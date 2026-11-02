@@ -1,0 +1,224 @@
+// Interfaz HTML: HUD, taller, regalos, pausa y menú principal.
+import { UPGRADES, GIFTS, CHARACTERS, LAYERS, MAX_DEPTH, HP_MAX } from './config.js';
+import { ICON_URL, CAT } from './sprites.js';
+import { fmtMoney } from './util.js';
+
+const $ = (id) => document.getElementById(id);
+
+export class UI {
+  constructor(game) {
+    this.g = game;
+    this.last = {};
+    this.isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+    if (this.isTouch) document.body.classList.add('touch');
+
+    document.querySelectorAll('img[data-icon]').forEach((img) => { img.src = ICON_URL[img.dataset.icon]; });
+    document.querySelector('.shop-cat').src = CAT.a.toDataURL();
+    document.querySelector('.gift-img').src = ICON_URL.giftBig;
+
+    // marcas de regalos en el medidor de profundidad
+    const gauge = $('gauge');
+    this.giftMarks = GIFTS.map((gf) => {
+      const d = document.createElement('div');
+      d.className = 'gauge-gift';
+      d.style.top = (gf.depth / MAX_DEPTH) * 100 + '%';
+      d.innerHTML = `<span>${gf.depth} m</span><img src="${ICON_URL.giftBig}" alt="">`;
+      gauge.appendChild(d);
+      return d;
+    });
+
+    // selección de personaje
+    document.querySelectorAll('.char').forEach((b) => {
+      const id = b.dataset.char;
+      b.querySelector('img').src = ICON_URL['char_' + id];
+      b.querySelector('span').textContent = CHARACTERS[id].name;
+      b.addEventListener('click', () => { game.audio.unlock(); game.audio.play('ui'); this.selectChar(id); });
+    });
+    this.selectChar(game.charId);
+
+    $('btn-new').addEventListener('click', () => { game.audio.unlock(); game.requestNewGame(); });
+    $('btn-continue').addEventListener('click', () => { game.audio.unlock(); game.continueGame(); });
+    $('btn-pause').addEventListener('click', () => game.pause());
+    $('btn-resume').addEventListener('click', () => game.resume());
+    $('btn-title').addEventListener('click', () => game.toTitle());
+    $('btn-reset').addEventListener('click', () => game.confirmReset());
+    $('btn-sfx').addEventListener('click', () => { game.audio.setSfx(!game.audio.sfxOn); this.refreshAudioBtns(); });
+    $('btn-music').addEventListener('click', () => { game.audio.setMusic(!game.audio.musicOn); this.refreshAudioBtns(); });
+    $('shop-close').addEventListener('click', () => game.closeShop());
+    $('screen-shop').addEventListener('click', (e) => { if (e.target.id === 'screen-shop') game.closeShop(); });
+    $('gift-ok').addEventListener('click', () => game.closeGift());
+    this.refreshAudioBtns();
+    this.updateTitle();
+  }
+
+  selectChar(id) {
+    this.g.charId = id;
+    try { localStorage.setItem('terra-regalos-pan:char', id); } catch { /* nada */ }
+    document.querySelectorAll('.char').forEach((b) => b.classList.toggle('sel', b.dataset.char === id));
+  }
+
+  refreshAudioBtns() {
+    $('btn-sfx').textContent = 'Sonidos: ' + (this.g.audio.sfxOn ? 'Sí' : 'No');
+    $('btn-music').textContent = 'Música: ' + (this.g.audio.musicOn ? 'Sí' : 'No');
+  }
+
+  updateTitle() {
+    const has = !!this.g.savedData;
+    $('btn-continue').classList.toggle('hidden', !has);
+    const hint = $('title-hint');
+    if (has) {
+      const s = this.g.savedData;
+      const gifts = (s.gifts || []).length;
+      hint.textContent = `Partida guardada: ${fmtMoney(s.money || 0)} · récord ${Math.floor(s.counters?.best || 0)} m · ${gifts}/${GIFTS.length} regalos`;
+    } else {
+      hint.textContent = this.isTouch ? 'Tip: jugalo con el celu acostado' : 'Tip: se juega con teclado o mouse';
+    }
+  }
+
+  show(id, on = true) { $(id).classList.toggle('hidden', !on); }
+
+  setPlaying(on) {
+    this.show('hud', on);
+    this.show('touch', on && this.isTouch);
+    this.show('screen-title', !on);
+  }
+
+  // ---------- HUD ----------
+  updateHUD() {
+    const g = this.g, p = g.players[0];
+    if (!p) return;
+    const L = this.last;
+    const hp = Math.ceil(p.hp), en = Math.ceil(p.energy), emax = g.stats.energyMax;
+    if (L.hp !== hp) {
+      L.hp = hp;
+      $('bar-hp').querySelector('.fill').style.width = (hp / HP_MAX) * 100 + '%';
+      $('bar-hp').querySelector('.num').textContent = `${hp}/${HP_MAX}`;
+      $('bar-hp').classList.toggle('low', hp < HP_MAX * 0.3);
+    }
+    if (L.en !== en || L.emax !== emax) {
+      L.en = en; L.emax = emax;
+      $('bar-en').querySelector('.fill').style.width = (en / emax) * 100 + '%';
+      $('bar-en').querySelector('.num').textContent = `${en}/${emax}`;
+      $('bar-en').classList.toggle('low', en < emax * 0.25);
+    }
+    const money = Math.floor(g.money);
+    if (L.money !== money) {
+      if (L.money !== undefined && money > L.money) {
+        const mb = $('money-box');
+        mb.classList.remove('bump'); void mb.offsetWidth; mb.classList.add('bump');
+      }
+      L.money = money;
+      $('money').textContent = fmtMoney(money);
+    }
+    const depth = Math.floor(p.depth);
+    if (L.depth !== depth) {
+      L.depth = depth;
+      $('depth-num').textContent = `${depth} m`;
+      $('gauge-you').style.top = Math.min(100, (depth / MAX_DEPTH) * 100) + '%';
+      $('gauge-fill').style.height = Math.min(100, (depth / MAX_DEPTH) * 100) + '%';
+      let name = 'Superficie';
+      if (p.resting) name = 'Casa';
+      else if (depth > 0) {
+        let acc = 0;
+        for (const l of LAYERS) { if (depth < l.to) { name = l.name; break; } acc = l.to; }
+      }
+      $('depth-layer').textContent = name;
+    }
+    const best = Math.floor(g.counters.best);
+    if (L.best !== best) {
+      L.best = best;
+      $('gauge-best').style.top = Math.min(100, (best / MAX_DEPTH) * 100) + '%';
+    }
+    const opened = g.openedGifts.length;
+    if (L.gifts !== opened) {
+      L.gifts = opened;
+      this.giftMarks.forEach((m, i) => m.classList.toggle('done', g.openedGifts.includes(GIFTS[i].id)));
+    }
+  }
+
+  setPrompt(text) {
+    if (this.last.prompt === text) return;
+    this.last.prompt = text;
+    const el = $('prompt');
+    if (!text) { el.classList.add('hidden'); } else { el.textContent = text; el.classList.remove('hidden'); }
+  }
+
+  setActButton(label) {
+    const el = $('t-act');
+    if (this.last.act === label) return;
+    this.last.act = label;
+    if (!label) el.classList.add('hidden');
+    else { el.textContent = label; el.classList.remove('hidden'); }
+  }
+
+  toast(msg, kind = '') {
+    const box = $('toasts');
+    const el = document.createElement('div');
+    el.className = 'toast ' + kind;
+    el.textContent = msg;
+    box.appendChild(el);
+    while (box.children.length > 3) box.removeChild(box.firstChild);
+    setTimeout(() => { el.style.transition = 'opacity 0.4s'; el.style.opacity = '0'; }, 2300);
+    setTimeout(() => el.remove(), 2750);
+  }
+
+  // ---------- Taller ----------
+  renderShop() {
+    const g = this.g;
+    $('shop-money').textContent = fmtMoney(g.money);
+    const list = $('shop-list');
+    list.innerHTML = '';
+    for (const up of UPGRADES) {
+      const lvl = g.upgrades[up.id];
+      const max = lvl >= up.levels.length - 1;
+      const [val] = up.levels[lvl];
+      const next = max ? null : up.levels[lvl + 1];
+      const card = document.createElement('div');
+      card.className = 'up' + (max ? ' max' : '');
+      const pips = up.levels.slice(1).map((_, i) => `<div class="pip ${i < lvl ? 'on' : ''}"></div>`).join('');
+      card.innerHTML = `
+        <div class="up-ico"><img src="${ICON_URL[up.icon]}" alt=""></div>
+        <div><h4>${up.name}</h4><p class="desc">${up.desc}</p></div>
+        <div class="pips">${pips}</div>
+        <div class="vals"><span class="now">${up.label(val)}</span>${next ? `<span class="next">→ ${up.label(next[0])}</span>` : '<span class="next">¡Al máximo!</span>'}</div>
+      `;
+      const btn = document.createElement('button');
+      btn.className = 'btn buy';
+      if (max) { btn.textContent = 'Completo'; btn.disabled = true; }
+      else {
+        btn.textContent = `Mejorar · ${fmtMoney(next[1])}`;
+        btn.disabled = g.money < next[1];
+        btn.addEventListener('click', () => g.buy(up.id));
+      }
+      card.appendChild(btn);
+      list.appendChild(card);
+    }
+  }
+
+  // ---------- Regalo ----------
+  showGift(gift) {
+    $('gift-kicker').textContent = `¡Regalo encontrado a ${gift.depth} m!`;
+    $('gift-title').textContent = gift.title;
+    $('gift-text').textContent = gift.text;
+    $('gift-ok').textContent = gift.final ? '¡Gracias!' : '¡Seguir cavando!';
+    this.show('screen-gift', true);
+  }
+
+  // ---------- Mensajes ----------
+  showMsg(title, text, buttons) {
+    $('msg-title').textContent = title;
+    $('msg-text').textContent = text;
+    const box = $('msg-btns');
+    box.innerHTML = '';
+    for (const b of buttons) {
+      const el = document.createElement('button');
+      el.className = 'btn ' + (b.cls || '');
+      el.textContent = b.label;
+      el.addEventListener('click', () => { this.show('screen-msg', false); b.onClick && b.onClick(); });
+      box.appendChild(el);
+    }
+    this.show('screen-msg', true);
+  }
+
+  fade(on) { $('fade').classList.toggle('on', on); }
+}

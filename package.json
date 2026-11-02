@@ -1,0 +1,10 @@
+{
+  "name": "terra-regalos-pan",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Juego pixel art de cavar un pozo en el patio para encontrar regalos.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  }
+}

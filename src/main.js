@@ -1,0 +1,505 @@
+// Terra Regalos — loop principal y estado del juego.
+import {
+  TILE, SURFACE, WORLD_W, WORLD_H, DEFAULT_SEED, UPGRADES, ITEMS, GIFTS, HP_MAX,
+  DEATH_MONEY_PENALTY, ENDING_TEXT, CHARACTERS,
+} from './config.js';
+import { initTiles } from './tiles.js';
+import { initSprites, drawChest, drawGiftBox, CAT, CRACKS } from './sprites.js';
+import { World } from './world.js';
+import { Structures, CAT_POS, PATIO } from './structures.js';
+import { Background } from './background.js';
+import { Lighting } from './lighting.js';
+import { Particles, Pickups, FloatTexts } from './entities.js';
+import { Player } from './player.js';
+import { Input } from './input.js';
+import { Audio } from './audio.js';
+import { UI } from './ui.js';
+import { store } from './save.js';
+import { fmtMoney, clamp } from './util.js';
+
+const STEP = 1 / 60;
+
+function computeStats(u) {
+  const v = (id) => UPGRADES.find((x) => x.id === id).levels[u[id]][0];
+  return {
+    power: v('pala'),
+    brush: v('ancho'),
+    energyMax: v('bateria'),
+    armor: v('armadura'),
+    jetSpeed: v('motor'),
+    jetCost: v('eficiencia'),
+  };
+}
+
+class Game {
+  constructor() {
+    this.canvas = document.getElementById('game');
+    this.ctx = this.canvas.getContext('2d');
+    initTiles();
+    initSprites();
+    this.audio = new Audio();
+    this.input = new Input(this.canvas);
+    this.input.onAnyInput = () => this.audio.unlock();
+    this.bg = new Background();
+    this.structs = new Structures();
+    this.lighting = new Lighting();
+    this.particles = new Particles();
+    this.pickups = new Pickups(this);
+    this.texts = new FloatTexts();
+    this.lights = [];
+    this.time = 0;
+    this.shakeT = 0; this.shakeA = 0;
+    this.toastTimes = {};
+    this.state = 'title';
+    try { this.charId = localStorage.getItem('terra-regalos-pan:char') || 'ella'; } catch { this.charId = 'ella'; }
+    if (!CHARACTERS[this.charId]) this.charId = 'ella';
+    this.savedData = null;
+    this.freshGame();
+    this.cam = { x: 26 * TILE, y: (SURFACE - 22) * TILE };
+    this.ui = new UI(this);
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+    window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 200));
+    document.addEventListener('visibilitychange', () => { if (document.hidden) { this.save(); if (this.state === 'play') this.pause(); } });
+    window.addEventListener('pagehide', () => this.save());
+    store.load().then((d) => { this.savedData = d && d.v === 1 ? d : null; this.ui.updateTitle(); });
+    this.acc = 0;
+    this.lastTs = performance.now();
+    requestAnimationFrame((t) => this.frame(t));
+  }
+
+  // ------------------------------------------------------------
+  //  Partida
+  // ------------------------------------------------------------
+  freshGame(seed = DEFAULT_SEED) {
+    this.seed = seed;
+    this.world = new World(seed);
+    this.money = 0;
+    this.upgrades = Object.fromEntries(UPGRADES.map((u) => [u.id, 0]));
+    this.stats = computeStats(this.upgrades);
+    this.openedGifts = [];
+    this.counters = { tiles: 0, deaths: 0, playTime: 0, best: 0, earned: 0 };
+    this.tips = {};
+    this.players = [new Player(this, this.charId)];
+    this.pickups.list = [];
+    this.particles.list = [];
+  }
+
+  requestNewGame() {
+    if (this.savedData) {
+      this.ui.showMsg('¿Empezar de nuevo?', 'Ya hay una partida guardada. Si empezás una nueva, se borra el progreso.', [
+        { label: 'Cancelar', cls: 'alt' },
+        { label: 'Empezar de cero', cls: 'danger', onClick: () => this.startNew() },
+      ]);
+    } else this.startNew();
+  }
+
+  startNew() {
+    this.freshGame();
+    this.startPlaying();
+    this.save();
+    setTimeout(() => this.tip('start', '¡Bajen por la escalera al patio y empiecen a cavar!'), 600);
+  }
+
+  continueGame() {
+    const d = this.savedData;
+    if (!d) return this.startNew();
+    this.freshGame(d.seed || DEFAULT_SEED);
+    this.world.importDug(d.dug);
+    this.money = d.money || 0;
+    for (const u of UPGRADES) this.upgrades[u.id] = clamp((d.upgrades && d.upgrades[u.id]) || 0, 0, u.levels.length - 1);
+    this.stats = computeStats(this.upgrades);
+    this.openedGifts = d.gifts || [];
+    for (const ch of this.world.chests) if (this.openedGifts.includes(ch.id)) { ch.opened = true; ch.open = 1; }
+    Object.assign(this.counters, d.counters || {});
+    this.tips = d.tips || {};
+    const p = new Player(this, this.charId);
+    this.players = [p];
+    if (d.player) {
+      const { x, y, hp, energy } = d.player;
+      if (Number.isFinite(x) && Number.isFinite(y) && !p.collides(x, y)) { p.x = x; p.y = y; p.peakY = y; }
+      if (Number.isFinite(hp)) p.hp = clamp(hp, 1, HP_MAX);
+      if (Number.isFinite(energy)) p.energy = clamp(energy, 0, this.stats.energyMax);
+    }
+    this.startPlaying();
+  }
+
+  startPlaying() {
+    this.state = 'play';
+    this.ui.setPlaying(true);
+    const p = this.players[0];
+    this.cam.x = p.cx - this.vw / 2;
+    this.cam.y = p.cy - this.vh / 2;
+    this.saveTimer = 0;
+  }
+
+  serialize() {
+    const p = this.players[0];
+    return {
+      v: 1,
+      seed: this.seed,
+      money: Math.floor(this.money),
+      upgrades: this.upgrades,
+      gifts: this.openedGifts,
+      dug: this.world.exportDug(),
+      counters: this.counters,
+      tips: this.tips,
+      player: p ? { char: p.char, x: p.x, y: p.y, hp: p.hp, energy: p.energy } : null,
+      savedAt: Date.now(),
+    };
+  }
+
+  save() {
+    if (!['play', 'shop', 'paused', 'gift'].includes(this.state)) return;
+    const d = this.serialize();
+    this.savedData = d;
+    store.save(d);
+  }
+
+  toTitle() {
+    this.save();
+    this.audio.jet(false);
+    this.ui.show('screen-pause', false);
+    this.state = 'title';
+    this.ui.setPlaying(false);
+    this.ui.updateTitle();
+  }
+
+  confirmReset() {
+    this.ui.show('screen-pause', false);
+    this.ui.showMsg('¿Borrar la partida?', 'Se pierde todo: la plata, las mejoras y el pozo. No se puede deshacer.', [
+      { label: 'Cancelar', cls: 'alt', onClick: () => this.ui.show('screen-pause', true) },
+      {
+        label: 'Borrar', cls: 'danger', onClick: async () => {
+          await store.clear();
+          this.savedData = null;
+          this.freshGame();
+          this.state = 'title';
+          this.ui.setPlaying(false);
+          this.ui.updateTitle();
+        },
+      },
+    ]);
+  }
+
+  pause() {
+    if (this.state !== 'play') return;
+    this.state = 'paused';
+    this.audio.jet(false);
+    this.ui.show('screen-pause', true);
+    this.save();
+  }
+
+  resume() {
+    this.ui.show('screen-pause', false);
+    this.state = 'play';
+  }
+
+  // ------------------------------------------------------------
+  //  Eventos del juego
+  // ------------------------------------------------------------
+  toast(msg, key, kind = 'warn') {
+    const now = this.time;
+    if (key && this.toastTimes[key] && now - this.toastTimes[key] < 3) return;
+    if (key) this.toastTimes[key] = now;
+    this.ui.toast(msg, kind);
+  }
+
+  tip(key, msg) {
+    if (this.tips[key]) return;
+    this.tips[key] = true;
+    this.ui.toast(msg, 'good');
+  }
+
+  addText(x, y, text, color) { this.texts.add(x, y, text, color); }
+
+  shake(a) { this.shakeT = 0.25; this.shakeA = Math.max(this.shakeA, a); }
+
+  collect(item, player) {
+    const it = ITEMS[item];
+    this.money += it.value;
+    this.counters.earned += it.value;
+    this.audio.play(it.sfx);
+    this.addText(player.cx, player.y - 6, '+$' + it.value, it.value >= 300 ? '#8fe9ff' : it.value >= 35 ? '#9cf08a' : '#ffd34d');
+    const cols = it.glow ? ['#ffffff', `rgb(${it.glow.join(',')})`] : ['#fff0a0', '#ffd34d'];
+    for (let i = 0; i < 4; i++) this.particles.add({ x: player.cx, y: player.cy, vx: (Math.random() - 0.5) * 60, vy: -30 - Math.random() * 40, life: 0.5, max: 0.5, color: cols[i % 2], star: true, grav: 60 });
+    if (it.value >= 300) this.toast(`¡${it.name}! +${fmtMoney(it.value)}`, null, 'good');
+    this.tip('money', '¡Plata! Gastala en el Taller, a la derecha del patio');
+  }
+
+  buy(id) {
+    const up = UPGRADES.find((u) => u.id === id);
+    const lvl = this.upgrades[id];
+    if (lvl >= up.levels.length - 1) return;
+    const cost = up.levels[lvl + 1][1];
+    if (this.money < cost) { this.audio.play('deny'); return; }
+    this.money -= cost;
+    this.upgrades[id] = lvl + 1;
+    this.stats = computeStats(this.upgrades);
+    if (id === 'bateria') for (const p of this.players) p.energy = this.stats.energyMax;
+    this.audio.play('buy');
+    this.ui.toast(`¡${up.name} mejorada!`, 'good');
+    this.ui.renderShop();
+    this.save();
+  }
+
+  openShop() {
+    if (this.state !== 'play') return;
+    this.state = 'shop';
+    this.audio.jet(false);
+    this.audio.play('ui');
+    this.ui.renderShop();
+    this.ui.show('screen-shop', true);
+  }
+
+  closeShop() {
+    this.ui.show('screen-shop', false);
+    if (this.state === 'shop') this.state = 'play';
+  }
+
+  openChest(ch, player) {
+    if (this.state !== 'play' || ch.opened) return;
+    ch.opened = true;
+    this.state = 'cinematic';
+    this.cine = { ch, t: 0, player };
+    player.vx = 0;
+    player.digging = false;
+    this.audio.jet(false);
+    this.audio.play('chest');
+  }
+
+  updateCinematic(dt) {
+    const c = this.cine;
+    c.t += dt;
+    c.ch.open = Math.min(1, c.t / 0.5);
+    const x = c.ch.c * TILE + 4, y = c.ch.r * TILE - 8;
+    if (Math.random() < 0.6) {
+      this.particles.add({ x: x + (Math.random() - 0.5) * 14, y, vx: (Math.random() - 0.5) * 30, vy: -40 - Math.random() * 50, life: 1, max: 1, color: Math.random() < 0.5 ? '#ffd34d' : '#ff9ccc', star: true, grav: 10 });
+    }
+    if (Math.random() < 0.15) this.particles.add({ x: x + (Math.random() - 0.5) * 20, y: y - 6, vx: 0, vy: -20, life: 1.2, max: 1.2, heart: true, grav: 0 });
+    if (c.t > 2.2 && !c.shown) {
+      c.shown = true;
+      this.state = 'gift';
+      this.openedGifts.push(c.ch.id);
+      this.ui.showGift(c.ch.gift);
+      this.save();
+    }
+  }
+
+  closeGift() {
+    this.ui.show('screen-gift', false);
+    const ch = this.cine && this.cine.ch;
+    this.state = 'play';
+    this.cine = null;
+    this.save();
+    if (ch && ch.gift.final) {
+      const mins = Math.floor(this.counters.playTime / 60);
+      this.state = 'paused';
+      this.ui.showMsg('¡Fin! ♥', `${ENDING_TEXT}\n\nTiempo: ${mins} min · Bloques cavados: ${this.counters.tiles}\nPlata juntada: ${fmtMoney(this.counters.earned)}`, [
+        { label: 'Seguir jugando', onClick: () => { this.state = 'play'; } },
+      ]);
+    } else if (this.openedGifts.length < GIFTS.length) {
+      const next = GIFTS.find((g) => !this.openedGifts.includes(g.id));
+      if (next) this.toast(`El próximo regalo está a ${next.depth} m`, null, 'good');
+    }
+  }
+
+  faint(player, reason) {
+    if (this.state !== 'play') return;
+    this.state = 'faint';
+    player.dead = true;
+    this.audio.jet(false);
+    this.audio.play('faint');
+    this.counters.deaths++;
+    const lost = Math.floor(this.money * DEATH_MONEY_PENALTY);
+    for (let i = 0; i < 14; i++) this.particles.add({ x: player.cx, y: player.cy, vx: (Math.random() - 0.5) * 60, vy: -Math.random() * 60, life: 0.8, max: 0.8, color: '#ffffff', star: true, grav: 40 });
+    setTimeout(() => this.ui.fade(true), 400);
+    setTimeout(() => {
+      const title = reason === 'energy' ? '¡Sin energía!' : '¡Auch!';
+      const text = (reason === 'energy'
+        ? 'Te quedaste sin energía bajo tierra y te desmayaste.\nAlguien te rescató y te llevó a casa.'
+        : 'Te caíste demasiado fuerte y quedaste K.O.\nTe despertaste en casa.')
+        + (lost > 0 ? `\n\nPerdiste ${fmtMoney(lost)} en el camino.` : '');
+      this.ui.showMsg(title, text, [{
+        label: 'Volver a cavar',
+        onClick: () => {
+          this.money -= lost;
+          player.spawn();
+          player.hp = HP_MAX;
+          player.energy = this.stats.energyMax;
+          this.cam.x = player.cx - this.vw / 2;
+          this.cam.y = player.cy - this.vh / 2;
+          this.ui.fade(false);
+          this.state = 'play';
+          this.save();
+        },
+      }]);
+    }, 1300);
+  }
+
+  // ------------------------------------------------------------
+  //  Loop
+  // ------------------------------------------------------------
+  resize() {
+    const W = window.innerWidth, H = window.innerHeight;
+    const scale = Math.max(1, Math.round(Math.min(W, H) / 215));
+    this.scale = scale;
+    this.vw = Math.ceil(W / scale);
+    this.vh = Math.ceil(H / scale);
+    this.canvas.width = this.vw;
+    this.canvas.height = this.vh;
+    this.canvas.style.width = this.vw * scale + 'px';
+    this.canvas.style.height = this.vh * scale + 'px';
+    this.ctx.imageSmoothingEnabled = false;
+    this.input.scale = scale;
+    const portrait = H > W && this.ui && this.ui.isTouch;
+    document.getElementById('rotate-hint').classList.toggle('hidden', !portrait);
+  }
+
+  frame(ts) {
+    const dt = Math.min(0.1, (ts - this.lastTs) / 1000);
+    this.lastTs = ts;
+    this.acc += dt;
+    let n = 0;
+    while (this.acc >= STEP && n < 6) { this.update(STEP); this.acc -= STEP; n++; }
+    if (n === 6) this.acc = 0;
+    this.render();
+    requestAnimationFrame((t) => this.frame(t));
+  }
+
+  update(dt) {
+    this.time += dt;
+    const inp = this.input.read(this.cam.x, this.cam.y);
+    const p = this.players[0];
+
+    if (this.state === 'play') {
+      if (inp.pause) this.pause();
+      this.counters.playTime += dt;
+      for (const pl of this.players) pl.update(dt, inp);
+      if (p.inShop) {
+        this.ui.setPrompt(this.ui.isTouch ? null : 'Presioná E para entrar al Taller');
+        this.ui.setActButton('TALLER');
+        if (inp.interact) this.openShop();
+        this.tip('shop', 'Este es el Taller: acá se compran las mejoras');
+      } else {
+        this.ui.setActButton(null);
+        if (p.resting && (p.energy < this.stats.energyMax - 0.5 || p.hp < HP_MAX - 0.5)) this.ui.setPrompt('Descansando... ♥');
+        else this.ui.setPrompt(null);
+      }
+      this.counters.best = Math.max(this.counters.best, p.depth);
+      this.pickups.update(dt);
+      this.updateTips(p);
+      this.saveTimer += dt;
+      if (this.saveTimer > 12) { this.saveTimer = 0; this.save(); }
+    } else if (this.state === 'shop') {
+      if (inp.pause || inp.interact) this.closeShop();
+    } else if (this.state === 'paused') {
+      if (inp.pause && !document.getElementById('screen-pause').classList.contains('hidden')) this.resume();
+    } else if (this.state === 'cinematic') {
+      this.updateCinematic(dt);
+    }
+
+    // destellos de cofres cercanos
+    for (const ch of this.world.chests) {
+      if (ch.opened) continue;
+      if (Math.random() < 0.08) {
+        this.particles.add({ x: ch.c * TILE + 4 + (Math.random() - 0.5) * 18, y: ch.r * TILE - 6 + (Math.random() - 0.5) * 10, vx: 0, vy: -8, life: 0.7, max: 0.7, color: Math.random() < 0.5 ? '#ffd34d' : '#ff9ccc', star: true, grav: 0 });
+      }
+    }
+
+    this.particles.update(dt, this.world);
+    this.texts.update(dt);
+    this.updateCamera(dt);
+    if (this.shakeT > 0) { this.shakeT -= dt; if (this.shakeT <= 0) this.shakeA = 0; }
+    this.input.endFrame();
+  }
+
+  updateTips(p) {
+    if (p.x > 27 * TILE && p.depth < 2) {
+      this.tip('dig', this.ui.isTouch ? 'Mové el joystick hacia abajo (o tocá CAVAR) para cavar' : 'Mantené S o ↓ para cavar hacia abajo (J para los costados)');
+    }
+    if (p.depth > 14) this.tip('jet', this.ui.isTouch ? 'Para subir: mantené SALTAR y volás con el jetpack' : 'Para subir: mantené Espacio y volás con el jetpack');
+    if (p.energy < this.stats.energyMax * 0.3 && p.depth > 4) this.tip('energy', 'Energía baja: volvé al departamento a descansar');
+    if (this.money >= 40 && this.upgrades.pala === 0) this.tip('afford', '¡Ya te alcanza para mejorar la pala en el Taller!');
+    if (p.depth > 40) this.tip('fall', this.ui.isTouch ? 'Ojo con las caídas: para bajar despacio mantené SALTAR + joystick abajo' : 'Ojo con las caídas: para bajar despacio mantené Espacio + S');
+  }
+
+  updateCamera(dt) {
+    const vw = this.vw, vh = this.vh;
+    let tx, ty;
+    if (this.state === 'title') {
+      tx = 22 * TILE - vw / 2 + Math.sin(this.time * 0.15) * 90;
+      ty = (SURFACE - 6) * TILE - vh * 0.62;
+    } else {
+      const p = this.players[0];
+      tx = p.cx - vw / 2;
+      ty = p.cy - vh / 2;
+    }
+    const k = Math.min(1, dt * (this.state === 'title' ? 2 : 9));
+    this.cam.x += (tx - this.cam.x) * k;
+    this.cam.y += (ty - this.cam.y) * k;
+    const maxX = WORLD_W * TILE - vw;
+    this.cam.x = maxX < 0 ? maxX / 2 : clamp(this.cam.x, 0, maxX);
+    this.cam.y = clamp(this.cam.y, 0, WORLD_H * TILE - vh);
+  }
+
+  render() {
+    const ctx = this.ctx, vw = this.vw, vh = this.vh;
+    let sx = 0, sy = 0;
+    if (this.shakeT > 0) { sx = (Math.random() - 0.5) * this.shakeA * 2; sy = (Math.random() - 0.5) * this.shakeA * 2; }
+    const camX = Math.round(this.cam.x + sx), camY = Math.round(this.cam.y + sy);
+    const t = this.time;
+
+    this.bg.draw(ctx, camX, camY, vw, vh, t);
+    this.structs.drawBackdrop(ctx, camX, camY, t);
+    this.structs.drawBuildings(ctx, camX, camY);
+    this.world.draw(ctx, camX, camY, vw, vh);
+
+    // grietas sobre los bloques que se están cavando
+    for (const p of this.players) {
+      if (!p.digging || p.tooHard || !p.digKey) continue;
+      const stage = Math.min(2, Math.floor(p.digProg * 3));
+      const tg = p.digTargets(p.digDir);
+      for (const c of tg.list) {
+        if (c.hard > this.stats.power) continue;
+        ctx.drawImage(CRACKS[stage], c.c * TILE - camX, c.r * TILE - camY);
+      }
+    }
+
+    // cofres
+    for (const ch of this.world.chests) {
+      const x = ch.c * TILE - 3 - camX, y = ch.r * TILE - 11 - camY;
+      if (x < -30 || x > vw + 30 || y < -40 || y > vh + 30) continue;
+      if (!ch.opened) {
+        ctx.fillStyle = 'rgba(255,200,230,0.18)';
+        const r = 10 + Math.sin(t * 3) * 2;
+        ctx.beginPath(); ctx.arc(x + 7.5, y + 5, r, 0, Math.PI * 2); ctx.fill();
+      }
+      drawChest(ctx, x, y, ch.open);
+      if (this.cine && this.cine.ch === ch) {
+        const rise = Math.min(1, Math.max(0, (this.cine.t - 0.4) / 1.2));
+        drawGiftBox(ctx, x + 2, Math.round(y - 4 - rise * 18 + Math.sin(t * 5) * rise));
+      }
+    }
+
+    // gato del taller
+    const p0 = this.players[0];
+    const blink = (t % 4) > 3.85;
+    const catSpr = blink ? CAT.blink : Math.floor(t / 0.7) % 2 ? CAT.b : CAT.a;
+    ctx.drawImage(catSpr, CAT_POS.x - camX, CAT_POS.y - camY);
+    if (this.state === 'play' && p0 && p0.inShop && Math.random() < 0.02) {
+      this.particles.add({ x: CAT_POS.x + 3, y: CAT_POS.y - 2, vx: 0, vy: -12, life: 1, max: 1, heart: true, grav: 0 });
+    }
+
+    this.pickups.draw(ctx, camX, camY, t);
+    if (this.state !== 'title') for (const p of this.players) p.draw(ctx, camX, camY);
+    this.particles.draw(ctx, camX, camY);
+    this.lighting.draw(ctx, this, camX, camY, vw, vh, t);
+    this.texts.draw(ctx, camX, camY);
+
+    if (this.state !== 'title') this.ui.updateHUD();
+  }
+}
+
+window.game = new Game();
+export { PATIO };

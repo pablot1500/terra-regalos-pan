@@ -1,0 +1,160 @@
+// ============================================================
+//  Terra Regalos — configuración general del juego
+//  Casi todo lo "ajustable" (precios, dureza, textos) vive acá.
+// ============================================================
+
+// ---- Mundo ----
+export const TILE = 8;               // px por bloque (resolución virtual)
+export const CHUNK = 16;             // bloques por chunk de render
+export const WORLD_W = 79;           // ancho del mundo en bloques
+export const SURFACE = 40;           // fila donde empieza el suelo
+export const METERS_PER_TILE = 2;    // cada bloque = 2 metros de profundidad
+export const MAX_DEPTH = 1000;       // metros hasta el fondo
+export const BOTTOM_ROW = SURFACE + MAX_DEPTH / METERS_PER_TILE + 1; // primera fila de roca madre
+export const WORLD_H = BOTTOM_ROW + 3;
+export const EDGE = 2;               // columnas de roca madre a cada lado
+export const DEFAULT_SEED = 14022;   // mismo mundo para los dos jugadores
+
+// ---- Personajes (los nombres se pueden cambiar acá) ----
+export const CHARACTERS = {
+  el: { name: 'Él' },
+  ella: { name: 'Ella' },
+};
+
+// ---- Física ----
+export const PHYS = {
+  gravity: 640,
+  maxFall: 430,
+  walk: 74,
+  accelGround: 1000,
+  accelAir: 620,
+  jump: 182,
+  stepUp: 9,             // sube escalones de 1 bloque solo
+  safeFallTiles: 6,      // caer más de esto (12 m) lastima
+  fallDmgPerTile: 6,     // daño por cada bloque extra de caída
+  jetAccel: 1050,
+};
+
+export const HP_MAX = 100;
+export const REST = { energyPerSec: 110, hpPerSec: 70 };
+export const DEATH_MONEY_PENALTY = 0.1; // pierden 10% de la plata si se desmayan/mueren
+
+// ---- Cavado ----
+export const DIG = {
+  baseTime: 0.36,    // segundos por bloque cuando fuerza == dureza
+  minTime: 0.07,
+  energyCost: 1,     // energía por palazo (sin importar el área)
+};
+
+// Área de la pala ancha por nivel: extra = bloques a los costados, depth = profundidad
+export const BRUSH = [
+  { extra: 0, depth: 1 },
+  { extra: 1, depth: 1 },
+  { extra: 1, depth: 2 },
+  { extra: 1, depth: 3 },
+  { extra: 2, depth: 3 },
+];
+
+// Colores del filo de la pala según el nivel de fuerza
+export const SHOVEL_BLADES = [
+  ['#8d96a0', '#c3cad2', '#5b636d'], // hierro
+  ['#b9c6d2', '#eef4f9', '#6f7f8f'], // acero
+  ['#e6a92e', '#fff0a0', '#9c6a12'], // oro
+  ['#36c47c', '#b6ffd8', '#1c7a4a'], // esmeralda
+  ['#ff4f74', '#ffc0cf', '#a8203f'], // rubí
+  ['#6fdcff', '#eafcff', '#2c8db5'], // diamante
+  ['#ff7ac8', '#ffe1f3', '#b0307a'], // pala del amor
+];
+
+// ---- Capas del subsuelo (en metros) ----
+export const LAYERS = [
+  { name: 'Tierra', to: 80 },
+  { name: 'Arcilla', to: 200 },
+  { name: 'Piedra', to: 350 },
+  { name: 'Granito', to: 550 },
+  { name: 'Basalto', to: 800 },
+  { name: 'Abismo', to: 99999 },
+];
+
+// ---- Tesoros ----
+export const ITEMS = [
+  null,
+  { key: 'coin', name: 'Moneda', value: 1, sfx: 'coin' },
+  { key: 'coins', name: 'Monedas', value: 4, sfx: 'coin' },
+  { key: 'bill', name: 'Billete', value: 10, sfx: 'bill' },
+  { key: 'billstack', name: 'Fajo de billetes', value: 35, sfx: 'bill' },
+  { key: 'goldbar', name: 'Lingote de oro', value: 120, sfx: 'gold' },
+  { key: 'ruby', name: 'Rubí', value: 300, sfx: 'gem', glow: [255, 80, 110] },
+  { key: 'emerald', name: 'Esmeralda', value: 650, sfx: 'gem', glow: [60, 220, 150] },
+  { key: 'diamond', name: 'Diamante', value: 1500, sfx: 'gem', glow: [140, 230, 255] },
+];
+
+// Por capa: probabilidad de que un bloque tenga tesoro y pesos de cada ítem
+export const LAYER_LOOT = [
+  { density: 0.14, w: { 1: 55, 2: 35, 3: 10 } },
+  { density: 0.13, w: { 1: 15, 2: 40, 3: 35, 4: 10 } },
+  { density: 0.10, w: { 2: 25, 3: 40, 4: 25, 5: 10 } },
+  { density: 0.10, w: { 3: 20, 4: 40, 5: 32, 6: 8 } },
+  { density: 0.10, w: { 4: 25, 5: 45, 6: 22, 7: 8 } },
+  { density: 0.10, w: { 5: 30, 6: 35, 7: 25, 8: 10 } },
+];
+
+// ---- Mejoras (compartidas entre los dos jugadores) ----
+// levels: [valor, costo]. El nivel 0 es el inicial (gratis).
+export const UPGRADES = [
+  {
+    id: 'pala', name: 'Pala', icon: 'shovel',
+    desc: 'Más fuerza: rompe materiales más duros y cava más rápido.',
+    levels: [[1, 0], [2, 40], [4, 220], [7, 900], [11, 3200], [16, 10000], [24, 24000]],
+    label: (v) => `Fuerza ${v}`,
+  },
+  {
+    id: 'ancho', name: 'Pala ancha', icon: 'wide',
+    desc: 'Cava más área de un solo palazo.',
+    levels: [[0, 0], [1, 150], [2, 800], [3, 3000], [4, 9000]],
+    label: (v) => ['1 bloque', '3 bloques', '6 bloques', '9 bloques', '15 bloques'][v],
+  },
+  {
+    id: 'bateria', name: 'Batería', icon: 'battery',
+    desc: 'Más energía para cavar y volar sin volver a casa.',
+    levels: [[100, 0], [140, 60], [200, 250], [280, 900], [400, 2800], [560, 7500], [800, 16000]],
+    label: (v) => `${v} de energía`,
+  },
+  {
+    id: 'armadura', name: 'Armadura', icon: 'armor',
+    desc: 'Te protege de los golpes cuando caés de muy alto.',
+    levels: [[0, 0], [25, 80], [45, 400], [60, 1500], [75, 4500], [90, 11000]],
+    label: (v) => (v ? `-${v}% de daño` : 'Sin armadura'),
+  },
+  {
+    id: 'motor', name: 'Jetpack: Motor', icon: 'rocket',
+    desc: 'Volás más rápido y con más fuerza.',
+    levels: [[85, 0], [115, 100], [150, 450], [190, 1600], [235, 5000], [290, 12000]],
+    label: (v) => `Velocidad ${v}`,
+  },
+  {
+    id: 'eficiencia', name: 'Jetpack: Eficiencia', icon: 'leaf',
+    desc: 'El jetpack gasta menos energía por segundo.',
+    levels: [[8, 0], [6, 90], [4.5, 400], [3.3, 1400], [2.4, 4200], [1.6, 10000]],
+    label: (v) => `${String(v).replace('.', ',')} energía/seg`,
+  },
+];
+
+// ---- Regalos ----
+// Textos de prueba: después los cambiamos por los regalos de verdad.
+export const GIFTS = [
+  {
+    id: 1, depth: 300, title: 'Primer regalo',
+    text: 'Acá va a ir la primera sorpresa.\n(Texto de prueba: después lo cambiamos por el regalo de verdad.)',
+  },
+  {
+    id: 2, depth: 600, title: 'Segundo regalo',
+    text: 'Acá va a ir la segunda sorpresa.\n(Texto de prueba.)',
+  },
+  {
+    id: 3, depth: 1000, title: 'El regalo final', final: true,
+    text: 'Acá va a ir la última sorpresa.\n(Texto de prueba.)',
+  },
+];
+
+export const ENDING_TEXT = '¡Llegaron al fondo y encontraron todos los regalos!\nGracias por jugar.';
