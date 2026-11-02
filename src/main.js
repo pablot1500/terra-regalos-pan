@@ -32,7 +32,7 @@ function computeStats(u) {
 }
 
 class Game {
-  constructor() {
+  constructor(boot = {}) {
     this.canvas = document.getElementById('game');
     this.ctx = this.canvas.getContext('2d');
     initTiles();
@@ -62,7 +62,12 @@ class Game {
     window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 200));
     document.addEventListener('visibilitychange', () => { if (document.hidden) { this.save(); if (this.state === 'play') this.pause(); } });
     window.addEventListener('pagehide', () => this.save());
-    store.load().then((d) => { this.savedData = d && d.v === 1 ? d : null; this.ui.updateTitle(); });
+    store.load().then((d) => {
+      this.savedData = d && d.v === 1 ? d : null;
+      this.ui.updateTitle();
+      // al recibir una versión nueva en vivo, retomar la partida donde estaba
+      if (boot.resume && this.savedData) this.continueGame();
+    });
     this.acc = 0;
     this.lastTs = performance.now();
     requestAnimationFrame((t) => this.frame(t));
@@ -501,5 +506,18 @@ class Game {
   }
 }
 
-window.game = new Game();
+function start(data) {
+  window.game = new Game(data || {});
+  const hot = window.claude && window.claude.hot;
+  if (hot && hot.snapshot) {
+    hot.snapshot(() => {
+      const g = window.game;
+      g.save();
+      return { resume: g.state !== 'title' };
+    });
+  }
+}
+const hot = window.claude && window.claude.hot;
+if (hot && hot.ready) hot.ready(start);
+else start((hot && hot.data) || {});
 export { PATIO };
