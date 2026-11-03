@@ -106,8 +106,9 @@ export class Audio {
       if (this.jetSrc) return;
       const c = this.ctx;
       const s = c.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true;
-      const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 0.8;
-      const g = c.createGain(); g.gain.value = 0; g.gain.linearRampToValueAtTime(0.18, c.currentTime + 0.05);
+      // soplido grave y suave (sin el siseo agudo), que entra y sale despacito
+      const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 420; f.Q.value = 0.3;
+      const g = c.createGain(); g.gain.value = 0; g.gain.linearRampToValueAtTime(0.06, c.currentTime + 0.25);
       s.connect(f); f.connect(g); g.connect(this.sfx);
       s.start();
       this.jetSrc = s; this.jetGain = g;
@@ -115,8 +116,8 @@ export class Audio {
       const c = this.ctx;
       this.jetGain.gain.cancelScheduledValues(c.currentTime);
       this.jetGain.gain.setValueAtTime(this.jetGain.gain.value, c.currentTime);
-      this.jetGain.gain.linearRampToValueAtTime(0, c.currentTime + 0.08);
-      this.jetSrc.stop(c.currentTime + 0.1);
+      this.jetGain.gain.linearRampToValueAtTime(0, c.currentTime + 0.2);
+      this.jetSrc.stop(c.currentTime + 0.22);
       this.jetSrc = null;
     }
   }
