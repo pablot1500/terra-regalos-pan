@@ -51,7 +51,7 @@ export const DIG = {
 };
 
 // Radio (en px) del círculo que saca cada palazo, según el nivel de pala ancha
-export const BRUSH_R = [10, 11.5, 13.5, 16, 19];
+export const BRUSH_R = [10, 11.5, 13.5, 16, 19, 23];
 
 // Colores del filo de la pala según el nivel de fuerza
 export const SHOVEL_BLADES = [
@@ -113,8 +113,8 @@ export const UPGRADES = [
   {
     id: 'ancho', name: 'Pala ancha', icon: 'wide',
     desc: 'Cava más área de un solo palazo.',
-    levels: [[0, 0], [1, 220], [2, 1200], [3, 4500], [4, 13500]],
-    label: (v) => ['Ancha', 'Muy ancha', 'Enorme', 'Gigante', 'Colosal'][v],
+    levels: [[0, 0], [1, 220], [2, 1200], [3, 4500], [4, 13500], [5, 32000]],
+    label: (v) => ['Ancha', 'Muy ancha', 'Enorme', 'Gigante', 'Colosal', 'Titánica'][v],
   },
   {
     id: 'bateria', name: 'Batería', icon: 'battery',
