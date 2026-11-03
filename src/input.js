@@ -99,6 +99,8 @@ export class Input {
     btn('t-jump', 'jump');
     btn('t-dig', 'dig');
     btn('t-act', null);
+    btn('t-torch', null);
+    btn('t-dyn', null);
   }
 
   read(camX, camY) {
@@ -125,6 +127,8 @@ export class Input {
       mx: this.mouse.x + camX,
       my: this.mouse.y + camY,
       interact: e('KeyE') || e('Enter') || e('t-act'),
+      torchPressed: e('KeyT') || e('Digit1') || e('t-torch'),
+      dynPressed: e('KeyG') || e('Digit2') || e('t-dyn'),
       pause: e('Escape') || e('KeyP'),
     };
   }

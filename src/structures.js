@@ -12,6 +12,7 @@ export const HOME_ZONE = { x0: 11 * TILE, x1: 19 * TILE, y0: (S - 11) * TILE, y1
 export const SHOP_ZONE = { x0: 65 * TILE, x1: 76 * TILE, y0: (S - 6) * TILE, y1: S * TILE };
 export const SPAWN = { x: 14 * TILE + 1, y: (S - 6) * TILE - 15 };
 export const PATIO = { c0: 27, c1: 64 };
+export const DIG_ZONE = { c0: 41, c1: 50 }; // cantero del medio: lo único que se puede cavar desde arriba
 export const CAT_POS = { x: 64 * TILE + 50, y: (S - 9) * TILE + 56 - 10 };
 
 export function placeStructures(world) {
@@ -20,6 +21,12 @@ export function placeStructures(world) {
   for (let r = S; r <= S + 1; r++) {
     for (let c = 2; c <= 26; c++) set(c, r, T.CONCRETE);
     for (let c = 65; c <= 76; c++) set(c, r, T.CONCRETE);
+  }
+  // patio: baldosas en todo menos el cantero del medio
+  for (let c = PATIO.c0; c <= PATIO.c1; c++) {
+    if (c >= DIG_ZONE.c0 && c <= DIG_ZONE.c1) continue;
+    set(c, S, T.PAVER);
+    set(c, S + 1, T.CONCRETE);
   }
   // edificio sólido
   for (let c = 2; c <= 19; c++) for (let r = S - 12; r <= S - 1; r++) set(c, r, T.STRUCT);

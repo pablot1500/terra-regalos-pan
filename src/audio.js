@@ -81,7 +81,7 @@ export class Audio {
   play(name) {
     if (!this.ctx || !this.sfxOn) return;
     const now = performance.now();
-    const minGap = { coin: 40, dig: 60, clink: 80, land: 80 }[name] || 0;
+    const minGap = { coin: 40, dig: 60, drill: 60, clink: 80, land: 80, fuse: 70 }[name] || 0;
     if (minGap && now - (this.last[name] || 0) < minGap) return;
     this.last[name] = now;
     switch (name) {
@@ -100,6 +100,18 @@ export class Audio {
       case 'chest': [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.22, { type: i % 2 ? 'square' : 'triangle', vol: 0.14, delay: i * 0.11 })); break;
       case 'faint': [392, 330, 262, 196].forEach((f, i) => this.tone(f, 0.25, { type: 'triangle', vol: 0.18, delay: i * 0.15 })); break;
       case 'ui': this.tone(660, 0.05, { vol: 0.08 }); break;
+      case 'drill':
+        this.tone(95 + Math.random() * 20, 0.12, { type: 'sawtooth', vol: 0.12, slide: 80 });
+        this.noise(0.1, { vol: 0.25, freq: 2200, type: 'bandpass' });
+        break;
+      case 'fuse': this.noise(0.06, { vol: 0.18, freq: 5000, type: 'highpass' }); if (Math.random() < 0.4) this.tone(2400 + Math.random() * 1500, 0.02, { type: 'square', vol: 0.03 }); break;
+      case 'boom':
+        this.noise(0.9, { vol: 0.9, freq: 400 });
+        this.noise(0.35, { vol: 0.5, freq: 1800 });
+        this.tone(120, 0.7, { type: 'sine', vol: 0.6, slide: 30 });
+        this.tone(60, 0.9, { type: 'triangle', vol: 0.4, slide: 25 });
+        break;
+      case 'torch': this.noise(0.25, { vol: 0.25, freq: 1500, type: 'bandpass' }); this.tone(330, 0.12, { type: 'triangle', vol: 0.08, slide: 660 }); break;
       case 'rest': this.tone(880, 0.2, { type: 'sine', vol: 0.06 }); break;
     }
   }

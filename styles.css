@@ -120,6 +120,18 @@ button { font-family: var(--font); cursor: pointer; }
 #money-box.bump { animation: bump 0.25s; }
 @keyframes bump { 40% { transform: scale(1.18); } }
 
+#inv-box {
+  position: absolute; left: calc(12px + env(safe-area-inset-left)); top: calc(102px + env(safe-area-inset-top));
+  display: flex; gap: 12px;
+}
+.inv { display: flex; align-items: center; gap: 4px; font-size: 18px; font-weight: 700; text-shadow: 0 2px 0 var(--ink), 2px 0 0 var(--ink), -2px 0 0 var(--ink), 0 -2px 0 var(--ink); }
+.inv .ico { width: 15px; height: 24px; object-fit: contain; }
+.inv kbd { font-family: var(--font); font-size: 11px; background: var(--panel); border: 2px solid var(--ink); padding: 0 4px; color: var(--muted); text-shadow: none; }
+body.touch .inv kbd { display: none; }
+.tbtn.mini { width: 52px; height: 52px; background: var(--panel-2); box-shadow: inset -3px -3px 0 var(--panel), 0 3px 0 var(--ink); color: var(--cream); font-size: 13px; gap: 1px; }
+.tbtn.mini .ico { width: 14px; height: 22px; object-fit: contain; }
+.tbtn.torch { right: calc(210px + env(safe-area-inset-right)); bottom: calc(40px + env(safe-area-inset-bottom)); }
+.tbtn.dyn { right: calc(150px + env(safe-area-inset-right)); bottom: calc(118px + env(safe-area-inset-bottom)); }
 #depth-box {
   position: absolute; right: calc(10px + env(safe-area-inset-right)); top: calc(54px + env(safe-area-inset-top));
   display: flex; flex-direction: column; align-items: center; gap: 4px;
@@ -213,6 +225,11 @@ button { font-family: var(--font); cursor: pointer; }
 .up .vals .next { color: var(--green); }
 .up .buy { grid-column: 1 / -1; width: 100%; font-size: 16px; padding: 7px; }
 .up.max .buy { background: #6b5a75; }
+.shop-section { grid-column: 1 / -1; margin: 6px 0 -2px; font-size: 15px; color: var(--gold); text-shadow: 0 2px 0 var(--ink); }
+.up .tier { font-size: 13px; color: var(--pink); margin: 0; }
+.up .buy-row { grid-column: 1 / -1; display: flex; gap: 8px; }
+.up .buy-row .btn { flex: 1; font-size: 15px; padding: 7px 4px; }
+.up .have { font-size: 14px; color: var(--muted); grid-column: 2; }
 
 /* ---------- Regalo ---------- */
 .panel.gift { width: min(460px, 94vw); text-align: center; overflow: hidden; padding: 22px 20px 20px; }
@@ -251,7 +268,19 @@ body.touch .ctl-desk { display: none; }
   .btn.big { font-size: 18px; padding: 8px 20px; min-width: 200px; }
   .menu { gap: 8px; }
   #gauge { height: 110px; }
-  #depth-box { top: 52px; }
+  #inv-box {
+  position: absolute; left: calc(12px + env(safe-area-inset-left)); top: calc(102px + env(safe-area-inset-top));
+  display: flex; gap: 12px;
+}
+.inv { display: flex; align-items: center; gap: 4px; font-size: 18px; font-weight: 700; text-shadow: 0 2px 0 var(--ink), 2px 0 0 var(--ink), -2px 0 0 var(--ink), 0 -2px 0 var(--ink); }
+.inv .ico { width: 15px; height: 24px; object-fit: contain; }
+.inv kbd { font-family: var(--font); font-size: 11px; background: var(--panel); border: 2px solid var(--ink); padding: 0 4px; color: var(--muted); text-shadow: none; }
+body.touch .inv kbd { display: none; }
+.tbtn.mini { width: 52px; height: 52px; background: var(--panel-2); box-shadow: inset -3px -3px 0 var(--panel), 0 3px 0 var(--ink); color: var(--cream); font-size: 13px; gap: 1px; }
+.tbtn.mini .ico { width: 14px; height: 22px; object-fit: contain; }
+.tbtn.torch { right: calc(210px + env(safe-area-inset-right)); bottom: calc(40px + env(safe-area-inset-bottom)); }
+.tbtn.dyn { right: calc(150px + env(safe-area-inset-right)); bottom: calc(118px + env(safe-area-inset-bottom)); }
+#depth-box { top: 52px; }
   .panel h2 { font-size: 22px; }
   .gift-img { width: 78px; height: 84px; }
   .tbtn { width: 74px; height: 74px; }
@@ -259,6 +288,11 @@ body.touch .ctl-desk { display: none; }
   .tbtn.jump { bottom: calc(66px + env(safe-area-inset-bottom)); }
   .tbtn.act { bottom: calc(160px + env(safe-area-inset-bottom)); }
   #stick { width: 112px; height: 112px; }
+  .tbtn.mini { width: 46px; height: 46px; }
+  .tbtn.torch { right: calc(186px + env(safe-area-inset-right)); bottom: calc(34px + env(safe-area-inset-bottom)); }
+  .tbtn.dyn { right: calc(134px + env(safe-area-inset-right)); bottom: calc(104px + env(safe-area-inset-bottom)); }
+  #inv-box { top: calc(96px + env(safe-area-inset-top)); }
+  .inv { font-size: 15px; }
   #toasts { top: auto; bottom: calc(10px + env(safe-area-inset-bottom)); width: 42vw; flex-direction: column-reverse; }
   .toast { font-size: 13px; padding: 4px 8px; }
   #prompt { font-size: 14px; }

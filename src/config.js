@@ -43,7 +43,7 @@ export const DEATH_MONEY_PENALTY = 0.1; // pierden 10% de la plata si se desmaya
 export const DIG = {
   baseTime: 0.42,    // segundos por palazo cuando fuerza == dureza
   minTime: 0.07,
-  energyCost: 1,     // energía por palazo (sin importar el área)
+  energyCost: [0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4], // energía por palazo según el nivel de pala
   reach: 6,          // px de alcance más allá del borde del personaje
 };
 
@@ -82,6 +82,9 @@ export const ITEMS = [
   { key: 'ruby', name: 'Rubí', value: 300, sfx: 'gem', glow: [255, 80, 110] },
   { key: 'emerald', name: 'Esmeralda', value: 650, sfx: 'gem', glow: [60, 220, 150] },
   { key: 'diamond', name: 'Diamante', value: 1500, sfx: 'gem', glow: [140, 230, 255] },
+  { key: 'moneybag', name: 'Bolsa de plata', value: 900, sfx: 'gold' },
+  { key: 'gembag', name: 'Bolsa de diamantes', value: 3000, sfx: 'gem', glow: [200, 160, 255] },
+  { key: 'crown', name: 'Corona', value: 5000, sfx: 'gem', glow: [255, 220, 120] },
 ];
 
 // Por capa: probabilidad de que un bloque tenga tesoro y pesos de cada ítem
@@ -90,18 +93,19 @@ export const LAYER_LOOT = [
   { density: 0.13, w: { 1: 15, 2: 40, 3: 35, 4: 10 } },
   { density: 0.10, w: { 2: 25, 3: 40, 4: 25, 5: 10 } },
   { density: 0.10, w: { 3: 20, 4: 40, 5: 32, 6: 8 } },
-  { density: 0.10, w: { 4: 25, 5: 45, 6: 22, 7: 8 } },
-  { density: 0.10, w: { 5: 30, 6: 35, 7: 25, 8: 10 } },
+  { density: 0.10, w: { 4: 22, 5: 42, 6: 22, 7: 8, 9: 6 } },
+  { density: 0.10, w: { 5: 22, 6: 28, 7: 22, 8: 12, 9: 10, 10: 4, 11: 2 } },
 ];
 
 // ---- Mejoras (compartidas entre los dos jugadores) ----
 // levels: [valor, costo]. El nivel 0 es el inicial (gratis).
 export const UPGRADES = [
   {
-    id: 'pala', name: 'Pala', icon: 'shovel',
+    id: 'pala', name: 'Herramienta de cavar', icon: 'shovel',
     desc: 'Más fuerza: rompe materiales más duros y cava más rápido.',
     levels: [[1, 0], [2, 60], [4, 330], [7, 1350], [11, 4800], [16, 15000], [24, 36000]],
     label: (v) => `Fuerza ${v}`,
+    tiers: ['Pala de hierro', 'Pala de acero', 'Pala de oro', 'Taladro', 'Taladro turbo', 'Taladro de diamante', 'Mega taladro del amor'],
   },
   {
     id: 'ancho', name: 'Pala ancha', icon: 'wide',
@@ -122,18 +126,27 @@ export const UPGRADES = [
     label: (v) => (v ? `-${v}% de daño` : 'Sin armadura'),
   },
   {
-    id: 'motor', name: 'Jetpack: Motor', icon: 'rocket',
+    id: 'motor', name: 'Motor del jetpack', icon: 'rocket',
     desc: 'Volás más rápido y con más fuerza.',
     levels: [[85, 0], [115, 150], [150, 680], [190, 2400], [235, 7500], [290, 18000]],
     label: (v) => `Velocidad ${v}`,
+    tiers: ['Jetpack básico', 'Jetpack sport', 'Jetpack turbo', 'Jetpack a reacción', 'Cohete', 'Cohete supersónico'],
   },
   {
-    id: 'eficiencia', name: 'Jetpack: Eficiencia', icon: 'leaf',
+    id: 'eficiencia', name: 'Eficiencia del jetpack', icon: 'leaf',
     desc: 'El jetpack gasta menos energía por segundo.',
-    levels: [[8, 0], [6, 140], [4.5, 600], [3.3, 2100], [2.4, 6300], [1.6, 15000]],
+    levels: [[6, 0], [4.6, 140], [3.5, 600], [2.6, 2100], [1.9, 6300], [1.3, 15000]],
     label: (v) => `${String(v).replace('.', ',')} energía/seg`,
   },
 ];
+
+// ---- Consumibles (precio fijo, sin límite de cantidad) ----
+export const SUPPLIES = {
+  torch: { name: 'Antorcha', price: 25, desc: 'Se clava en la pared e ilumina alrededor. No se rompe al cavar.' },
+  dyn: { name: 'Dinamita', price: 100, desc: 'Mecha de 3 segundos y ¡boom! Rompe un área grande.' },
+};
+export const TORCH = { radius: 9 };           // en bloques
+export const DYNAMITE = { fuse: 3, radius: 38, damage: 40, powerMult: 1.6, powerAdd: 2 };
 
 // ---- Regalos ----
 // Textos de prueba: después los cambiamos por los regalos de verdad.

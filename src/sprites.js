@@ -99,8 +99,8 @@ export const CHAR_PAL = {
   },
 };
 
-function composeFrame(charId, legsKey, bob, blink) {
-  const pal = { ...CHAR_PAL[charId] };
+function composeFrame(charId, legsKey, bob, blink, jet = 0) {
+  const pal = { ...CHAR_PAL[charId], ...JET_TIERS[Math.min(jet, JET_TIERS.length - 1)] };
   const [c, x] = makeCanvas(CHAR_W, CHAR_H);
   const legs = mapSprite(LEGS[legsKey], pal);
   x.drawImage(legs, 0, 14);
@@ -120,15 +120,25 @@ const FRAME_DEFS = {
   air: ['air', 0, false],
 };
 
+// colores del jetpack según el nivel de motor
+export const JET_TIERS = [
+  { j: '#c3cad4', J: '#8a94a3', r: '#ff5a5a' },
+  { j: '#8fc4ff', J: '#4a7fd0', r: '#ffd34d' },
+  { j: '#86e3a8', J: '#3e9b6a', r: '#ff5a5a' },
+  { j: '#ff8a72', J: '#c0392b', r: '#ffd34d' },
+  { j: '#ffd860', J: '#c8871a', r: '#ff4d6d' },
+  { j: '#ffa8d6', J: '#c9578a', r: '#8fe9ff' },
+];
 const charCache = {};
-export function getCharFrames(charId) {
-  if (charCache[charId]) return charCache[charId];
+export function getCharFrames(charId, jet = 0) {
+  const ck = charId + ':' + jet;
+  if (charCache[ck]) return charCache[ck];
   const right = {}, left = {};
   for (const [name, [legs, bob, blink]] of Object.entries(FRAME_DEFS)) {
-    right[name] = composeFrame(charId, legs, bob, blink);
+    right[name] = composeFrame(charId, legs, bob, blink, jet);
     left[name] = flipH(right[name]);
   }
-  return (charCache[charId] = { right, left });
+  return (charCache[ck] = { right, left });
 }
 
 /** Retrato grande para el menú */
@@ -166,6 +176,48 @@ export function drawArmShovel(ctx, sx, sy, facing, bob, armAng, shovelAng, palaL
   px(hx, hy, pal.s);
 }
 
+const DRILL_TIERS = [
+  null, null, null,
+  { body: '#f2c14e', dark: '#9c6a12', hi: '#fff0a0' },  // taladro (amarillo de obra)
+  { body: '#ff6b3d', dark: '#a8321a', hi: '#ffc0a8' },  // turbo
+  { body: '#6fdcff', dark: '#2c8db5', hi: '#eafcff' },  // diamante
+  { body: '#ff7ac8', dark: '#b0307a', hi: '#ffe1f3' },  // del amor
+];
+
+/** Taladro en la mano, apuntando en `ang` (local, mirando a la derecha). `spin` anima la mecha. */
+export function drawDrill(ctx, sx, sy, facing, bob, ang, level, charId, spin) {
+  const pal = CHAR_PAL[charId];
+  const T = DRILL_TIERS[Math.min(level, DRILL_TIERS.length - 1)] || DRILL_TIERS[3];
+  const mx = (lx) => (facing > 0 ? sx + Math.round(lx) : sx + CHAR_W - 1 - Math.round(lx));
+  const my = (ly) => sy + Math.round(ly);
+  const px = (lx, ly, col) => { ctx.fillStyle = col; ctx.fillRect(mx(lx), my(ly), 1, 1); };
+  const shX = 9, shY = 10 + bob;
+  const ca = Math.cos(ang), sa = Math.sin(ang);
+  const hx = shX + ca * 2.5, hy = shY + sa * 2.5;
+  const nx = -sa, ny = ca; // perpendicular
+  // cuerpo del taladro
+  for (let t = -1.5; t <= 3.5; t += 0.5) {
+    for (let w = -1; w <= 1; w++) {
+      const col = w === -1 ? T.hi : w === 1 ? T.dark : T.body;
+      px(hx + ca * t + nx * w, hy + sa * t + ny * w, col);
+    }
+  }
+  px(hx + ca * -2 + nx * 2, hy + sa * -2 + ny * 2, '#3a3f45'); // empuñadura
+  px(hx + ca * -1.5 + nx * 2, hy + sa * -1.5 + ny * 2, '#3a3f45');
+  // mecha cónica con rosca que gira
+  const ph = Math.floor((spin || 0) * 24) % 2;
+  for (let t = 4; t <= 8; t += 0.5) {
+    const wmax = t < 6 ? 1 : 0;
+    for (let w = -wmax; w <= wmax; w++) {
+      const stripe = (Math.floor(t * 2) + ph) % 2 === 0;
+      px(hx + ca * t + nx * w, hy + sa * t + ny * w, stripe ? '#e8eef3' : '#7d8796');
+    }
+  }
+  // brazo + mano
+  pixelLine(ctx, mx(shX), my(shY), mx(hx - ca), my(hy - sa), pal.C);
+  px(hx - ca * 0.5, hy - sa * 0.5, pal.s);
+}
+
 // ============================================================
 //  Tesoros
 // ============================================================
@@ -175,6 +227,7 @@ const LOOT_PAL = {
   R: '#7a0f24', E: '#d6284a', P: '#ff9fb3',
   e: '#0d5e3a', M: '#2ec27e', F: '#a8f5cf',
   c: '#2a6f9e', C: '#7fd8ff', W: '#effcff',
+  n: '#9a6a3a', N: '#c99a5a', v: '#5b3a8c', V: '#8f63d9',
 };
 const LOOT_MAPS = {
   coin: ['.ddd.', 'dYyyd', 'dyyyd', 'dyyod', '.ooo.'],
@@ -185,6 +238,9 @@ const LOOT_MAPS = {
   ruby: ['.RRR.', 'RPwER', 'REEER', '.RER.', '..R..'],
   emerald: ['.eee.', 'eFMMe', 'eFMMe', 'eMMMe', '.eee.'],
   diamond: ['.ccc.', 'cWCWc', 'cCCCc', '.cCc.', '..c..'],
+  moneybag: ['..o..', '.nNn.', 'nNgNn', 'nNNNn', '.nnn.'],
+  gembag: ['.CoR.', '.vVv.', 'vVWVv', 'vVVVv', '.vvv.'],
+  crown: ['y.y.y', 'yRyCy', 'yyyyy', 'ddddd'],
 };
 export const LOOT_SPR = {};
 export function initSprites() {
@@ -324,13 +380,66 @@ const ICONS = {
   pick: ['sss..', '...w.', '..w..', '.w...', 'w....'],
 };
 export const ICON_URL = {};
+let c_;
 function initIcons() {
   for (const [k, m] of Object.entries(ICONS)) {
     const c = outlined(mapSprite(m, ICON_PAL), '#1d1420');
     ICON_URL[k] = c.toDataURL();
   }
+  // íconos que evolucionan con el nivel: pala → taladro, jetpack → cohete
+  for (let lvl = 0; lvl < 7; lvl++) {
+    let c;
+    if (lvl < 3) {
+      const b = SHOVEL_BLADES[lvl];
+      c = mapSprite(ICONS.shovel, { ...ICON_PAL, s: b[0], S: b[1] });
+      if (lvl === 2) c = mapSprite(['..www..', '...w...', '...w...', '..sss..', '.sSsss.', 'sSsssss', 'sSsssss', '.sssss.', '..sss..', '...s...'], { ...ICON_PAL, s: b[0], S: b[1] });
+    } else {
+      const T = DRILL_TIERS[lvl];
+      const rows = ['.HBBBB....', 'kBBBBBmMm.', 'kBBBBBMmMm', 'kBBBBBmMm.', '.DDkDD....', '...kk.....', '...kk.....'];
+      if (lvl >= 5) rows.unshift('......Y...', '.....Y.Y..');
+      c = mapSprite(rows, { ...ICON_PAL, B: T.body, H: T.hi, D: T.dark, k: '#3a3f45', m: '#7d8796', M: '#e8eef3', Y: '#fff3a8' });
+    }
+    ICON_URL['pala_' + lvl] = outlined(c, '#1d1420').toDataURL();
+  }
+  for (let lvl = 0; lvl < 6; lvl++) {
+    const J = JET_TIERS[lvl];
+    const rows = ['...R...', '..RRR..', '..jWj..', '..jbj..', '..jJj..', '.RjJjR.', lvl >= 3 ? 'RR.k.RR' : '.R.k.R.'];
+    const fl = 1 + Math.floor(lvl / 2);
+    const flames = [['...y...'], ['..yYy..', '...y...'], ['..yYy..', '..yYy..', '...y...'], ['.yyYyy.', '..yYy..', '..yYy..', '...y...']][Math.min(fl, 4) - 1];
+    c_ = mapSprite(rows.concat(flames), { ...ICON_PAL, j: J.j, J: J.J, W: '#e8f6ff', R: J.r === '#ffd34d' ? '#ff4d6d' : '#ff4d6d', b: '#3a3f45' });
+    ICON_URL['motor_' + lvl] = outlined(c_, '#1d1420').toDataURL();
+  }
+  ICON_URL.torch = outlined(mapSprite(['..y..', '.yYy.', '.yYy.', '.kkk.', '..w..', '..w..', '..w..', '..w..'], { ...ICON_PAL, y: '#ff9a3d', Y: '#fff3a8', k: '#3a3f45', w: '#a8703f' }), '#1d1420').toDataURL();
+  ICON_URL.dyn = outlined(mapSprite(['.....Y.', '....y..', '...k...', '.RRRR..', '.RrRR..', '.RWWR..', '.RrRR..', '.RRRR..'], { R: '#d9344e', r: '#ff7b7b', W: '#f4f1ea', k: '#3a3f45', y: '#ffd23f', Y: '#fff3a8' }), '#1d1420').toDataURL();
   const [gc, gx] = makeCanvas(13, 14);
   drawGiftBox(gx, 1, 1);
   ICON_URL.giftBig = outlined(gc, '#1d1420').toDataURL();
   for (const k of ['el', 'ella']) ICON_URL['char_' + k] = charPortrait(k, 1).toDataURL();
+}
+
+// ============================================================
+//  Antorcha y dinamita en el mundo
+// ============================================================
+export function drawTorch(ctx, x, y, t, seed) {
+  // (x, y) = punta de la llama
+  const R = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + a, y + b, w, h); };
+  R(-2, 6, 5, 1, '#5b636d');           // grampa en la pared
+  R(0, 4, 1, 7, '#8a5a36'); R(0, 4, 1, 1, '#3a3f45');
+  R(-1, 3, 3, 2, '#3a3f45');
+  const f = Math.floor(t * 9 + seed) % 3;
+  R(-1, 1, 3, 2, '#ff8a3d'); R(0, 0, 1, 3, '#ffd34d');
+  if (f === 0) { R(0, -2, 1, 2, '#ff8a3d'); R(0, -1, 1, 1, '#fff3a8'); }
+  else if (f === 1) { R(-1, -1, 1, 1, '#ff8a3d'); R(1, -2, 1, 2, '#ffd34d'); }
+  else { R(0, -3, 1, 2, '#ff6b3d'); R(1, -1, 1, 1, '#ffd34d'); }
+}
+
+export function drawDynamite(ctx, x, y, t, left) {
+  // (x, y) = centro de la base
+  const R = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + a, y + b, w, h); };
+  const flash = left < 1 && Math.floor(t * 16) % 2 === 0;
+  R(-2, -6, 4, 6, flash ? '#ffffff' : '#d9344e');
+  R(-2, -6, 1, 6, flash ? '#ffffff' : '#ff7b7b');
+  R(-2, -4, 4, 1, '#f4f1ea');
+  R(0, -8, 1, 2, '#3a3f45');
+  if (Math.floor(t * 20) % 2) R(1, -9, 1, 1, '#fff3a8'); else R(0, -9, 1, 1, '#ffd23f');
 }

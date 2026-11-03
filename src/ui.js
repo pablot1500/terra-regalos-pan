@@ -1,5 +1,5 @@
 // Interfaz HTML: HUD, taller, regalos, pausa y menú principal.
-import { UPGRADES, GIFTS, CHARACTERS, LAYERS, MAX_DEPTH, HP_MAX } from './config.js';
+import { UPGRADES, GIFTS, CHARACTERS, LAYERS, MAX_DEPTH, HP_MAX, SUPPLIES } from './config.js';
 import { ICON_URL, CAT } from './sprites.js';
 import { fmtMoney } from './util.js';
 
@@ -129,6 +129,12 @@ export class UI {
       L.best = best;
       $('gauge-best').style.top = Math.min(100, (best / MAX_DEPTH) * 100) + '%';
     }
+    const it = g.inv.torch, id = g.inv.dyn;
+    if (L.torch !== it || L.dyn !== id) {
+      L.torch = it; L.dyn = id;
+      $('inv-torch').textContent = it; $('inv-dyn').textContent = id;
+      $('t-torch-n').textContent = it; $('t-dyn-n').textContent = id;
+    }
     const opened = g.openedGifts.length;
     if (L.gifts !== opened) {
       L.gifts = opened;
@@ -168,19 +174,48 @@ export class UI {
     $('shop-money').textContent = fmtMoney(g.money);
     const list = $('shop-list');
     list.innerHTML = '';
+    const section = (txt) => { const h = document.createElement('h3'); h.className = 'shop-section'; h.textContent = txt; list.appendChild(h); };
+
+    section('Consumibles');
+    for (const [id, it] of Object.entries(SUPPLIES)) {
+      const card = document.createElement('div');
+      card.className = 'up';
+      card.innerHTML = `
+        <div class="up-ico"><img src="${ICON_URL[id]}" alt=""></div>
+        <div><h4>${it.name} · ${fmtMoney(it.price)}</h4><p class="desc">${it.desc}</p></div>
+        <p class="have">Tienen: ${g.inv[id]} · tecla ${id === 'torch' ? 'T' : 'G'}</p>
+      `;
+      const row = document.createElement('div');
+      row.className = 'buy-row';
+      for (const n of [1, 5]) {
+        const b = document.createElement('button');
+        b.className = 'btn' + (n === 5 ? ' alt' : '');
+        b.textContent = `${n === 1 ? 'Comprar 1' : 'Comprar 5'} · ${fmtMoney(it.price * n)}`;
+        b.disabled = g.money < it.price * n;
+        b.addEventListener('click', () => g.buySupply(id, n));
+        row.appendChild(b);
+      }
+      card.appendChild(row);
+      list.appendChild(card);
+    }
+
+    section('Mejoras');
     for (const up of UPGRADES) {
       const lvl = g.upgrades[up.id];
       const max = lvl >= up.levels.length - 1;
       const [val] = up.levels[lvl];
       const next = max ? null : up.levels[lvl + 1];
+      const icon = ICON_URL[up.id + '_' + lvl] || ICON_URL[up.icon];
+      const tier = up.tiers ? up.tiers[lvl] : null;
+      const nextTier = up.tiers && !max ? up.tiers[lvl + 1] : null;
       const card = document.createElement('div');
       card.className = 'up' + (max ? ' max' : '');
       const pips = up.levels.slice(1).map((_, i) => `<div class="pip ${i < lvl ? 'on' : ''}"></div>`).join('');
       card.innerHTML = `
-        <div class="up-ico"><img src="${ICON_URL[up.icon]}" alt=""></div>
-        <div><h4>${up.name}</h4><p class="desc">${up.desc}</p></div>
+        <div class="up-ico"><img src="${icon}" alt=""></div>
+        <div><h4>${tier || up.name}</h4>${tier ? `<p class="tier">${up.name}</p>` : ''}<p class="desc">${up.desc}</p></div>
         <div class="pips">${pips}</div>
-        <div class="vals"><span class="now">${up.label(val)}</span>${next ? `<span class="next">→ ${up.label(next[0])}</span>` : '<span class="next">¡Al máximo!</span>'}</div>
+        <div class="vals"><span class="now">${up.label(val)}</span>${next ? `<span class="next">→ ${up.label(next[0])}${nextTier && nextTier !== tier ? ` · ${nextTier}` : ''}</span>` : '<span class="next">¡Al máximo!</span>'}</div>
       `;
       const btn = document.createElement('button');
       btn.className = 'btn buy';

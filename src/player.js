@@ -1,6 +1,6 @@
 import { TILE, WORLD_W, EDGE, PHYS, DIG, BRUSH_R, HP_MAX, REST } from './config.js';
 import { DEF, T, isDiggable, hardness } from './tiles.js';
-import { getCharFrames, drawArmShovel, CHAR_W, CHAR_H } from './sprites.js';
+import { getCharFrames, drawArmShovel, drawDrill, CHAR_W, CHAR_H } from './sprites.js';
 import { HOME_ZONE, SHOP_ZONE, SPAWN, inZone } from './structures.js';
 import { depthAtY, SUB } from './world.js';
 import { clamp } from './util.js';
@@ -149,7 +149,7 @@ export class Player {
       else if (!isDiggable(target.hit.t)) {
         if (inp.digPressed || inp.downPressed) g.toast('Acá no se puede cavar', 'nodig');
         aim = null; target = null;
-      } else walkIx = 0;
+      }
     }
 
     // ---- movimiento horizontal ----
@@ -275,7 +275,8 @@ export class Player {
       this.digging = false; this.digProg = 0; this.digKey = null; this.tooHard = false; this.digPoint = null;
       return;
     }
-    if (this.energy < DIG.energyCost) {
+    const eCost = DIG.energyCost[Math.min(g.upgrades.pala, DIG.energyCost.length - 1)];
+    if (this.energy < eCost) {
       this.digging = false;
       this.digPoint = null;
       g.toast('Sin energía: volvé a casa a descansar', 'noen2');
@@ -310,14 +311,14 @@ export class Player {
     const ph = this.digAnim % 1;
     if (prevPhase < STRIKE_AT && ph >= STRIKE_AT) {
       this.debris(target.hit.x, target.hit.y, target.hit.t, 3);
-      g.audio.play('dig');
+      g.audio.play(g.upgrades.pala >= 3 ? 'drill' : 'dig');
     }
     this.digProg += dt / time;
     if (this.digProg >= 1) {
       this.digProg = 0;
       const res = W.digCircle(target.cx, target.cy, target.R, st.power);
       if (res.n > 0) {
-        this.energy = Math.max(0, this.energy - DIG.energyCost);
+        this.energy = Math.max(0, this.energy - eCost);
         g.counters.tiles += res.n / 16;
         for (const [t, n] of Object.entries(res.mats)) this.debris(target.cx, target.cy, +t, Math.min(10, 2 + (n >> 3)), target.R);
         for (const l of res.loot) g.pickups.spawn(l.x, l.y, l.item);
@@ -350,7 +351,7 @@ export class Player {
   draw(ctx, camX, camY) {
     if (this.dead) return;
     if (this.hurtT > 0 && Math.floor(this.hurtT * 20) % 2 === 0) return;
-    const frames = getCharFrames(this.char)[this.facing > 0 ? 'right' : 'left'];
+    const frames = getCharFrames(this.char, this.game.upgrades.motor)[this.facing > 0 ? 'right' : 'left'];
     let frame;
     if (!this.onGround) frame = 'air';
     else if (Math.abs(this.vx) > 5 && !this.digging) frame = ['walkA', 'walkB', 'walkC', 'walkB'][Math.floor(this.walkT * 9) % 4];
@@ -374,7 +375,11 @@ export class Player {
 
     // brazo + pala
     let arm, sh, len = 7;
-    if (this.digging && this.aim) {
+    const drill = this.game.upgrades.pala >= 3;
+    if (this.digging && this.aim && drill) {
+      const a = Math.atan2(this.aim.y, this.aim.x * this.facing);
+      arm = a + (Math.random() - 0.5) * 0.12; sh = arm; len = 6;
+    } else if (this.digging && this.aim) {
       const a = Math.atan2(this.aim.y, this.aim.x * this.facing); // ángulo local (mirando a la derecha)
       const p = this.digAnim % 1;
       if (p < STRIKE_AT) {
@@ -392,7 +397,8 @@ export class Player {
       const sw = Math.sin(this.walkT * 9 * Math.PI / 2);
       arm = 1.0 + sw * 0.25; sh = 0.95 + sw * 0.2; len = 4;
     } else { arm = 1.0; sh = 1.05; len = 4; }
-    drawArmShovel(ctx, sx, sy, this.facing, bob, arm, sh, this.game.upgrades.pala, this.char, len);
+    if (drill) drawDrill(ctx, sx, sy, this.facing, bob, this.digging ? arm : 0.9, this.game.upgrades.pala, this.char, this.digging ? this.anim : 0);
+    else drawArmShovel(ctx, sx, sy, this.facing, bob, arm, sh, this.game.upgrades.pala, this.char, len);
   }
 }
 
