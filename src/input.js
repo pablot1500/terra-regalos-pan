@@ -22,7 +22,8 @@ export class Input {
 
     canvas.addEventListener('pointerdown', (e) => {
       if (e.pointerType !== 'mouse' || e.button !== 0) return;
-      this.mouse.down = true;
+      if (this.autoDig) this.mouse.latched = !this.mouse.latched;
+      else this.mouse.down = true;
       this.setMouse(e, canvas);
       if (this.onAnyInput) this.onAnyInput();
     });
@@ -86,12 +87,24 @@ export class Input {
       el.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         el.setPointerCapture(e.pointerId);
+        if (prop === 'dig' && this.autoDig) {
+          // cavado automático: un toque empieza, otro toque frena
+          this.touch.dig = !this.touch.dig;
+          el.classList.toggle('latched', this.touch.dig);
+          this.edges.add(elId);
+          if (this.onAnyInput) this.onAnyInput();
+          return;
+        }
         if (prop) this.touch[prop] = true;
         this.edges.add(elId);
         el.classList.add('down');
         if (this.onAnyInput) this.onAnyInput();
       });
-      const up = () => { if (prop) this.touch[prop] = false; el.classList.remove('down'); };
+      const up = () => {
+        if (prop === 'dig' && this.autoDig) return;
+        if (prop) this.touch[prop] = false;
+        el.classList.remove('down');
+      };
       el.addEventListener('pointerup', up);
       el.addEventListener('pointercancel', up);
       el.addEventListener('lostpointercapture', up);
@@ -123,13 +136,33 @@ export class Input {
       sy: T.sy,
       digPressed: e('KeyJ') || e('KeyK') || e('KeyX') || e('t-dig'),
       downPressed: e('ArrowDown') || e('KeyS') || e('t-down'),
-      mouseDig: this.mouse.down,
+      mouseDig: this.mouse.down || !!this.mouse.latched,
       mx: this.mouse.x + camX,
       my: this.mouse.y + camY,
       interact: e('KeyE') || e('Enter') || e('t-act'),
+      musicPressed: e('KeyM'),
+      sfxPressed: e('KeyN'),
+      autoPressed: e('KeyB'),
       torchPressed: e('KeyT') || e('Digit1') || e('t-torch'),
       pause: e('Escape') || e('KeyP'),
     };
+  }
+
+  /** suelta el cavado automático (al pausar, abrir el taller, etc.) */
+  releaseLatch() {
+    this.mouse.latched = false;
+    if (this.autoDig && this.touch.dig) {
+      this.touch.dig = false;
+      document.getElementById('t-dig').classList.remove('latched');
+    }
+  }
+
+  setAutoDig(on) {
+    this.autoDig = on;
+    this.mouse.down = false;
+    this.mouse.latched = false;
+    this.touch.dig = false;
+    document.getElementById('t-dig').classList.remove('latched', 'down');
   }
 
   endFrame() { this.edges.clear(); }

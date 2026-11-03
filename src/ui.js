@@ -39,6 +39,9 @@ export class UI {
     $('btn-new').addEventListener('click', () => { game.audio.unlock(); game.requestNewGame(); });
     $('btn-continue').addEventListener('click', () => { game.audio.unlock(); game.continueGame(); });
     $('btn-pause').addEventListener('click', () => game.pause());
+    $('q-music').addEventListener('click', () => this.toggleMusic());
+    $('q-sfx').addEventListener('click', () => this.toggleSfx());
+    $('q-auto').addEventListener('click', () => this.toggleAuto());
     $('btn-resume').addEventListener('click', () => game.resume());
     $('btn-title').addEventListener('click', () => game.toTitle());
     $('btn-reset').addEventListener('click', () => game.confirmReset());
@@ -48,6 +51,9 @@ export class UI {
     $('screen-shop').addEventListener('click', (e) => { if (e.target.id === 'screen-shop') game.closeShop(); });
     $('gift-ok').addEventListener('click', () => game.closeGift());
     this.refreshAudioBtns();
+    let auto = false;
+    try { auto = localStorage.getItem('terra-regalos-pan:autodig') === '1'; } catch { /* nada */ }
+    this.toggleAuto(auto);
     this.updateTitle();
   }
 
@@ -60,6 +66,37 @@ export class UI {
   refreshAudioBtns() {
     $('btn-sfx').textContent = 'Sonidos: ' + (this.g.audio.sfxOn ? 'Sí' : 'No');
     $('btn-music').textContent = 'Música: ' + (this.g.audio.musicOn ? 'Sí' : 'No');
+    $('q-sfx').classList.toggle('off', !this.g.audio.sfxOn);
+    $('q-music').classList.toggle('off', !this.g.audio.musicOn);
+    $('q-sfx').setAttribute('aria-pressed', String(this.g.audio.sfxOn));
+    $('q-music').setAttribute('aria-pressed', String(this.g.audio.musicOn));
+  }
+
+  toggleMusic() {
+    this.g.audio.unlock();
+    this.g.audio.setMusic(!this.g.audio.musicOn);
+    this.refreshAudioBtns();
+    this.toast(this.g.audio.musicOn ? 'Música activada' : 'Música silenciada');
+  }
+
+  toggleSfx() {
+    this.g.audio.unlock();
+    this.g.audio.setSfx(!this.g.audio.sfxOn);
+    this.refreshAudioBtns();
+    this.toast(this.g.audio.sfxOn ? 'Sonidos activados' : 'Sonidos silenciados');
+  }
+
+  toggleAuto(on) {
+    const g = this.g;
+    const v = on === undefined ? !g.input.autoDig : on;
+    g.input.setAutoDig(v);
+    $('q-auto').classList.toggle('on', v);
+    $('q-auto').setAttribute('aria-pressed', String(v));
+    try { localStorage.setItem('terra-regalos-pan:autodig', v ? '1' : '0'); } catch { /* nada */ }
+    if (on === undefined) {
+      const how = this.isTouch ? 'un toque en CAVAR empieza, otro frena' : 'un click empieza a cavar, otro click frena';
+      this.toast(v ? `Cavado automático: ${how}` : 'Cavado automático desactivado', 'good');
+    }
   }
 
   updateTitle() {

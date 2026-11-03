@@ -394,6 +394,7 @@ const ICON_PAL = {
   a: '#6e7f91', A: '#b8c6d4',
   b: '#4a5260', p: '#ff7eb6', P: '#d9578f',
   l: '#7cd65a', L: '#3e9b3e',
+  c: '#fff4e0',
 };
 const ICONS = {
   heart: ['.rr.rr.', 'rRRrRRr', 'rRWRRRr', 'rRRRRRr', '.rRRRr.', '..rRr..', '...r...'],
@@ -407,6 +408,9 @@ const ICONS = {
   leaf: ['....ll', '..llll', '.lLll.', 'lLll..', 'L.....'],
   gift: ['.p.p.', 'pPyPp', 'ppypp', 'PPyPP', 'PPyPP'],
   pick: ['sss..', '...w.', '..w..', '.w...', 'w....'],
+  note: ['...ccc', '...c.c', '...c.c', '...c.c', '.ccc.c', 'cccc.c', '.cc.cc', '....cc'],
+  speaker: ['...c....', '..cc..c.', 'cccc.c.c', 'cccc.c.c', 'cccc.c.c', '..cc..c.', '...c....'],
+  autodig: ['..www..', '...w...', '...w...', '..sss..', '.sSsss.', '.sSsss.', '..sss..', 'y.y.y.y'],
 };
 export const ICON_URL = {};
 let c_;

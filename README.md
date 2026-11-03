@@ -31,6 +31,8 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 | Cavar con teclado | J + W/A/S/D (8 direcciones) | — |
 | Poner antorcha | T | Botón de antorcha |
 | Abrir el taller | E | Botón TALLER |
+| Cavado automático (un click empieza, otro frena) | B o botón AUTO | Botón AUTO + toque en CAVAR |
+| Música / sonidos | M / N o los botones de arriba | Botones de arriba |
 | Pausa | Esc | Botón ❚❚ |
 
 ## Cómo se juega

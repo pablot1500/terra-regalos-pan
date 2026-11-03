@@ -423,6 +423,9 @@ class Game {
     if (this.state === 'play') {
       if (inp.pause) this.pause();
       if (inp.torchPressed) this.placeTorch(p);
+      if (inp.musicPressed) this.ui.toggleMusic();
+      if (inp.sfxPressed) this.ui.toggleSfx();
+      if (inp.autoPressed) this.ui.toggleAuto();
       this.counters.playTime += dt;
       for (const pl of this.players) pl.update(dt, inp);
       if (p.inShop) {
@@ -441,12 +444,15 @@ class Game {
       this.saveTimer += dt;
       if (this.saveTimer > 12) { this.saveTimer = 0; this.save(); }
     } else if (this.state === 'shop') {
+      this.input.releaseLatch();
       if (inp.pause || inp.interact) this.closeShop();
     } else if (this.state === 'paused') {
       if (inp.pause && !document.getElementById('screen-pause').classList.contains('hidden')) this.resume();
     } else if (this.state === 'cinematic') {
       this.updateCinematic(dt);
     }
+
+    if (this.state !== 'play') this.input.releaseLatch();
 
     // destellos de cofres cercanos
     for (const ch of this.world.chests) {
@@ -534,7 +540,7 @@ class Game {
       const mx = Math.round(this.input.mouse.x), my = Math.round(this.input.mouse.y);
       ctx.fillStyle = 'rgba(29,20,32,0.7)';
       ctx.fillRect(mx - 3, my, 2, 1); ctx.fillRect(mx + 2, my, 2, 1); ctx.fillRect(mx, my - 3, 1, 2); ctx.fillRect(mx, my + 2, 1, 2);
-      ctx.fillStyle = '#fff4e0';
+      ctx.fillStyle = this.input.mouse.latched ? '#ff7eb6' : '#fff4e0';
       ctx.fillRect(mx - 3, my - 1, 2, 1); ctx.fillRect(mx + 2, my - 1, 2, 1); ctx.fillRect(mx - 1, my - 3, 1, 2); ctx.fillRect(mx - 1, my + 2, 1, 2);
     }
 

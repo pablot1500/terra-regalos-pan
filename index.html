@@ -37,6 +37,11 @@
         <div id="depth-layer">Superficie</div>
       </div>
       <button id="btn-pause" class="icon-btn" aria-label="Pausa"><span></span><span></span></button>
+      <div id="quick-btns">
+        <button id="q-auto" class="q-btn auto" aria-label="Cavado automático" title="Cavado automático (B)"><img class="ico" data-icon="autodig" alt=""><small>AUTO</small></button>
+        <button id="q-sfx" class="q-btn" aria-label="Sonidos" title="Sonidos (N)"><img class="ico" data-icon="speaker" alt=""></button>
+        <button id="q-music" class="q-btn" aria-label="Música" title="Música (M)"><img class="ico" data-icon="note" alt=""></button>
+      </div>
       <div id="toasts"></div>
       <div id="prompt" class="hidden"></div>
     </div>
@@ -109,13 +114,14 @@
             <p><b>Espacio</b> o <b>W</b> saltar · mantené para <b>volar</b> con el jetpack</p>
             <p><b>S</b> o <b>↓</b> cavar hacia abajo · <b>Espacio + S</b> bajar volando despacio</p>
             <p><b>J</b> cavar hacia adelante (con <b>W</b> hacia arriba)</p>
-            <p><b>Click</b> cavar hacia el mouse</p>
+            <p><b>Click</b> cavar hacia el mouse · <b>B</b> cavado automático (un click empieza, otro click frena)</p>
+            <p><b>M</b> música · <b>N</b> sonidos</p>
             <p><b>T</b> poner antorcha · <b>Shift</b> correr (también volando)</p>
             <p><b>E</b> abrir el taller · <b>Esc</b> pausa</p>
           </div>
           <div class="ctl-touch">
             <p><b>Joystick</b> caminar · hacia abajo para cavar</p>
-            <p><b>CAVAR</b> cava hacia donde apunta el joystick</p>
+            <p><b>CAVAR</b> cava hacia donde apunta el joystick · con <b>AUTO</b> activado, un toque empieza y otro frena</p>
             <p>Botón chiquito: <b>antorcha</b> · joystick a fondo: <b>correr</b></p>
             <p><b>SALTAR</b> salta · mantené para volar · con el joystick abajo bajás despacio</p>
           </div>
