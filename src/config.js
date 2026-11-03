@@ -11,7 +11,7 @@ export const SURFACE = 40;           // fila donde empieza el suelo
 export const METERS_PER_TILE = 2;    // cada bloque = 2 metros de profundidad
 export const MAX_DEPTH = 1500;       // metros hasta el núcleo
 export const CORE_ROW = SURFACE + MAX_DEPTH / METERS_PER_TILE; // donde termina la roca y empieza el núcleo
-export const CORE_ROWS = 32;         // alto de la caverna del núcleo (en bloques)
+export const CORE_ROWS = 96;         // alto de la caverna del núcleo (en bloques): una caída larga
 export const BOTTOM_ROW = CORE_ROW + CORE_ROWS; // primera fila de roca madre
 export const WORLD_H = BOTTOM_ROW + 3;
 export const EDGE = 2;               // columnas de roca madre a cada lado

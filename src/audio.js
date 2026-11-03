@@ -6,17 +6,29 @@ export class Audio {
     this.ctx = null;
     this.sfxOn = true;
     this.musicOn = true;
+    // volumen de cada canal, de 0 a 1 (los sliders del menú de pausa)
+    this.vol = { music: 1, sfx: 1, jet: 0.7 };
     this.last = {};
     try {
       const s = JSON.parse(localStorage.getItem('terra-regalos-pan:audio') || '{}');
       if (s.sfx === false) this.sfxOn = false;
       if (s.music === false) this.musicOn = false;
+      for (const k in this.vol) if (Number.isFinite(s.vol?.[k])) this.vol[k] = Math.min(1, Math.max(0, s.vol[k]));
     } catch { /* nada */ }
   }
 
   savePrefs() {
-    try { localStorage.setItem('terra-regalos-pan:audio', JSON.stringify({ sfx: this.sfxOn, music: this.musicOn })); } catch { /* nada */ }
+    try { localStorage.setItem('terra-regalos-pan:audio', JSON.stringify({ sfx: this.sfxOn, music: this.musicOn, vol: this.vol })); } catch { /* nada */ }
   }
+
+  applyVolumes() {
+    if (!this.ctx) return;
+    this.sfx.gain.value = this.sfxOn ? 0.5 * this.vol.sfx : 0;
+    this.mus.gain.value = this.musicOn ? 0.16 * this.vol.music : 0;
+    this.jetBus.gain.value = this.vol.jet;
+  }
+
+  setVolume(k, v) { this.vol[k] = v; this.applyVolumes(); this.savePrefs(); }
 
   unlock() {
     if (!this.ctx) {
@@ -24,8 +36,10 @@ export class Audio {
       if (!AC) return;
       this.ctx = new AC();
       this.master = this.ctx.createGain(); this.master.gain.value = 0.7; this.master.connect(this.ctx.destination);
-      this.sfx = this.ctx.createGain(); this.sfx.gain.value = this.sfxOn ? 0.5 : 0; this.sfx.connect(this.master);
-      this.mus = this.ctx.createGain(); this.mus.gain.value = this.musicOn ? 0.16 : 0; this.mus.connect(this.master);
+      this.sfx = this.ctx.createGain(); this.sfx.connect(this.master);
+      this.mus = this.ctx.createGain(); this.mus.connect(this.master);
+      this.jetBus = this.ctx.createGain(); this.jetBus.connect(this.sfx); // el jetpack también se apaga con los sonidos
+      this.applyVolumes();
       const len = this.ctx.sampleRate;
       this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
       const d = this.noiseBuf.getChannelData(0);
@@ -35,8 +49,8 @@ export class Audio {
     if (this.ctx.state === 'suspended') this.ctx.resume();
   }
 
-  setSfx(on) { this.sfxOn = on; if (this.sfx) this.sfx.gain.value = on ? 0.5 : 0; this.savePrefs(); }
-  setMusic(on) { this.musicOn = on; if (this.mus) this.mus.gain.value = on ? 0.16 : 0; this.savePrefs(); }
+  setSfx(on) { this.sfxOn = on; this.applyVolumes(); this.savePrefs(); }
+  setMusic(on) { this.musicOn = on; this.applyVolumes(); this.savePrefs(); }
 
   tone(freq, dur, { type = 'square', vol = 0.2, slide = null, delay = 0, out = null } = {}) {
     const c = this.ctx, t = c.currentTime + delay;
@@ -108,8 +122,8 @@ export class Audio {
       const s = c.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true;
       // soplido grave y suave (sin el siseo agudo), que entra y sale despacito
       const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 420; f.Q.value = 0.3;
-      const g = c.createGain(); g.gain.value = 0; g.gain.linearRampToValueAtTime(0.06, c.currentTime + 0.25);
-      s.connect(f); f.connect(g); g.connect(this.sfx);
+      const g = c.createGain(); g.gain.value = 0; g.gain.linearRampToValueAtTime(0.13, c.currentTime + 0.25);
+      s.connect(f); f.connect(g); g.connect(this.jetBus);
       s.start();
       this.jetSrc = s; this.jetGain = g;
     } else if (this.jetSrc) {

@@ -51,6 +51,16 @@ export class UI {
     $('screen-shop').addEventListener('click', (e) => { if (e.target.id === 'screen-shop') game.closeShop(); });
     $('gift-ok').addEventListener('click', () => game.closeGift());
     this.refreshAudioBtns();
+    for (const k of ['music', 'sfx', 'jet']) {
+      const el = $('vol-' + k), out = el.nextElementSibling;
+      el.value = Math.round(game.audio.vol[k] * 100);
+      out.textContent = el.value + '%';
+      el.addEventListener('input', () => {
+        game.audio.unlock();
+        game.audio.setVolume(k, el.value / 100);
+        out.textContent = el.value + '%';
+      });
+    }
     let auto = false;
     try { auto = localStorage.getItem('terra-regalos-pan:autodig') === '1'; } catch { /* nada */ }
     this.toggleAuto(auto);

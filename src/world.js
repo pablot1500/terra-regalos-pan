@@ -46,8 +46,7 @@ const OBS = LAYERS.length - 1; // índice de la capa de obsidiana
 // colores de la lava (cuerpo, de oscuro a claro) y de la superficie
 const LAVA_BODY = [[176, 30, 8], [214, 60, 12], [246, 102, 22], [255, 146, 40]];
 const LAVA_TOP = [[255, 214, 92], [255, 242, 170]];
-// colores del magma de fondo del núcleo, de oscuro a claro
-const CORE_PAL = [[30, 8, 6], [50, 13, 8], [76, 21, 10], [108, 32, 12], [160, 60, 16], [232, 128, 44]];
+
 
 export class World {
   constructor(seed) {
@@ -563,14 +562,18 @@ export class World {
     const sx0 = 1, sx1 = sw - 2;
     const tick = this.lavaTick = this.lavaTick % 255 + 1;
     const free = (q) => !sub[q] && !lava[q];
-    // la lava que cae dentro de la caverna del núcleo se evapora (así no tapa la plataforma)
-    const seaTop = (BOTTOM_ROW - 3) * SPT;
+    // la lava que cae dentro de la caverna del núcleo se va evaporando de a poco mientras cae:
+    // cuanto más abajo, más probable; nunca llega a la plataforma
+    const seaTop = (BOTTOM_ROW - 3) * SPT, coreTop = CORE_ROW * SPT, never = seaTop - 110;
     const move = (a, b) => {
       lava[a] = 0;
       const by = (b / sw) | 0;
       if (by < seaTop && this.mat[(by >> 2) * this.w + ((b % sw) >> 2)] === T.CORE) {
-        if (this.steam.length < 40) this.steam.push([(b % sw) * SUB + 1, by * SUB + 1]);
-        return;
+        const p = by > never ? 1 : 0.004 + Math.max(0, by - coreTop) * 0.0003;
+        if (hash2(b, tick, 91) < p) {
+          if (this.steam.length < 40 && hash2(b, tick, 92) < 0.5) this.steam.push([(b % sw) * SUB + 1, by * SUB + 1]);
+          return;
+        }
       }
       lava[b] = 1; lavaStamp[b] = tick;
     };
@@ -582,7 +585,7 @@ export class World {
         const q = row + sx;
         if (!lava[q] || lavaStamp[q] === tick) continue;
         const dn = q + sw;
-        if (free(dn)) { move(q, dn); continue; }
+        if (free(dn)) { move(q, sy < sy1 && free(dn + sw) ? dn + sw : dn); continue; }
         const dir = (hash2(sx, sy, tick) < 0.5) ? -1 : 1;
         if (free(dn + dir)) { move(q, dn + dir); continue; }
         if (free(dn - dir)) { move(q, dn - dir); continue; }
@@ -616,7 +619,8 @@ export class World {
         if (!lava[q]) continue;
         any = true;
         let col;
-        if (!lava[q - sw] && !sub[q - sw]) col = LAVA_TOP[(Math.sin(sx * 0.9 + t * 4) > 0.6) ? 1 : 0];
+        if (!lava[q + sw] && !sub[q + sw]) col = LAVA_BODY[(sx + sy) & 1 ? 2 : 3]; // gotas cayendo
+        else if (!lava[q - sw] && !sub[q - sw]) col = LAVA_TOP[(Math.sin(sx * 0.9 + t * 4) > 0.6) ? 1 : 0];
         else {
           const v = Math.sin(sx * 0.42 + t * 1.3 + Math.sin(sy * 0.37 - t * 0.9) * 1.8) + Math.sin(sy * 0.53 + t * 0.7 + sx * 0.11) * 0.8;
           col = LAVA_BODY[clamp(Math.floor((v + 1.8) * 1.15), 0, 3)];
@@ -628,17 +632,6 @@ export class World {
     if (!any) return;
     this.lavaX.putImageData(img, 0, 0, 0, 0, cols, rows);
     ctx.drawImage(this.lavaCv, 0, 0, cols, rows, sx0 * SUB - camX, sy0 * SUB - camY, cols * SUB, rows * SUB);
-  }
-
-  /** color del magma de fondo del núcleo (vetas que brillan, más claro hacia abajo) */
-  corePx(wx, wy) {
-    const n = fbm(wx * 0.03, wy * 0.045, this.seed + 71);
-    const vein = Math.abs(fbm(wx * 0.06 + 5, wy * 0.08, this.seed + 73) - 0.5);
-    const heat = clamp((wy - CORE_ROW * TILE) / ((BOTTOM_ROW - CORE_ROW) * TILE), 0, 1);
-    let i = Math.floor(n * 2.6 + heat * 1.3 + hash2(wx >> 1, wy >> 1, 74) * 0.4);
-    if (vein < 0.025) i += 2;
-    else if (vein < 0.05) i += 1;
-    return CORE_PAL[clamp(i, 0, CORE_PAL.length - 1)];
   }
 
   // ---------- Render ----------
@@ -686,11 +679,7 @@ export class World {
           else { const tx_ = tex[v]; d[k] = tx_[o]; d[k + 1] = tx_[o + 1]; d[k + 2] = tx_[o + 2]; d[k + 3] = 255; }
         } else {
           let m = this.mat[ti];
-          if (m === T.CORE) {
-            const p = this.corePx(wx, wy);
-            d[k] = p[0]; d[k + 1] = p[1]; d[k + 2] = p[2]; d[k + 3] = 255;
-            continue;
-          }
+          if (m === T.CORE) continue; // el fondo del núcleo lo dibuja core.js (con parallax)
           if ((m === T.GRAVEL || m === T.DIRT) && this.nearGravelEdge(c, r)) m = this.gravelPx(wx, wy) ? T.GRAVEL : T.DIRT;
           const wt = WALLPX[m || T.DIRT];
           if (!wt) continue;

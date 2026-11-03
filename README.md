@@ -53,7 +53,7 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 - Cavar y volar gastan energía. En el departamento se recargan la energía y la vida.
 - Si te quedás sin energía bajo tierra o te caés muy fuerte, te desmayás: volvés a casa y perdés el 10% de la plata.
 - De los **1000 m** para abajo aparece la **obsidiana** (negrísima, se mezcla con el abismo), con cuevas grandes para volar, cada vez menos tesoros y **parches de lava**: brilla, quema, y si cavás por debajo se derrama como un líquido.
-- A los **1500 m** la roca termina en una línea ondulada: abajo está el **núcleo**, una caverna de magma. Al romper el piso caés a una plataforma sobre un mar de lava; el último cofre está en su punta de abajo a la derecha (por ahora no se abre).
+- A los **1500 m** la roca termina en una línea ondulada: abajo está el **núcleo**, una caverna enorme de magma. Al romper el piso caés unos 190 m (el fondo se mueve con parallax: magma lejos y, hacia abajo, un mundo abierto de cuevas de lava con mesetas, cascadas y un lago) hasta una plataforma sobre un mar de lava. La lava que se derrama desde arriba se va evaporando mientras cae. El último cofre está en la punta de abajo a la derecha de la plataforma (por ahora no se abre).
 - El medidor de la derecha marca la profundidad y dónde están los regalos.
 - La música cambia con la profundidad: dos canciones para la superficie (hasta 300 m), dos para la zona media (300 a 800 m) y dos para lo profundo (800 a 1500 m), con fundidos entre una y otra. Están escritas en texto en [`src/music.js`](src/music.js).
 - El progreso se guarda solo en el navegador (localStorage).

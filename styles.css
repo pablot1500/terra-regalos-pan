@@ -263,6 +263,12 @@ body.touch .inv kbd { display: none; }
 
 /* ---------- Pausa / mensajes ---------- */
 .panel.pause, .panel.msg { width: min(520px, 94vw); text-align: center; max-height: 92vh; overflow-y: auto; }
+.pause .vols { display: grid; gap: 6px; margin-top: 12px; background: var(--panel-2); border: 3px solid var(--ink); padding: 8px 12px; }
+.pause .vols label { display: grid; grid-template-columns: 80px 1fr 44px; align-items: center; gap: 10px; font-size: 14px; text-align: left; }
+.pause .vols output { color: var(--gold); text-align: right; }
+.pause .vols input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 10px; background: var(--ink); border: 2px solid var(--panel-hi); cursor: pointer; }
+.pause .vols input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 18px; background: var(--pink); border: 2px solid var(--ink); box-shadow: inset -2px -2px 0 var(--pink-d); }
+.pause .vols input[type=range]::-moz-range-thumb { width: 12px; height: 16px; background: var(--pink); border: 2px solid var(--ink); border-radius: 0; box-shadow: inset -2px -2px 0 var(--pink-d); }
 .pause .controls { background: var(--panel-2); border: 3px solid var(--ink); padding: 8px 12px; margin-top: 12px; text-align: left; font-size: 14px; }
 .pause .controls p { margin: 4px 0; }
 .pause .controls b { color: var(--gold); }

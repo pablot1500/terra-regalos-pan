@@ -10,6 +10,7 @@ import { initSprites, drawChest, drawGiftBox, drawTorch, DOG } from './sprites.j
 import { World } from './world.js';
 import { Structures, DOG_POS, PATIO } from './structures.js';
 import { Background } from './background.js';
+import { CoreBackdrop } from './core.js';
 import { Lighting } from './lighting.js';
 import { Particles, Pickups, FloatTexts } from './entities.js';
 import { Player } from './player.js';
@@ -60,6 +61,7 @@ class Game {
     this.input = new Input(this.canvas);
     this.input.onAnyInput = () => this.audio.unlock();
     this.bg = new Background();
+    this.coreBg = new CoreBackdrop();
     this.structs = new Structures();
     this.lighting = new Lighting();
     this.particles = new Particles();
@@ -541,7 +543,7 @@ class Game {
     }
     // chispas de magma subiendo en el núcleo
     if (this.cam.y + this.vh > CORE_ROW * TILE && Math.random() < dt * 14) {
-      this.particles.add({ x: this.cam.x + Math.random() * this.vw, y: (BOTTOM_ROW - 3) * TILE, vx: (Math.random() - 0.5) * 12, vy: -18 - Math.random() * 30, life: 3 + Math.random() * 3, max: 6, color: Math.random() < 0.6 ? '#ffb347' : '#ff6a1a', size: 1, grav: -2 });
+      this.particles.add({ x: this.cam.x + Math.random() * this.vw, y: Math.min((BOTTOM_ROW - 3) * TILE, this.cam.y + this.vh + 4), vx: (Math.random() - 0.5) * 12, vy: -18 - Math.random() * 30, life: 3 + Math.random() * 3, max: 6, color: Math.random() < 0.6 ? '#ffb347' : '#ff6a1a', size: 1, grav: -2 });
     }
     // polvillo flotando en la luz de la linterna bajo tierra
     if (this.state === 'play' && p && p.depth > 8 && Math.random() < dt * 6) {
@@ -632,6 +634,7 @@ class Game {
     const t = this.time;
 
     this.bg.draw(ctx, camX, camY, vw, vh, t);
+    this.coreBg.draw(ctx, camX, camY, vw, vh, t);
     this.structs.drawBackdrop(ctx, camX, camY, t);
     this.structs.drawBuildings(ctx, camX, camY);
     this.world.draw(ctx, camX, camY, vw, vh);
