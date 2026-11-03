@@ -9,8 +9,10 @@ export const CHUNK = 16;             // bloques por chunk de render
 export const WORLD_W = 79;           // ancho del mundo en bloques
 export const SURFACE = 40;           // fila donde empieza el suelo
 export const METERS_PER_TILE = 2;    // cada bloque = 2 metros de profundidad
-export const MAX_DEPTH = 1500;       // metros hasta el fondo
-export const BOTTOM_ROW = SURFACE + MAX_DEPTH / METERS_PER_TILE + 1; // primera fila de roca madre
+export const MAX_DEPTH = 1500;       // metros hasta el núcleo
+export const CORE_ROW = SURFACE + MAX_DEPTH / METERS_PER_TILE; // donde termina la roca y empieza el núcleo
+export const CORE_ROWS = 32;         // alto de la caverna del núcleo (en bloques)
+export const BOTTOM_ROW = CORE_ROW + CORE_ROWS; // primera fila de roca madre
 export const WORLD_H = BOTTOM_ROW + 3;
 export const EDGE = 2;               // columnas de roca madre a cada lado
 export const DEFAULT_SEED = 14022;   // mismo mundo para los dos jugadores
@@ -35,6 +37,20 @@ export const PHYS = {
   fallDmgPerTile: 4,     // daño por cada bloque extra de caída
   jetAccel: 1050,
   sprintMult: 1.7,       // Shift: correr (también volando)
+};
+
+// Modo vuelo del jetpack (se prende y apaga con E): h/v = velocidad, acc = qué tan rápido responde
+export const HOVER = [
+  null,
+  { h: 120, v: 150, acc: 900 },   // anteúltimo nivel: vuelo estable y manejable
+  { h: 210, v: 270, acc: 2600 },  // último nivel: rapidísimo y muy preciso
+];
+
+// Lava (de los 1000 m para abajo): se derrama como un líquido y quema
+export const LAVA = {
+  from: 1000,       // metros donde empiezan a aparecer los parches
+  dps: 40,          // daño por segundo al tocarla (la armadura del último nivel lo baja)
+  tick: 1 / 40,     // cada cuánto se mueve el líquido
 };
 
 export const HP_MAX = 100;
@@ -79,7 +95,8 @@ export const LAYERS = [
   { name: 'Piedra', to: 350 },
   { name: 'Granito', to: 550 },
   { name: 'Basalto', to: 800 },
-  { name: 'Abismo', to: 99999 },
+  { name: 'Abismo', to: 1000 },
+  { name: 'Obsidiana', to: 99999 },
 ];
 
 // ---- Tesoros ----
@@ -106,6 +123,8 @@ export const LAYER_LOOT = [
   { density: 0.10, w: { 3: 20, 4: 40, 5: 32, 6: 8 } },
   { density: 0.10, w: { 4: 22, 5: 42, 6: 22, 7: 8, 9: 6 } },
   { density: 0.10, w: { 5: 22, 6: 28, 7: 22, 8: 12, 9: 10, 10: 4, 11: 2 } },
+  // obsidiana: cada vez menos tesoros a medida que se baja (de 0.045 a 0.008)
+  { density: 0.045, fadeTo: 0.008, w: { 7: 18, 8: 30, 9: 14, 10: 24, 11: 14 } },
 ];
 
 // ---- Mejoras (compartidas entre los dos jugadores) ----
@@ -127,25 +146,28 @@ export const UPGRADES = [
   {
     id: 'bateria', name: 'Batería', icon: 'battery',
     desc: 'Más energía para cavar y volar sin volver a casa.',
-    levels: [[150, 0], [210, 90], [290, 380], [400, 1350], [550, 4200], [750, 11250], [1000, 24000]],
-    label: (v) => `${v} de energía`,
+    levels: [[210, 0], [290, 90], [400, 380], [550, 1350], [750, 4200], [1000, 11250], [Infinity, 30000]],
+    label: (v) => (v === Infinity ? 'Energía infinita' : `${v} de energía`),
   },
   {
     id: 'armadura', name: 'Armadura', icon: 'armor',
-    desc: 'Te protege de los golpes cuando caés de muy alto.',
-    levels: [[0, 0], [25, 120], [45, 600], [60, 2250], [75, 6750], [90, 16500], [100, 32000]],
-    label: (v) => (v >= 100 ? 'Inmune a las caídas' : v ? `-${v}% de daño` : 'Sin armadura'),
+    desc: 'Te protege de los golpes cuando caés de muy alto. Al máximo, también de la lava.',
+    // a = % menos de daño por caídas, lava = % menos de daño por lava
+    levels: [[{ a: 0, lava: 0 }, 0], [{ a: 25, lava: 0 }, 120], [{ a: 45, lava: 0 }, 600], [{ a: 60, lava: 0 }, 2250], [{ a: 75, lava: 0 }, 6750], [{ a: 90, lava: 0 }, 16500], [{ a: 100, lava: 0 }, 32000], [{ a: 100, lava: 80 }, 70000]],
+    label: (v) => (v.lava ? `Inmune a caídas · -${v.lava}% lava` : v.a >= 100 ? 'Inmune a las caídas' : v.a ? `-${v.a}% de daño` : 'Sin armadura'),
   },
   {
-    // motor y eficiencia en una sola mejora: s = velocidad, e = energía por segundo
+    // s = velocidad, e = energía por segundo, g = velocidad al bajar despacio (S),
+    // h = modo vuelo con E (1: estable, 2: rapidísimo; ver HOVER)
     id: 'motor', name: 'Jetpack', icon: 'rocket',
-    desc: 'Volás más rápido y gastando menos energía.',
+    desc: 'Volás más rápido, gastás menos energía y bajás más despacio con S. Los últimos niveles traen modo vuelo (E).',
     levels: [
-      [{ s: 85, e: 6 }, 0], [{ s: 115, e: 4.6 }, 260], [{ s: 150, e: 3.5 }, 1200], [{ s: 190, e: 2.6 }, 4300],
-      [{ s: 235, e: 1.9 }, 13000], [{ s: 290, e: 1.3 }, 30000], [{ s: 350, e: 0.8 }, 60000],
+      [{ s: 85, e: 6, g: 60 }, 0], [{ s: 115, e: 4.6, g: 52 }, 260], [{ s: 150, e: 3.5, g: 45 }, 1200], [{ s: 190, e: 2.6, g: 38 }, 4300],
+      [{ s: 235, e: 1.9, g: 31 }, 13000], [{ s: 290, e: 1.3, g: 25 }, 30000], [{ s: 350, e: 0.8, g: 20, h: 1 }, 60000],
+      [{ s: 420, e: 0.5, g: 15, h: 2 }, 120000],
     ],
-    label: (v) => `Vel. ${v.s} · ${String(v.e).replace('.', ',')}/seg`,
-    tiers: ['Jetpack básico', 'Jetpack sport', 'Jetpack turbo', 'Jetpack a reacción', 'Cohete', 'Cohete supersónico', 'Cohete estelar'],
+    label: (v) => (v.h ? `Modo vuelo${v.h === 2 ? ' turbo' : ''} (E) · Vel. ${v.s}` : `Vel. ${v.s} · ${String(v.e).replace('.', ',')}/seg`),
+    tiers: ['Jetpack básico', 'Jetpack sport', 'Jetpack turbo', 'Jetpack a reacción', 'Cohete', 'Cohete supersónico', 'Cohete estelar', 'Nave del núcleo'],
   },
   {
     id: 'casco', name: 'Casco de minero', icon: 'helmet',
@@ -174,7 +196,8 @@ export const GIFTS = [
     text: 'Acá va a ir la segunda sorpresa.\n(Texto de prueba.)',
   },
   {
-    id: 3, depth: 1500, title: 'El regalo final', final: true,
+    // el último está en el núcleo: en la plataforma de abajo de todo (por ahora no se abre)
+    id: 3, depth: 1500, title: 'El regalo final', final: true, core: true,
     text: 'Acá va a ir la última sorpresa.\n(Texto de prueba.)',
   },
 ];

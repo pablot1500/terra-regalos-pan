@@ -163,6 +163,7 @@ export const JET_TIERS = [
   { j: '#ffd860', J: '#c8871a', r: '#ff4d6d' },
   { j: '#ffa8d6', J: '#c9578a', r: '#8fe9ff' },
   { j: '#eafcff', J: '#7fd8ff', r: '#ff7ac8' },
+  { j: '#4a3a44', J: '#ff7a2e', r: '#ffd34d' }, // nave del núcleo
 ];
 
 // casco de minero (desde el nivel 1): color del casco y de la lámpara por nivel
@@ -499,7 +500,7 @@ function initIcons() {
     }
     ICON_URL['pala_' + lvl] = outlined(c, '#1d1420').toDataURL();
   }
-  for (let lvl = 0; lvl < 7; lvl++) {
+  for (let lvl = 0; lvl < JET_TIERS.length; lvl++) {
     const J = JET_TIERS[lvl];
     const rows = ['...R...', '..RRR..', '..jWj..', '..jbj..', '..jJj..', '.RjJjR.', lvl >= 3 ? 'RR.k.RR' : '.R.k.R.'];
     const fl = 1 + Math.floor(lvl / 2);

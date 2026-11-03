@@ -6,11 +6,11 @@
 //    saca círculos de sub-celdas, así los pozos quedan orgánicos.
 import {
   TILE, CHUNK, WORLD_W, WORLD_H, SURFACE, METERS_PER_TILE, BOTTOM_ROW, EDGE,
-  LAYERS, LAYER_LOOT, GIFTS, ITEMS,
+  LAYERS, LAYER_LOOT, GIFTS, ITEMS, MAX_DEPTH, CORE_ROW, LAVA,
 } from './config.js';
 import { T, DEF, LAYER_TILES, VARIANTS, TEXPX, WALLPX, PALRGB, isDiggable, hardness } from './tiles.js';
 import { hash2, fbm } from './rng.js';
-import { makeCanvas } from './util.js';
+import { makeCanvas, clamp } from './util.js';
 import { LOOT_SPR } from './sprites.js';
 import { placeStructures, PATIO, DIG_ZONE } from './structures.js';
 
@@ -39,6 +39,16 @@ function pickLoot(weights, q) {
 
 const GRASS_HI = [124, 214, 90], GRASS = [79, 154, 50], GRASS_D = [58, 122, 38];
 
+// plataforma del fondo del núcleo y el último cofre
+export const CORE_PLATFORM = { c0: 12, c1: 66, r: BOTTOM_ROW - 7 };
+const OBS = LAYERS.length - 1; // índice de la capa de obsidiana
+
+// colores de la lava (cuerpo, de oscuro a claro) y de la superficie
+const LAVA_BODY = [[176, 30, 8], [214, 60, 12], [246, 102, 22], [255, 146, 40]];
+const LAVA_TOP = [[255, 214, 92], [255, 242, 170]];
+// colores del magma de fondo del núcleo, de oscuro a claro
+const CORE_PAL = [[30, 8, 6], [50, 13, 8], [76, 21, 10], [108, 32, 12], [160, 60, 16], [232, 128, 44]];
+
 export class World {
   constructor(seed) {
     this.seed = seed;
@@ -54,6 +64,12 @@ export class World {
     this.variant = new Uint8Array(n);
     this.sub = new Uint8Array(this.sw * this.sh);
     this.subDug = new Uint8Array(this.sw * this.sh);
+    this.lava = new Uint8Array(this.sw * this.sh);      // sub-celdas con lava (siempre donde no hay terreno)
+    this.lavaStamp = new Uint8Array(this.sw * this.sh); // para no mover dos veces la misma gota en un paso
+    this.lavaTick = 1;
+    this.lavaAcc = 0;
+    this.lavaRow0 = rowForDepth(LAVA.from - 40) * SPT;
+    this.steam = [];          // dónde se evaporó lava al caer en el núcleo (main.js hace el humito)
     this.skyTop = new Int16Array(this.w);
     this.chests = [];
     this.chunks = new Map();
@@ -101,7 +117,7 @@ export class World {
 
   generate() {
     const { w, h, seed, tiles, mat, loot } = this;
-    const chambers = GIFTS.map((g, i) => ({
+    const chambers = GIFTS.filter((g) => !g.core).map((g, i) => ({
       gift: g,
       c: PATIO.c0 + 4 + Math.floor(hash2(i * 13 + 5, 7, seed) * (PATIO.c1 - PATIO.c0 - 8)),
       r: rowForDepth(g.depth),
@@ -118,26 +134,31 @@ export class World {
         const d = r - SURFACE;
         const meters = d * METERS_PER_TILE + (fbm(c * 0.07, r * 0.015, seed + 5) - 0.5) * 18;
         let L = layerIndex(meters);
+        // de los 1000 m para abajo la obsidiana se va comiendo al abismo
+        const deep = clamp((meters - LAVA.from) / (MAX_DEPTH - LAVA.from), 0, 1);
         if (d > 10) {
           const nn = fbm(c * 0.11 + 3.1, r * 0.11, seed + 9);
-          if (nn > 0.69 && L < LAYERS.length - 1) L++;
-          else if (nn < 0.28 && L > 0) L--;
+          if (nn > 0.69 && L < OBS && (L + 1 < OBS || meters > LAVA.from - 60)) L++;
+          else if (nn < (L === OBS ? 0.28 * (1 - deep) : 0.28) && L > 0) L--;
         }
         const t = LAYER_TILES[L];
         tiles[i] = mat[i] = t;
         const LL = LAYER_LOOT[L];
-        if (hash2(c, r, seed + 77) < LL.density) loot[i] = pickLoot(LL.w, hash2(c, r, seed + 78));
+        let dens = LL.density;
+        if (meters > LAVA.from) dens = Math.min(dens, LAYER_LOOT[OBS].density + (LAYER_LOOT[OBS].fadeTo - LAYER_LOOT[OBS].density) * deep);
+        if (hash2(c, r, seed + 77) < dens) loot[i] = pickLoot(LL.w, hash2(c, r, seed + 78));
       }
     }
     for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) this.fillTileSubs(c, r, tiles[r * w + c] === T.AIR ? 0 : 1);
 
     // 2) cuevas orgánicas: ruido en las esquinas de los bloques, interpolado por sub-celda
-    const cr0 = SURFACE + 22, cr1 = BOTTOM_ROW - 3;
+    const cr0 = SURFACE + 22, cr1 = CORE_ROW - 6;
     const CW = w + 1;
     const corner = new Float32Array(CW * (h + 1));
     for (let r = cr0; r <= cr1 + 1; r++) for (let c = 0; c <= w; c++) corner[r * CW + c] = fbm(c * 0.085, r * 0.15, seed + 21);
-    const TH = 0.72;
     for (let r = cr0; r < cr1; r++) {
+      // más abajo de los 1000 m las cuevas son mucho más grandes (para volar entre la lava)
+      const TH = 0.72 - 0.11 * clamp(((r - SURFACE) * METERS_PER_TILE - LAVA.from) / 160, 0, 1);
       for (let c = EDGE; c < w - EDGE; c++) {
         if (nearChamber(c, r)) continue;
         const a = corner[r * CW + c], b = corner[r * CW + c + 1], cc = corner[(r + 1) * CW + c], dd = corner[(r + 1) * CW + c + 1];
@@ -189,12 +210,111 @@ export class World {
       this.chests.push({ id: ch.gift.id, gift: ch.gift, c: ch.c, r: ch.r, opened: false, open: 0 });
     }
 
-    // 4) estructuras
+    // 4) lava y núcleo
+    this.genLava();
+    this.genCore();
+
+    // 5) estructuras
     placeStructures(this);
 
-    // 5) recuento final
+    // 6) recuento final
     for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) this.recount(c, r);
     for (let c = 0; c < w; c++) this.updateSkyTop(c);
+  }
+
+  /** Parches de lava encerrados en la roca y charcos en el piso de las cuevas (de los 1000 m para abajo). */
+  genLava() {
+    const { w, seed, sub, lava, sw } = this;
+    const r0 = rowForDepth(LAVA.from - 20), r1 = CORE_ROW - 5;
+    const CW = w + 1;
+    const corner = new Float32Array(CW * (r1 - r0 + 2));
+    for (let r = r0; r <= r1 + 1; r++) for (let c = 0; c <= w; c++) corner[(r - r0) * CW + c] = fbm(c * 0.17, r * 0.23, seed + 33);
+    for (let r = r0; r < r1; r++) {
+      const deep = clamp(((r - SURFACE) * METERS_PER_TILE - LAVA.from) / (MAX_DEPTH - LAVA.from), 0, 1);
+      const TH = 0.75 - 0.09 * deep; // cada vez más parches
+      for (let c = EDGE + 1; c < w - EDGE - 1; c++) {
+        const t = this.tiles[r * w + c];
+        if (t !== T.OBSIDIAN && t !== T.ABYSS && t !== T.AIR) continue;
+        const k = (r - r0) * CW + c;
+        const a = corner[k], b = corner[k + 1], cc = corner[k + CW], dd = corner[k + CW + 1];
+        if (Math.max(a, b, cc, dd) < TH) continue;
+        for (let j = 0; j < SPT; j++) {
+          const v = (j + 0.5) / SPT;
+          for (let i = 0; i < SPT; i++) {
+            const u = (i + 0.5) / SPT;
+            const val = a * (1 - u) * (1 - v) + b * u * (1 - v) + cc * (1 - u) * v + dd * u * v;
+            if (val <= TH) continue;
+            const q = (r * SPT + j) * sw + c * SPT + i;
+            sub[q] = 0;
+            lava[q] = 1;
+          }
+        }
+        this.loot[r * w + c] = 0;
+      }
+    }
+    // charcos: en el piso de las cuevas se junta lava
+    const sy0 = r0 * SPT, sy1 = r1 * SPT;
+    for (let sx = (EDGE + 1) * SPT; sx < (w - EDGE - 1) * SPT; sx++) {
+      for (let sy = sy0 + 1; sy < sy1; sy++) {
+        const q = sy * sw + sx;
+        if (!sub[q] || sub[q - sw] || lava[q - sw]) continue;
+        // piso de una cueva: ¿hay charco acá?
+        const deep = clamp(((sy / SPT - SURFACE) * METERS_PER_TILE - LAVA.from) / (MAX_DEPTH - LAVA.from), 0, 1);
+        if (fbm(sx * 0.045, sy * 0.06, seed + 37) < 0.6 - 0.07 * deep) continue;
+        const depth = 2 + Math.floor(hash2(sx >> 3, sy >> 2, seed + 38) * 5);
+        for (let k = 1; k <= depth; k++) {
+          const p = q - k * sw;
+          if (sub[p]) break;
+          lava[p] = 1;
+        }
+      }
+    }
+  }
+
+  /** Caverna del núcleo: el piso de roca termina en una línea ondulada y abajo hay magma, una plataforma y el último cofre. */
+  genCore() {
+    const { w, seed, sub, lava, sw, tiles, mat } = this;
+    // línea ondulada donde termina la roca
+    for (let sx = EDGE * SPT; sx < (w - EDGE) * SPT; sx++) {
+      const wx = sx * SUB + 1;
+      const top = CORE_ROW * TILE + (fbm(wx * 0.018, 1.3, seed + 51) - 0.5) * 44 + (fbm(wx * 0.09, 4.2, seed + 52) - 0.5) * 10;
+      for (let sy = Math.max(0, Math.floor(top / SUB)); sy < BOTTOM_ROW * SPT; sy++) {
+        const q = sy * sw + sx;
+        sub[q] = 0;
+        lava[q] = 0;
+      }
+    }
+    for (let r = CORE_ROW - 4; r < BOTTOM_ROW; r++) {
+      for (let c = EDGE; c < w - EDGE; c++) {
+        const i = r * w + c;
+        let n = 0;
+        for (let j = 0; j < SPT; j++) for (let k = 0; k < SPT; k++) n += sub[(r * SPT + j) * sw + c * SPT + k];
+        if (n === SPT * SPT) continue;
+        mat[i] = T.CORE;
+        if (!n) { tiles[i] = T.AIR; this.loot[i] = 0; }
+      }
+    }
+    // plataforma flotando sobre un mar de lava
+    const P = CORE_PLATFORM;
+    for (let c = P.c0; c <= P.c1; c++) {
+      const fromEdge = Math.min(c - P.c0, P.c1 - c);
+      const thick = Math.min(3, 1 + fromEdge) + (hash2(c, 3, seed + 55) < 0.35 && fromEdge > 3 ? 1 : 0);
+      for (let r = P.r; r < P.r + thick; r++) {
+        const i = r * w + c;
+        tiles[i] = T.COREFLOOR;
+        mat[i] = T.CORE;
+        this.loot[i] = 0;
+        this.fillTileSubs(c, r, 1);
+      }
+    }
+    for (let sy = (BOTTOM_ROW - 3) * SPT; sy < BOTTOM_ROW * SPT; sy++) {
+      for (let sx = EDGE * SPT; sx < (w - EDGE) * SPT; sx++) {
+        const q = sy * sw + sx;
+        if (!sub[q]) lava[q] = 1;
+      }
+    }
+    const gift = GIFTS.find((g) => g.core);
+    if (gift) this.chests.push({ id: gift.id, gift, c: P.c1 - 4, r: P.r, opened: false, open: 0, locked: true });
   }
 
   /** Recuenta las sub-celdas de un bloque y lo desmorona si quedó casi vacío. */
@@ -410,6 +530,117 @@ export class World {
     this.chunks.clear();
   }
 
+  // ---------- Lava ----------
+  /** cuántas sub-celdas de lava hay en un bloque */
+  lavaInTile(c, r) {
+    if (c < 0 || c >= this.w || r < 0 || r >= this.h) return 0;
+    let n = 0;
+    for (let j = 0; j < SPT; j++) {
+      const row = (r * SPT + j) * this.sw + c * SPT;
+      for (let k = 0; k < SPT; k++) n += this.lava[row + k];
+    }
+    return n;
+  }
+
+  /** cuántas sub-celdas de lava toca un rectángulo (en px) */
+  lavaInRect(x, y, w, h) {
+    const sx0 = Math.max(0, Math.floor(x / SUB)), sx1 = Math.min(this.sw - 1, Math.floor((x + w - 0.001) / SUB));
+    const sy0 = Math.max(this.lavaRow0, Math.floor(y / SUB)), sy1 = Math.min(this.sh - 1, Math.floor((y + h - 0.001) / SUB));
+    let n = 0;
+    for (let sy = sy0; sy <= sy1; sy++) for (let sx = sx0; sx <= sx1; sx++) n += this.lava[sy * this.sw + sx];
+    return n;
+  }
+
+  /** La lava cae y se desparrama como un líquido espeso (solo cerca de la cámara). */
+  updateLava(dt, camX, camY, vw, vh) {
+    this.lavaAcc += dt;
+    if (this.lavaAcc < LAVA.tick) return;
+    this.lavaAcc = Math.min(this.lavaAcc - LAVA.tick, LAVA.tick);
+    const M = 56;
+    const { sw, sub, lava, lavaStamp } = this;
+    const sy0 = Math.max(this.lavaRow0, Math.floor(camY / SUB) - M), sy1 = Math.min(this.sh - 2, Math.ceil((camY + vh) / SUB) + M);
+    if (sy0 > sy1) return;
+    const sx0 = 1, sx1 = sw - 2;
+    const tick = this.lavaTick = this.lavaTick % 255 + 1;
+    const free = (q) => !sub[q] && !lava[q];
+    // la lava que cae dentro de la caverna del núcleo se evapora (así no tapa la plataforma)
+    const seaTop = (BOTTOM_ROW - 3) * SPT;
+    const move = (a, b) => {
+      lava[a] = 0;
+      const by = (b / sw) | 0;
+      if (by < seaTop && this.mat[(by >> 2) * this.w + ((b % sw) >> 2)] === T.CORE) {
+        if (this.steam.length < 40) this.steam.push([(b % sw) * SUB + 1, by * SUB + 1]);
+        return;
+      }
+      lava[b] = 1; lavaStamp[b] = tick;
+    };
+    for (let sy = sy1; sy >= sy0; sy--) {
+      const row = sy * sw;
+      const ltr = (sy + tick) & 1;
+      for (let k = 0; k <= sx1 - sx0; k++) {
+        const sx = ltr ? sx0 + k : sx1 - k;
+        const q = row + sx;
+        if (!lava[q] || lavaStamp[q] === tick) continue;
+        const dn = q + sw;
+        if (free(dn)) { move(q, dn); continue; }
+        const dir = (hash2(sx, sy, tick) < 0.5) ? -1 : 1;
+        if (free(dn + dir)) { move(q, dn + dir); continue; }
+        if (free(dn - dir)) { move(q, dn - dir); continue; }
+        // espesa: se corre de costado más despacio que el agua
+        if (hash2(sx, sy, tick + 300) < 0.45) {
+          if (free(q + dir)) move(q, q + dir);
+          else if (free(q - dir)) move(q, q - dir);
+        }
+      }
+    }
+  }
+
+  /** dibuja la lava que se ve en pantalla (cuerpo animado y superficie brillante) */
+  drawLava(ctx, camX, camY, vw, vh, t) {
+    const sx0 = Math.max(0, Math.floor(camX / SUB)), sy0 = Math.max(this.lavaRow0, Math.floor(camY / SUB));
+    const sx1 = Math.min(this.sw - 1, Math.ceil((camX + vw) / SUB)), sy1 = Math.min(this.sh - 1, Math.ceil((camY + vh) / SUB));
+    if (sy0 > sy1) return;
+    const cols = sx1 - sx0 + 1, rows = sy1 - sy0 + 1;
+    if (!this.lavaCv || this.lavaCv.width < cols || this.lavaCv.height < rows) {
+      [this.lavaCv, this.lavaX] = makeCanvas(cols + 8, rows + 8);
+      this.lavaImg = this.lavaX.createImageData(cols + 8, rows + 8);
+    }
+    const img = this.lavaImg, d = img.data, IW = img.width;
+    d.fill(0);
+    const { sw, lava, sub } = this;
+    let any = false;
+    for (let sy = sy0; sy <= sy1; sy++) {
+      const row = sy * sw;
+      for (let sx = sx0; sx <= sx1; sx++) {
+        const q = row + sx;
+        if (!lava[q]) continue;
+        any = true;
+        let col;
+        if (!lava[q - sw] && !sub[q - sw]) col = LAVA_TOP[(Math.sin(sx * 0.9 + t * 4) > 0.6) ? 1 : 0];
+        else {
+          const v = Math.sin(sx * 0.42 + t * 1.3 + Math.sin(sy * 0.37 - t * 0.9) * 1.8) + Math.sin(sy * 0.53 + t * 0.7 + sx * 0.11) * 0.8;
+          col = LAVA_BODY[clamp(Math.floor((v + 1.8) * 1.15), 0, 3)];
+        }
+        const k = ((sy - sy0) * IW + (sx - sx0)) * 4;
+        d[k] = col[0]; d[k + 1] = col[1]; d[k + 2] = col[2]; d[k + 3] = 255;
+      }
+    }
+    if (!any) return;
+    this.lavaX.putImageData(img, 0, 0, 0, 0, cols, rows);
+    ctx.drawImage(this.lavaCv, 0, 0, cols, rows, sx0 * SUB - camX, sy0 * SUB - camY, cols * SUB, rows * SUB);
+  }
+
+  /** color del magma de fondo del núcleo (vetas que brillan, más claro hacia abajo) */
+  corePx(wx, wy) {
+    const n = fbm(wx * 0.03, wy * 0.045, this.seed + 71);
+    const vein = Math.abs(fbm(wx * 0.06 + 5, wy * 0.08, this.seed + 73) - 0.5);
+    const heat = clamp((wy - CORE_ROW * TILE) / ((BOTTOM_ROW - CORE_ROW) * TILE), 0, 1);
+    let i = Math.floor(n * 2.6 + heat * 1.3 + hash2(wx >> 1, wy >> 1, 74) * 0.4);
+    if (vein < 0.025) i += 2;
+    else if (vein < 0.05) i += 1;
+    return CORE_PAL[clamp(i, 0, CORE_PAL.length - 1)];
+  }
+
   // ---------- Render ----------
   renderChunk(cx, cy) {
     const key = cx + ',' + cy;
@@ -455,6 +686,11 @@ export class World {
           else { const tx_ = tex[v]; d[k] = tx_[o]; d[k + 1] = tx_[o + 1]; d[k + 2] = tx_[o + 2]; d[k + 3] = 255; }
         } else {
           let m = this.mat[ti];
+          if (m === T.CORE) {
+            const p = this.corePx(wx, wy);
+            d[k] = p[0]; d[k + 1] = p[1]; d[k + 2] = p[2]; d[k + 3] = 255;
+            continue;
+          }
           if ((m === T.GRAVEL || m === T.DIRT) && this.nearGravelEdge(c, r)) m = this.gravelPx(wx, wy) ? T.GRAVEL : T.DIRT;
           const wt = WALLPX[m || T.DIRT];
           if (!wt) continue;

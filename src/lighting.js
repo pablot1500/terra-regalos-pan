@@ -1,5 +1,15 @@
 // Oscuridad del subsuelo con luz del cielo, de la linterna y de las gemas.
-import { TILE, SURFACE, ITEMS } from './config.js';
+import { TILE, SURFACE, ITEMS, LAVA } from './config.js';
+import { rowForDepth } from './world.js';
+
+// cómo se reparte la luz de la lava y del magma alrededor (radio en bloques)
+const GLOW_R = 4;
+const GLOW_K = [];
+for (let dy = -GLOW_R; dy <= GLOW_R; dy++) for (let dx = -GLOW_R; dx <= GLOW_R; dx++) {
+  const v = Math.min(1, 1.15 - Math.hypot(dx, dy) / GLOW_R);
+  if (v > 0) GLOW_K.push([dx, dy, v]);
+}
+const LAVA_ROW = rowForDepth(LAVA.from - 40);
 import { T } from './tiles.js';
 import { makeCanvas } from './util.js';
 
@@ -40,6 +50,30 @@ export class Lighting {
     }
     for (const fx of game.lights) src.push(fx);
 
+    // luz propia de la lava y del magma del núcleo
+    if (!this.glow || this.glow.length < cols * rows) this.glow = new Float32Array(cols * rows);
+    const glow = this.glow;
+    glow.fill(0, 0, cols * rows);
+    if (r0 + rows + GLOW_R >= LAVA_ROW) {
+      for (let r = r0 - GLOW_R; r < r0 + rows + GLOW_R; r++) {
+        if (r < LAVA_ROW || r >= W.h) continue;
+        for (let c = c0 - GLOW_R; c < c0 + cols + GLOW_R; c++) {
+          if (c < 0 || c >= W.w) continue;
+          const i = r * W.w + c;
+          const core = W.mat[i] === T.CORE && W.tiles[i] === T.AIR;
+          const lv = core ? 16 : W.lavaInTile(c, r);
+          if (!lv) continue;
+          const I = core ? 1 : Math.min(1, 0.55 + lv / 16);
+          for (const [dx, dy, v] of GLOW_K) {
+            const j = r + dy - r0, ii = c + dx - c0;
+            if (j < 0 || j >= rows || ii < 0 || ii >= cols) continue;
+            const q = j * cols + ii, val = v * I;
+            if (val > glow[q]) glow[q] = val;
+          }
+        }
+      }
+    }
+
     let k = 0;
     for (let j = 0; j < rows; j++) {
       const r = r0 + j;
@@ -58,6 +92,8 @@ export class Lighting {
             const v = Math.min(depthFade, 1 - Math.max(0, r - st + 1) * 0.105) - Math.abs(dc) * 0.3;
             if (v > light) light = v;
           }
+          const gl = glow[j * cols + i];
+          if (gl > light) light = gl;
           if (light < 1) {
             const tx = c + 0.5, ty = r + 0.5;
             for (const [sx, sy, R, I] of src) {

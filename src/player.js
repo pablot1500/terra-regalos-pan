@@ -1,4 +1,4 @@
-import { TILE, WORLD_W, EDGE, PHYS, DIG, CRYSTAL_DIG, BRUSH_R, HP_MAX, REST } from './config.js';
+import { TILE, WORLD_W, EDGE, PHYS, DIG, CRYSTAL_DIG, BRUSH_R, HP_MAX, REST, HOVER, LAVA } from './config.js';
 import { DEF, T, isDiggable, hardness } from './tiles.js';
 import { getCharFrames, drawArmShovel, drawDrill, CHAR_W, CHAR_H } from './sprites.js';
 import { HOME_ZONE, SHOP_ZONE, SPAWN, inZone } from './structures.js';
@@ -17,6 +17,7 @@ const MAT_FX = {
   6: { dust: ['rgba(80,55,120,0.5)'], maxPuffs: 4, spark: ['#c9a6ff', '#ff9ccc', '#8fe9ff', '#ffffff'] }, // abismo
   11: { dust: ['rgba(230,120,180,0.4)'], maxPuffs: 3, spark: ['#ffd6ec', '#ff86c2', '#ffffff'] },      // cristal
   14: { dust: ['rgba(160,152,138,0.7)', 'rgba(196,188,172,0.6)'], maxPuffs: 8 },                       // grava
+  15: { dust: ['rgba(30,24,40,0.6)', 'rgba(60,40,50,0.5)'], maxPuffs: 4, spark: ['#ff8a3d', '#ffd34d', '#ffffff'] }, // obsidiana
 };
 
 export class Player {
@@ -55,6 +56,18 @@ export class Player {
     this.dead = false;
     this.restFx = 0;
     this.jetFx = 0;
+    this.hovering = false;    // modo vuelo del jetpack (últimos niveles)
+    this.burnT = 0;           // para mostrar de a ratos el daño de la lava
+    this.burnAcc = 0;
+  }
+
+  toggleHover() {
+    const g = this.game;
+    if (!g.stats.hover || this.dead) return;
+    this.hovering = !this.hovering;
+    g.toast(this.hovering ? 'Modo vuelo: prendido' : 'Modo vuelo: apagado', 'hover', 'good');
+    g.audio.play('ui');
+    if (this.hovering) { this.vy = Math.min(this.vy, 0); this.peakY = this.y; }
   }
 
   get cx() { return this.x + this.w / 2; }
@@ -166,40 +179,59 @@ export class Player {
 
     // ---- movimiento horizontal ----
     this.sprinting = !!inp.sprint && walkIx !== 0;
-    const want = walkIx * PHYS.walk * (this.flying ? 1.12 : 1) * (this.sprinting ? PHYS.sprintMult : 1);
-    const acc = this.onGround ? PHYS.accelGround : PHYS.accelAir;
+    if (this.hovering && !st.hover) this.hovering = false;
+    const H = this.hovering ? HOVER[st.hover] : null;
+    const want = H ? walkIx * H.h * (this.sprinting ? 1.35 : 1)
+      : walkIx * PHYS.walk * (this.flying ? 1.12 : 1) * (this.sprinting ? PHYS.sprintMult : 1);
+    const acc = H ? H.acc : this.onGround ? PHYS.accelGround : PHYS.accelAir;
     if (this.vx < want) this.vx = Math.min(want, this.vx + acc * dt);
     else this.vx = Math.max(want, this.vx - acc * dt);
 
     // ---- salto y jetpack ----
     this.jumpT += dt;
-    if (inp.jumpPressed && this.onGround) {
-      this.vy = -PHYS.jump;
-      this.onGround = false;
-      this.jumpT = 0;
-      g.audio.play('jump');
-    }
-    this.vy = Math.min(this.vy + PHYS.gravity * dt, PHYS.maxFall);
-    const wantJet = inp.jump && !this.onGround && (this.jumpT > 0.17 || this.vy > -30);
-    // descenso controlado (S solo, o Espacio + abajo): frena la caída para bajar
-    // por el pozo sin lastimarse, y no gasta energía
-    const glide = !this.onGround && ((inp.glide && this.vy > 20) || (wantJet && inp.down));
     const wasFlying = this.flying;
     this.flying = false;
-    if (glide) {
-      this.flying = true;
-      if (this.vy > 60) this.vy = Math.max(60, this.vy - PHYS.jetAccel * dt);
+    const inLava = this.game.world.lavaInRect(this.x, this.y, this.w, this.h) > 0;
+    if (H) {
+      // modo vuelo: sin gravedad, se mueve para donde apuntes y frena enseguida
+      const iy = (inp.up || inp.jump ? -1 : 0) + (inp.down ? 1 : 0);
+      const wantV = iy * H.v * (this.sprinting ? 1.35 : 1);
+      if (this.vy < wantV) this.vy = Math.min(wantV, this.vy + H.acc * dt);
+      else this.vy = Math.max(wantV, this.vy - H.acc * dt);
+      if (!this.onGround || iy < 0) {
+        this.flying = true;
+        this.jetFlame(dt);
+        if (!st.infEnergy) this.energy = Math.max(0, this.energy - st.jetCost * (iy || walkIx ? 1 : 0.4) * dt);
+        if (this.energy <= 0) { this.hovering = false; g.toast('¡Sin energía para volar!', 'nojet'); }
+      }
       this.peakY = this.y;
-      this.jetFlame(dt);
-    } else if (wantJet && this.energy > 0) {
-      this.flying = true;
-      this.vy -= PHYS.jetAccel * dt;
-      if (this.vy < -st.jetSpeed) this.vy = -st.jetSpeed;
-      this.energy = Math.max(0, this.energy - st.jetCost * dt);
-      this.peakY = this.y;
-      this.jetFlame(dt);
-    } else if (wantJet && this.energy <= 0 && Math.random() < 0.1) {
-      g.toast('¡Sin energía para volar!', 'nojet');
+    } else {
+      if (inp.jumpPressed && (this.onGround || inLava)) {
+        this.vy = -PHYS.jump * (inLava ? 0.8 : 1);
+        this.onGround = false;
+        this.jumpT = 0;
+        g.audio.play('jump');
+      }
+      this.vy = Math.min(this.vy + PHYS.gravity * dt, inLava ? 45 : PHYS.maxFall);
+      const wantJet = inp.jump && !this.onGround && (this.jumpT > 0.17 || this.vy > -30);
+      // descenso controlado (S solo, o Espacio + abajo): frena la caída para bajar
+      // por el pozo sin lastimarse, y no gasta energía; con cada mejora baja más despacio
+      const glide = !this.onGround && ((inp.glide && this.vy > 20) || (wantJet && inp.down));
+      if (glide) {
+        this.flying = true;
+        if (this.vy > st.glide) this.vy = Math.max(st.glide, this.vy - PHYS.jetAccel * dt);
+        this.peakY = this.y;
+        this.jetFlame(dt);
+      } else if (wantJet && this.energy > 0) {
+        this.flying = true;
+        this.vy -= PHYS.jetAccel * dt;
+        if (this.vy < -st.jetSpeed) this.vy = -st.jetSpeed;
+        if (!st.infEnergy) this.energy = Math.max(0, this.energy - st.jetCost * dt);
+        this.peakY = this.y;
+        this.jetFlame(dt);
+      } else if (wantJet && this.energy <= 0 && Math.random() < 0.1) {
+        g.toast('¡Sin energía para volar!', 'nojet');
+      }
     }
     if (this.flying !== wasFlying) g.audio.jet(this.flying);
 
@@ -243,9 +275,14 @@ export class Player {
       }
     }
 
+    // ---- lava ----
+    if (inLava) this.burn(dt);
+    else this.burnAcc = 0;
+    if (st.infEnergy) this.energy = st.energyMax;
+
     // ---- cofres ----
     for (const ch of g.world.chests) {
-      if (ch.opened) continue;
+      if (ch.opened || ch.locked) continue;
       const x0 = ch.c * TILE - 3, y0 = ch.r * TILE - 11;
       if (this.x + this.w > x0 && this.x < x0 + 15 && this.y + this.h > y0 && this.y < y0 + 11) g.openChest(ch, this);
     }
@@ -284,7 +321,20 @@ export class Player {
     }
   }
 
-  hurt(dmg) {
+  /** daño continuo por estar en la lava (la armadura del último nivel lo baja mucho) */
+  burn(dt) {
+    const g = this.game;
+    this.burnAcc += LAVA.dps * (1 - g.stats.lavaResist) * dt;
+    this.burnT -= dt;
+    if (Math.random() < dt * 30) g.particles.add({ x: this.x + Math.random() * this.w, y: this.y + Math.random() * this.h, vx: (Math.random() - 0.5) * 20, vy: -20 - Math.random() * 30, life: 0.5, max: 0.5, color: Math.random() < 0.5 ? '#ffd34d' : 'rgba(90,80,80,0.6)', size: 1, grav: -30, smoke: Math.random() < 0.4 });
+    if (this.burnT > 0 || this.burnAcc < 1) return;
+    this.burnT = 0.3;
+    const dmg = Math.floor(this.burnAcc);
+    this.burnAcc -= dmg;
+    this.hurt(dmg, 'lava');
+  }
+
+  hurt(dmg, reason = 'fall') {
     const g = this.game;
     this.hp -= dmg;
     this.hurtT = 0.8;
@@ -292,7 +342,7 @@ export class Player {
     g.addText(this.cx, this.y - 6, '-' + dmg, '#ff5d6c');
     g.shake(Math.min(6, 2 + dmg / 12));
     for (let i = 0; i < 8; i++) g.particles.add({ x: this.cx, y: this.cy, vx: (Math.random() - 0.5) * 60, vy: -Math.random() * 60, life: 0.5, max: 0.5, color: '#ff5d6c', size: 1, grav: 200 });
-    if (this.hp <= 0) { this.hp = 0; g.faint(this, 'fall'); }
+    if (this.hp <= 0) { this.hp = 0; g.faint(this, reason); }
   }
 
   updateDig(dt, aim, target) {

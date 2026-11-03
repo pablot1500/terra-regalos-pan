@@ -2,6 +2,7 @@
 import {
   TILE, SURFACE, WORLD_W, WORLD_H, DEFAULT_SEED, UPGRADES, ITEMS, GIFTS, HP_MAX,
   DEATH_MONEY_PENALTY, ENDING_TEXT, CHARACTERS, BRUSH_R, SUPPLIES, TORCH, DIG,
+  CORE_ROW, BOTTOM_ROW,
 } from './config.js';
 import { initTiles, T } from './tiles.js';
 import { hash2 } from './rng.js';
@@ -27,6 +28,7 @@ const GLINT = {
   [T.BASALT]: { p: 0.14, col: '#9fc3ff' },
   [T.ABYSS]: { p: 0.24, col: '#c9a6ff' },
   [T.CRYSTAL]: { p: 0.35, col: '#ff9ccc' },
+  [T.OBSIDIAN]: { p: 0.12, col: '#ff8a3d' },
 };
 
 function computeStats(u) {
@@ -35,10 +37,14 @@ function computeStats(u) {
     power: v('pala'),
     brush: v('ancho'),
     brushR: BRUSH_R[v('ancho')],
-    energyMax: v('bateria'),
-    armor: v('armadura'),
+    energyMax: Number.isFinite(v('bateria')) ? v('bateria') : 1000,
+    infEnergy: !Number.isFinite(v('bateria')),
+    armor: v('armadura').a,
+    lavaResist: v('armadura').lava / 100,
     jetSpeed: v('motor').s,
     jetCost: v('motor').e,
+    glide: v('motor').g,
+    hover: v('motor').h || 0,
     lightR: v('casco'),
     reach: DIG.reachMult * (1 + DIG.reachPerUpgrade * (u.pala + u.ancho)),
   };
@@ -393,10 +399,12 @@ class Game {
     for (let i = 0; i < 14; i++) this.particles.add({ x: player.cx, y: player.cy, vx: (Math.random() - 0.5) * 60, vy: -Math.random() * 60, life: 0.8, max: 0.8, color: '#ffffff', star: true, grav: 40 });
     setTimeout(() => this.ui.fade(true), 400);
     setTimeout(() => {
-      const title = reason === 'energy' ? '¡Sin energía!' : '¡Auch!';
+      const title = reason === 'energy' ? '¡Sin energía!' : reason === 'lava' ? '¡Te quemaste!' : '¡Auch!';
       const text = (reason === 'energy'
         ? 'Te quedaste sin energía bajo tierra y te desmayaste.\nAlguien te rescató y te llevó a casa.'
-        : 'Te caíste demasiado fuerte y quedaste K.O.\nTe despertaste en casa.')
+        : reason === 'lava'
+          ? 'Estuviste demasiado tiempo en la lava y te desmayaste.\nTe despertaste en casa.'
+          : 'Te caíste demasiado fuerte y quedaste K.O.\nTe despertaste en casa.')
         + (lost > 0 ? `\n\nPerdiste ${fmtMoney(lost)} en el camino.` : '');
       this.ui.showMsg(title, text, [{
         label: 'Volver a cavar',
@@ -463,6 +471,11 @@ class Game {
       if (inp.sfxPressed) this.ui.toggleSfx();
       if (inp.autoPressed) this.ui.toggleAuto();
       this.counters.playTime += dt;
+      this.world.updateLava(dt, this.cam.x, this.cam.y, this.vw, this.vh);
+      for (const [x, y] of this.world.steam.splice(0)) {
+        this.particles.add({ x, y, vx: (Math.random() - 0.5) * 14, vy: -14 - Math.random() * 16, life: 0.9, max: 0.9, color: 'rgba(120,100,100,0.55)', size: 2, grav: -20, smoke: true });
+        if (Math.random() < 0.3) this.particles.add({ x, y, vx: (Math.random() - 0.5) * 30, vy: -30, life: 0.4, max: 0.4, color: '#ffd34d', size: 1, grav: 60 });
+      }
       for (const pl of this.players) pl.update(dt, inp);
       if (this.popi) this.popi.update(dt);
       // Popi espera en el patio: al acercarte te ladra y te lo podés llevar
@@ -483,7 +496,9 @@ class Game {
         if (inp.interact) this.openShop();
         this.tip('shop', 'Este es el Taller: acá se compran las mejoras');
       } else {
-        this.ui.setActButton(null);
+        // modo vuelo del jetpack (últimos niveles): E lo prende y lo apaga
+        this.ui.setActButton(this.stats.hover ? (p.hovering ? 'ATERRIZAR' : 'VOLAR') : null);
+        if (inp.interact && this.stats.hover) p.toggleHover();
         if (p.resting && (p.energy < this.stats.energyMax - 0.5 || p.hp < HP_MAX - 0.5)) this.ui.setPrompt('Descansando... ♥');
         else this.ui.setPrompt(null);
       }
@@ -524,6 +539,10 @@ class Game {
       if (tx < cx0 || tx > cx1 || ty < cy0 || ty > cy1) continue;
       this.lights.push([tx, ty, TORCH.radius, 0.95 + Math.sin(this.time * 9 + tq.seed) * 0.04]);
     }
+    // chispas de magma subiendo en el núcleo
+    if (this.cam.y + this.vh > CORE_ROW * TILE && Math.random() < dt * 14) {
+      this.particles.add({ x: this.cam.x + Math.random() * this.vw, y: (BOTTOM_ROW - 3) * TILE, vx: (Math.random() - 0.5) * 12, vy: -18 - Math.random() * 30, life: 3 + Math.random() * 3, max: 6, color: Math.random() < 0.6 ? '#ffb347' : '#ff6a1a', size: 1, grav: -2 });
+    }
     // polvillo flotando en la luz de la linterna bajo tierra
     if (this.state === 'play' && p && p.depth > 8 && Math.random() < dt * 6) {
       const a = Math.random() * Math.PI * 2, d = 10 + Math.random() * 60;
@@ -544,6 +563,8 @@ class Game {
     if (p.energy < this.stats.energyMax * 0.3 && p.depth > 4) this.tip('energy', 'Energía baja: volvé al departamento a descansar');
     if (this.money >= 60 && this.upgrades.pala === 0) this.tip('afford', '¡Ya te alcanza para mejorar la pala en el Taller!');
     if (p.depth > 30) this.tip('torch', this.ui.isTouch ? 'Tip: en el Taller venden antorchas para iluminar' : 'Tip: en el Taller venden antorchas (se ponen con T)');
+    if (p.depth > 990) this.tip('lava', 'Cuidado con la lava: quema, y si cavás por debajo se derrama');
+    if (this.stats.hover && p.depth > 4) this.tip('hover', this.ui.isTouch ? 'Tu jetpack tiene modo vuelo: tocá VOLAR para prenderlo o apagarlo' : 'Tu jetpack tiene modo vuelo: tocá E para prenderlo o apagarlo');
     if (p.depth > 40) this.tip('fall', this.ui.isTouch ? 'Ojo con las caídas: para bajar despacio mantené SALTAR + joystick abajo' : 'Ojo con las caídas: mantené S para bajar despacio con el jetpack');
   }
 
@@ -614,6 +635,7 @@ class Game {
     this.structs.drawBackdrop(ctx, camX, camY, t);
     this.structs.drawBuildings(ctx, camX, camY);
     this.world.draw(ctx, camX, camY, vw, vh);
+    this.world.drawLava(ctx, camX, camY, vw, vh, t);
 
     // círculo de cavado: puntitos que se van cerrando a medida que avanza el palazo
     for (const p of this.players) {

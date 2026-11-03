@@ -135,7 +135,7 @@ export class UI {
     if (L.en !== en || L.emax !== emax) {
       L.en = en; L.emax = emax;
       $('bar-en').querySelector('.fill').style.width = (en / emax) * 100 + '%';
-      $('bar-en').querySelector('.num').textContent = `${en}/${emax}`;
+      $('bar-en').querySelector('.num').textContent = g.stats.infEnergy ? '∞' : `${en}/${emax}`;
       $('bar-en').classList.toggle('low', en < emax * 0.25);
     }
     const money = Math.floor(g.money);
