@@ -13,7 +13,7 @@
   --green: #5be36b;
   --red: #ff4d6d;
   --sky: #7cc2f1;
-  --font: 'Pixelify Sans', 'Courier New', monospace;
+  --font: 'Silkscreen', 'Pixelify Sans', 'Courier New', monospace; /* Silkscreen solo trae los números */
 }
 
 * { box-sizing: border-box; }

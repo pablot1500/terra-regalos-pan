@@ -30,8 +30,9 @@ export const PHYS = {
   accelAir: 620,
   jump: 182,
   stepUp: 9,             // sube escalones de 1 bloque solo
-  safeFallTiles: 6,      // caer más de esto (12 m) lastima
-  fallDmgPerTile: 6,     // daño por cada bloque extra de caída
+  safeFallTiles: 9,      // caer más de esto (18 m) lastima
+  safeFallPerArmor: 1.5, // cada nivel de armadura suma bloques de caída segura
+  fallDmgPerTile: 4,     // daño por cada bloque extra de caída
   jetAccel: 1050,
 };
 
@@ -145,7 +146,7 @@ export const SUPPLIES = {
   torch: { name: 'Antorcha', price: 25, desc: 'Se clava en la pared e ilumina alrededor. No se rompe al cavar.' },
   dyn: { name: 'Dinamita', price: 100, desc: 'Mecha de 3 segundos y ¡boom! Rompe un área grande.' },
 };
-export const TORCH = { radius: 9 };           // en bloques
+export const TORCH = { radius: 14 };           // en bloques
 export const DYNAMITE = { fuse: 3, radius: 38, damage: 40, powerMult: 1.6, powerAdd: 2 };
 
 // ---- Regalos ----

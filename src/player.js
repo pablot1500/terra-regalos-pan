@@ -251,8 +251,9 @@ export class Player {
       for (let i = 0; i < 5; i++) g.particles.add({ x: this.cx + (Math.random() - 0.5) * 6, y: this.y + this.h, vx: (Math.random() - 0.5) * 40, vy: -Math.random() * 20, life: 0.4, max: 0.4, color: 'rgba(210,190,160,0.8)', size: 1, grav: 60 });
       g.audio.play('land');
     }
-    if (fall > PHYS.safeFallTiles) {
-      const raw = (fall - PHYS.safeFallTiles) * PHYS.fallDmgPerTile;
+    const safe = PHYS.safeFallTiles + PHYS.safeFallPerArmor * g.upgrades.armadura;
+    if (fall > safe) {
+      const raw = (fall - safe) * PHYS.fallDmgPerTile;
       const dmg = Math.round(raw * (1 - g.stats.armor / 100));
       if (dmg > 0) this.hurt(dmg);
     }
