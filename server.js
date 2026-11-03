@@ -25,5 +25,5 @@ http.createServer((req, res) => {
     res.end(data);
   });
 }).listen(PORT, () => {
-  console.log(`Terra Regalos corriendo en http://localhost:${PORT}`);
+  console.log(`Terrari Pancha corriendo en http://localhost:${PORT}`);
 });

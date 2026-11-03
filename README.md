@@ -1,4 +1,4 @@
-# Terra Regalos
+# Terrari Pancha
 
 Un jueguito pixel art para el navegador: dos personajes cavan un pozo en el patio de su edificio, juntan monedas y billetes, mejoran su equipo en el taller y buscan tres regalos escondidos a **300 m**, **600 m** y **1000 m** de profundidad.
 

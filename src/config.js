@@ -1,5 +1,5 @@
 // ============================================================
-//  Terra Regalos — configuración general del juego
+//  Terrari Pancha — configuración general del juego
 //  Casi todo lo "ajustable" (precios, dureza, textos) vive acá.
 // ============================================================
 

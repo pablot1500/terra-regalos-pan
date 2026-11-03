@@ -1,4 +1,4 @@
-// Terra Regalos — loop principal y estado del juego.
+// Terrari Pancha — loop principal y estado del juego.
 import {
   TILE, SURFACE, WORLD_W, WORLD_H, DEFAULT_SEED, UPGRADES, ITEMS, GIFTS, HP_MAX,
   DEATH_MONEY_PENALTY, ENDING_TEXT, CHARACTERS, BRUSH_R, SUPPLIES, TORCH, DIG,
