@@ -17,7 +17,7 @@ import { UI } from './ui.js';
 import { store } from './save.js';
 import { fmtMoney, clamp } from './util.js';
 
-const STEP = 1 / 60;
+const STEP = 1 / 120;
 
 function computeStats(u) {
   const v = (id) => UPGRADES.find((x) => x.id === id).levels[u[id]][0];
@@ -441,8 +441,10 @@ class Game {
     this.scale = scale;
     this.vw = Math.ceil(W / scale);
     this.vh = Math.ceil(H / scale);
-    this.canvas.width = this.vw;
-    this.canvas.height = this.vh;
+    // el canvas va a resolución de pantalla; el arte se dibuja escalado (pixeles grandes)
+    // y la cámara se puede mover de a un pixel real: scroll suave sin perder el pixel art
+    this.canvas.width = this.vw * scale;
+    this.canvas.height = this.vh * scale;
     this.canvas.style.width = this.vw * scale + 'px';
     this.canvas.style.height = this.vh * scale + 'px';
     this.ctx.imageSmoothingEnabled = false;
@@ -454,10 +456,13 @@ class Game {
   frame(ts) {
     const dt = Math.min(0.1, (ts - this.lastTs) / 1000);
     this.lastTs = ts;
-    this.acc += dt;
-    let n = 0;
-    while (this.acc >= STEP && n < 6) { this.update(STEP); this.acc -= STEP; n++; }
-    if (n === 6) this.acc = 0;
+    // la física avanza exactamente lo que duró el cuadro, en pasos chicos (máx. 1/120 s)
+    // así cada cuadro dibujado muestra movimiento parejo, sea la pantalla de 60, 120 o 144 Hz
+    if (dt > 0) {
+      const n = Math.max(1, Math.ceil(dt / STEP));
+      const h = dt / n;
+      for (let i = 0; i < n; i++) this.update(h);
+    }
     this.render();
     requestAnimationFrame((t) => this.frame(t));
   }
@@ -557,7 +562,10 @@ class Game {
     const ctx = this.ctx, vw = this.vw, vh = this.vh;
     let sx = 0, sy = 0;
     if (this.shakeT > 0) { sx = (Math.random() - 0.5) * this.shakeA * 2; sy = (Math.random() - 0.5) * this.shakeA * 2; }
-    const camX = Math.round(this.cam.x + sx), camY = Math.round(this.cam.y + sy);
+    const S = this.scale;
+    ctx.setTransform(S, 0, 0, S, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    const camX = Math.round((this.cam.x + sx) * S) / S, camY = Math.round((this.cam.y + sy) * S) / S;
     const t = this.time;
 
     this.bg.draw(ctx, camX, camY, vw, vh, t);

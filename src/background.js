@@ -252,7 +252,8 @@ export class Background {
       const y1 = Math.round(skyTopY + (i + 1) * bandH);
       if (y1 < 0 || y0 > vh) continue;
       ctx.fillStyle = SKY[i];
-      ctx.fillRect(0, y0, vw, y1 - y0);
+      // la última banda llega hasta el suelo (que ahora puede estar en medio pixel)
+      ctx.fillRect(0, y0, vw, (i === SKY.length - 1 ? Math.ceil(gy) + 1 : y1) - y0);
       if (i > 0) {
         ctx.fillStyle = SKY[i - 1];
         for (let xx = (y0 & 1); xx < vw; xx += 2) ctx.fillRect(xx, y0, 1, 1);
