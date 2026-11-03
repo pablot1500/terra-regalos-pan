@@ -1,6 +1,6 @@
 // Interfaz HTML: HUD, taller, regalos, pausa y menú principal.
 import { UPGRADES, GIFTS, CHARACTERS, LAYERS, MAX_DEPTH, HP_MAX, SUPPLIES } from './config.js';
-import { ICON_URL, DOG } from './sprites.js';
+import { ICON_URL, DOG, POPI } from './sprites.js';
 import { fmtMoney } from './util.js';
 
 const $ = (id) => document.getElementById(id);
@@ -233,6 +233,24 @@ export class UI {
         row.appendChild(b);
       }
       card.appendChild(row);
+      list.appendChild(card);
+    }
+
+    section('Compañero');
+    {
+      const withMe = !!g.popi;
+      const card = document.createElement('div');
+      card.className = 'up supply';
+      card.innerHTML = `
+        <div class="up-ico"><img src="${(withMe ? POPI.right.idleA : DOG.happyA).toDataURL()}" alt="" style="width:36px;height:26px"></div>
+        <div><h4>Popi</h4><p class="desc">Tu perro salchicha. Con su casquito y su mini jetpack camina, salta y vuela solo detrás tuyo, y te ayuda a cavar los bloques de al lado. No gasta energía ni se lastima.</p></div>
+        <p class="have">${withMe ? 'Está con vos' : 'Está en el taller'}</p>
+      `;
+      const b = document.createElement('button');
+      b.className = 'btn buy' + (withMe ? ' alt' : '');
+      b.textContent = withMe ? 'Dejar a Popi en el taller' : 'Llevar a Popi';
+      b.addEventListener('click', () => g.togglePopi());
+      card.appendChild(b);
       list.appendChild(card);
     }
 

@@ -339,13 +339,21 @@ const DOG_PAL = {
   b: '#9a5428', B: '#6b3518', h: '#b8693a', l: '#d99a5a', n: '#1d1012', e: '#1d1012',
   c: '#d9344e', y: '#ffd34d', t: '#ff8fa3',
 };
-function paintDog(tailUp, blink, tongue) {
-  const [cv, x] = makeCanvas(18, 10);
-  const R = (a, b, w, h, k) => { x.fillStyle = DOG_PAL[k]; x.fillRect(a, b, w, h); };
+// legs: 'stand' | 'walkA' | 'walkB' | 'air' | 'dig'
+function paintDog(tailUp, blink, tongue, { legs = 'stand', helmet = false, jet = false } = {}) {
+  const [cv, x] = makeCanvas(18, 12);
+  const R = (a, b, w, h, k) => { x.fillStyle = DOG_PAL[k] || k; x.fillRect(a, b + 2, w, h); }; // +2: lugar para el casco
+  // mini jetpack (atrás, sobre el lomo)
+  if (jet) { R(10, 1, 4, 3, '#c3cad4'); R(10, 1, 1, 3, '#e8eef3'); R(13, 1, 1, 3, '#8a94a3'); R(11, 0, 2, 1, '#8a94a3'); R(12, 2, 1, 1, '#ff5a5a'); }
   // cuerpo largo y bajito
   R(5, 4, 11, 4, 'b'); R(7, 4, 7, 1, 'h'); R(6, 7, 9, 1, 'l');
   // patitas cortas
-  R(6, 8, 2, 2, 'B'); R(13, 8, 2, 2, 'B'); R(6, 9, 2, 1, 'l'); R(13, 9, 2, 1, 'l');
+  const leg = (lx, ly = 8, lh = 2) => { R(lx, ly, 2, lh, 'B'); R(lx, ly + lh - 1, 2, 1, 'l'); };
+  if (legs === 'walkA') { leg(5); leg(14); }
+  else if (legs === 'walkB') { leg(7); leg(12); }
+  else if (legs === 'air') { leg(6, 8, 1); leg(13, 8, 1); }
+  else if (legs === 'dig') { R(3, 6, 3, 2, 'B'); R(2, 7, 1, 1, 'l'); leg(13); }
+  else { leg(6); leg(13); }
   // cola
   if (tailUp) { R(16, 4, 1, 1, 'b'); R(16, 3, 1, 1, 'b'); R(17, 2, 1, 1, 'b'); }
   else { R(16, 4, 1, 1, 'b'); R(17, 5, 1, 1, 'b'); }
@@ -359,15 +367,32 @@ function paintDog(tailUp, blink, tongue) {
   R(5, 1, 2, 5, 'B');
   // collar con chapita
   R(7, 4, 1, 3, 'c'); R(7, 7, 1, 1, 'y');
+  // casquito de minero con lámpara
+  if (helmet) {
+    R(2, -2, 5, 1, '#f2c14e'); R(1, -1, 7, 2, '#f2c14e'); R(2, -1, 1, 1, '#fff3a8');
+    R(1, 1, 7, 1, '#c8871a'); R(0, -1, 1, 2, '#fff3a8');
+  }
   return outlined(cv, '#2b1a12');
 }
 export const DOG = {};
+// Popi aventurero: casquito + mini jetpack, mirando a la izquierda (left) y a la derecha (right)
+export const POPI = { left: {}, right: {} };
 function initDog() {
   DOG.a = paintDog(true, false, false);
   DOG.b = paintDog(false, false, false);
   DOG.blink = paintDog(true, true, false);
   DOG.happyA = paintDog(true, false, true);
   DOG.happyB = paintDog(false, false, true);
+  const gear = { helmet: true, jet: true };
+  const frames = {
+    idleA: [true, false, true, 'stand'], idleB: [false, false, true, 'stand'], blink: [true, true, false, 'stand'],
+    walkA: [true, false, true, 'walkA'], walkB: [false, false, true, 'walkB'],
+    air: [true, false, false, 'air'], digA: [true, false, false, 'dig'], digB: [false, false, false, 'stand'],
+  };
+  for (const [k, [tail, blink, tongue, legs]] of Object.entries(frames)) {
+    POPI.left[k] = paintDog(tail, blink, tongue, { legs, ...gear });
+    POPI.right[k] = flipH(POPI.left[k]);
+  }
 }
 
 // ============================================================

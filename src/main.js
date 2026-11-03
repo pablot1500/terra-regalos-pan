@@ -12,6 +12,7 @@ import { Background } from './background.js';
 import { Lighting } from './lighting.js';
 import { Particles, Pickups, FloatTexts } from './entities.js';
 import { Player } from './player.js';
+import { Popi } from './popi.js';
 import { Input } from './input.js';
 import { Audio } from './audio.js';
 import { UI } from './ui.js';
@@ -99,6 +100,7 @@ class Game {
     this.tips = {};
     this.inv = { torch: 0 };
     this.torches = [];
+    this.popi = null;
     this.players = [new Player(this, this.charId)];
     this.pickups.list = [];
     this.particles.list = [];
@@ -137,6 +139,7 @@ class Game {
     Object.assign(this.counters, d.counters || {});
     this.tips = d.tips || {};
     this.inv = { torch: (d.inv && Number.isFinite(d.inv.torch)) ? d.inv.torch : 0 };
+    this.popiWith = !!d.popi;
     this.torches = Array.isArray(d.torches)
       ? d.torches.filter((t) => t && Number.isFinite(t.x) && Number.isFinite(t.y)).map((t) => ({ x: t.x, y: t.y, seed: Number.isFinite(t.seed) ? t.seed : Math.random() * 10 }))
       : [];
@@ -156,6 +159,8 @@ class Game {
 
   startPlaying() {
     this.state = 'play';
+    this.popi = this.popiWith ? new Popi(this) : null;
+    this.popiWith = false;
     this.ui.setPlaying(true);
     const p = this.players[0];
     this.cam.x = p.cx - this.vw / 2;
@@ -176,6 +181,7 @@ class Game {
       tips: this.tips,
       inv: this.inv,
       torches: this.torches.map((t) => ({ x: t.x, y: t.y, seed: t.seed })),
+      popi: !!this.popi,
       player: p ? { char: p.char, x: p.x, y: p.y, hp: p.hp, energy: p.energy } : null,
       savedAt: Date.now(),
     };
@@ -299,6 +305,21 @@ class Game {
     for (let i = 0; i < 6; i++) this.particles.add({ x, y, vx: (Math.random() - 0.5) * 30, vy: -Math.random() * 30, life: 0.5, max: 0.5, color: '#ffd34d', size: 1, grav: 40 });
   }
 
+  togglePopi() {
+    if (this.popi) {
+      this.popi.poof();
+      this.popi = null;
+      this.ui.toast('Popi se quedó en el taller', 'good');
+    } else {
+      this.popi = new Popi(this);
+      this.popi.poof();
+      this.audio.play('bark');
+      this.ui.toast('¡Popi se puso el casco y viene con vos!', 'good');
+    }
+    this.ui.renderShop();
+    this.save();
+  }
+
   openShop() {
     if (this.state !== 'play') return;
     this.state = 'shop';
@@ -381,6 +402,7 @@ class Game {
         onClick: () => {
           this.money -= lost;
           player.spawn();
+          if (this.popi) this.popi.place();
           player.hp = HP_MAX;
           player.energy = this.stats.energyMax;
           this.cam.x = player.cx - this.vw / 2;
@@ -441,7 +463,8 @@ class Game {
       if (inp.autoPressed) this.ui.toggleAuto();
       this.counters.playTime += dt;
       for (const pl of this.players) pl.update(dt, inp);
-      if (p.inShop && !this.wasInShop) {
+      if (this.popi) this.popi.update(dt);
+      if (p.inShop && !this.wasInShop && !this.popi) {
         this.audio.play('bark');
         this.addText(DOG_POS.x + 9, DOG_POS.y - 4, '¡GUAU!', '#fff4e0');
       }
@@ -487,6 +510,7 @@ class Game {
     this.lights = [];
     const cx0 = this.cam.x / TILE - 12, cx1 = (this.cam.x + this.vw) / TILE + 12;
     const cy0 = this.cam.y / TILE - 12, cy1 = (this.cam.y + this.vh) / TILE + 12;
+    if (this.popi) this.lights.push([this.popi.cx / TILE, this.popi.cy / TILE, 3.5, 0.85]);
     for (const tq of this.torches) {
       const tx = tq.x / TILE, ty = tq.y / TILE;
       if (tx < cx0 || tx > cx1 || ty < cy0 || ty > cy1) continue;
@@ -626,8 +650,8 @@ class Game {
     const blink = (t % 4.3) > 4.15;
     const wag = Math.floor(t / (near ? 0.11 : 0.55)) % 2;
     const dogSpr = blink ? DOG.blink : near ? (wag ? DOG.happyB : DOG.happyA) : (wag ? DOG.b : DOG.a);
-    ctx.drawImage(dogSpr, DOG_POS.x - camX, DOG_POS.y - camY);
-    if (near && Math.random() < 0.02) {
+    if (!this.popi) ctx.drawImage(dogSpr, DOG_POS.x - camX, DOG_POS.y - camY);
+    if (!this.popi && near && Math.random() < 0.02) {
       this.particles.add({ x: DOG_POS.x + 5, y: DOG_POS.y - 2, vx: 0, vy: -12, life: 1, max: 1, heart: true, grav: 0 });
     }
 
@@ -637,6 +661,7 @@ class Game {
       drawTorch(ctx, x, y, t, tq.seed);
     }
     this.pickups.draw(ctx, camX, camY, t);
+    if (this.popi && this.state !== 'title') this.popi.draw(ctx, camX, camY);
     if (this.state !== 'title') for (const p of this.players) p.draw(ctx, camX, camY);
     this.particles.draw(ctx, camX, camY);
     this.lighting.draw(ctx, this, camX, camY, vw, vh, t);
