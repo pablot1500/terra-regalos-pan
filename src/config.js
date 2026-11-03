@@ -48,6 +48,7 @@ export const DIG = {
   energyCost: [0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35], // energía por palazo según el nivel de pala
   reach: 6,          // px de alcance más allá del borde del personaje
   reachMult: 1.3,    // multiplicador del alcance total (+30%)
+  reachPerUpgrade: 0.05, // +5% de alcance por cada mejora de fuerza o de pala ancha
 };
 
 // Radio (en px) del círculo que saca cada palazo, según el nivel de pala ancha
@@ -105,14 +106,14 @@ export const LAYER_LOOT = [
 export const UPGRADES = [
   {
     id: 'pala', name: 'Herramienta de cavar', icon: 'shovel',
-    desc: 'Más fuerza: rompe materiales más duros y cava más rápido.',
+    desc: 'Más fuerza: rompe materiales más duros, cava más rápido y llega un poco más lejos.',
     levels: [[1, 0], [2, 60], [4, 330], [7, 1350], [11, 4800], [16, 15000], [24, 36000], [34, 80000]],
     label: (v) => `Fuerza ${v}`,
     tiers: ['Pala de hierro', 'Pala de acero', 'Pala de oro', 'Taladro', 'Taladro turbo', 'Taladro de diamante', 'Mega taladro del amor', 'Taladro cósmico'],
   },
   {
     id: 'ancho', name: 'Pala ancha', icon: 'wide',
-    desc: 'Cava más área de un solo palazo.',
+    desc: 'Cava más área de un solo palazo y llega un poco más lejos.',
     levels: [[0, 0], [1, 220], [2, 1200], [3, 4500], [4, 13500], [5, 32000]],
     label: (v) => ['Ancha', 'Muy ancha', 'Enorme', 'Gigante', 'Colosal', 'Titánica'][v],
   },
@@ -125,21 +126,26 @@ export const UPGRADES = [
   {
     id: 'armadura', name: 'Armadura', icon: 'armor',
     desc: 'Te protege de los golpes cuando caés de muy alto.',
-    levels: [[0, 0], [25, 120], [45, 600], [60, 2250], [75, 6750], [90, 16500]],
-    label: (v) => (v ? `-${v}% de daño` : 'Sin armadura'),
+    levels: [[0, 0], [25, 120], [45, 600], [60, 2250], [75, 6750], [90, 16500], [100, 32000]],
+    label: (v) => (v >= 100 ? 'Inmune a las caídas' : v ? `-${v}% de daño` : 'Sin armadura'),
   },
   {
-    id: 'motor', name: 'Motor del jetpack', icon: 'rocket',
-    desc: 'Volás más rápido y con más fuerza.',
-    levels: [[85, 0], [115, 150], [150, 680], [190, 2400], [235, 7500], [290, 18000]],
-    label: (v) => `Velocidad ${v}`,
-    tiers: ['Jetpack básico', 'Jetpack sport', 'Jetpack turbo', 'Jetpack a reacción', 'Cohete', 'Cohete supersónico'],
+    // motor y eficiencia en una sola mejora: s = velocidad, e = energía por segundo
+    id: 'motor', name: 'Jetpack', icon: 'rocket',
+    desc: 'Volás más rápido y gastando menos energía.',
+    levels: [
+      [{ s: 85, e: 6 }, 0], [{ s: 115, e: 4.6 }, 260], [{ s: 150, e: 3.5 }, 1200], [{ s: 190, e: 2.6 }, 4300],
+      [{ s: 235, e: 1.9 }, 13000], [{ s: 290, e: 1.3 }, 30000], [{ s: 350, e: 0.8 }, 60000],
+    ],
+    label: (v) => `Vel. ${v.s} · ${String(v.e).replace('.', ',')}/seg`,
+    tiers: ['Jetpack básico', 'Jetpack sport', 'Jetpack turbo', 'Jetpack a reacción', 'Cohete', 'Cohete supersónico', 'Cohete estelar'],
   },
   {
-    id: 'eficiencia', name: 'Eficiencia del jetpack', icon: 'leaf',
-    desc: 'El jetpack gasta menos energía por segundo.',
-    levels: [[6, 0], [4.6, 140], [3.5, 600], [2.6, 2100], [1.9, 6300], [1.3, 15000]],
-    label: (v) => `${String(v).replace('.', ',')} energía/seg`,
+    id: 'casco', name: 'Casco de minero', icon: 'helmet',
+    desc: 'La lámpara del casco ilumina más lejos bajo tierra.',
+    levels: [[7.5, 0], [9, 120], [10.5, 550], [12, 1900], [14, 5800], [16, 14000], [19, 30000]],
+    label: (v) => `Luz ${Math.round(v * 2)} m`,
+    tiers: ['Linterna chiquita', 'Casco de minero', 'Casco con LED', 'Casco reflector', 'Casco faro', 'Casco solar', 'Casco de estrella'],
   },
 ];
 

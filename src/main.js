@@ -1,7 +1,7 @@
 // Terra Regalos — loop principal y estado del juego.
 import {
   TILE, SURFACE, WORLD_W, WORLD_H, DEFAULT_SEED, UPGRADES, ITEMS, GIFTS, HP_MAX,
-  DEATH_MONEY_PENALTY, ENDING_TEXT, CHARACTERS, BRUSH_R, SUPPLIES, TORCH,
+  DEATH_MONEY_PENALTY, ENDING_TEXT, CHARACTERS, BRUSH_R, SUPPLIES, TORCH, DIG,
 } from './config.js';
 import { initTiles } from './tiles.js';
 import { initSprites, drawChest, drawGiftBox, drawTorch, CAT } from './sprites.js';
@@ -27,8 +27,10 @@ function computeStats(u) {
     brushR: BRUSH_R[v('ancho')],
     energyMax: v('bateria'),
     armor: v('armadura'),
-    jetSpeed: v('motor'),
-    jetCost: v('eficiencia'),
+    jetSpeed: v('motor').s,
+    jetCost: v('motor').e,
+    lightR: v('casco'),
+    reach: DIG.reachMult * (1 + DIG.reachPerUpgrade * (u.pala + u.ancho)),
   };
 }
 
@@ -116,7 +118,10 @@ class Game {
     if (d.v === 2) this.world.importDug(d.dug);
     else this.world.importDugTiles(d.dug);
     this.money = d.money || 0;
-    for (const u of UPGRADES) this.upgrades[u.id] = clamp((d.upgrades && d.upgrades[u.id]) || 0, 0, u.levels.length - 1);
+    const du = d.upgrades || {};
+    for (const u of UPGRADES) this.upgrades[u.id] = clamp(du[u.id] || 0, 0, u.levels.length - 1);
+    // partidas viejas: motor y eficiencia del jetpack eran mejoras separadas
+    if (du.eficiencia) this.upgrades.motor = clamp(Math.max(du.motor || 0, du.eficiencia), 0, UPGRADES.find((u) => u.id === 'motor').levels.length - 1);
     this.stats = computeStats(this.upgrades);
     this.openedGifts = d.gifts || [];
     for (const ch of this.world.chests) if (this.openedGifts.includes(ch.id)) { ch.opened = true; ch.open = 1; }

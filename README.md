@@ -41,8 +41,10 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
   - **Pala → Taladro**: más fuerza (desde el nivel 3 pasa a ser un taladro; el último es el Taladro cósmico). Cada capa (tierra, arcilla, piedra, granito, basalto, abismo) necesita una pala más fuerte.
   - **Pala ancha**: cava más bloques por palazo.
   - **Batería**: más energía.
-  - **Armadura**: menos daño por caídas.
-  - **Jetpack: Motor** y **Jetpack: Eficiencia**: volar más rápido y gastando menos.
+  - **Armadura**: menos daño por caídas (el último nivel te hace inmune).
+  - **Jetpack**: volar más rápido y gastando menos energía.
+  - **Casco de minero**: la lámpara ilumina más lejos bajo tierra.
+  - Cada mejora de la pala/taladro y de la pala ancha también suma un poco de alcance para cavar.
 - En el taller también se compran **antorchas** ($25): iluminan una zona grande y no se rompen al cavar.
 - Cavar y volar gastan energía. En el departamento se recargan la energía y la vida.
 - Si te quedás sin energía bajo tierra o te caés muy fuerte, te desmayás: volvés a casa y perdés el 10% de la plata.

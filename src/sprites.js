@@ -99,7 +99,7 @@ export const CHAR_PAL = {
   },
 };
 
-function composeFrame(charId, legsKey, bob, blink, jet = 0) {
+function composeFrame(charId, legsKey, bob, blink, jet = 0, helmet = 0) {
   const pal = { ...CHAR_PAL[charId], ...JET_TIERS[Math.min(jet, JET_TIERS.length - 1)] };
   const [c, x] = makeCanvas(CHAR_W, CHAR_H);
   const legs = mapSprite(LEGS[legsKey], pal);
@@ -107,6 +107,8 @@ function composeFrame(charId, legsKey, bob, blink, jet = 0) {
   const top = blink ? BODY_TOP.map((r, i) => (i === 4 || i === 5 ? r.replace(/[ew]/g, i === 5 ? 'S' : 's') : r)) : BODY_TOP;
   x.drawImage(mapSprite(top, pal), 0, bob);
   x.drawImage(mapSprite(HAIR[charId], pal), 0, bob);
+  const H = HELMET_TIERS[Math.min(helmet, HELMET_TIERS.length - 1)];
+  if (H) x.drawImage(mapSprite(HELMET, { o: '#2b1d2b', ...H }), 0, bob);
   return c;
 }
 
@@ -128,14 +130,32 @@ export const JET_TIERS = [
   { j: '#ff8a72', J: '#c0392b', r: '#ffd34d' },
   { j: '#ffd860', J: '#c8871a', r: '#ff4d6d' },
   { j: '#ffa8d6', J: '#c9578a', r: '#8fe9ff' },
+  { j: '#eafcff', J: '#7fd8ff', r: '#ff7ac8' },
+];
+
+// casco de minero (desde el nivel 1): color del casco y de la lámpara por nivel
+export const HELMET_TIERS = [
+  null,
+  { Y: '#f2c14e', y: '#c8871a', w: '#fff3a8', l: '#5b636d', L: '#fff3a8' },
+  { Y: '#ff8a3d', y: '#c0562a', w: '#ffc8a0', l: '#5b636d', L: '#ffffff' },
+  { Y: '#eef2f5', y: '#a9b4bd', w: '#ffffff', l: '#5b636d', L: '#bff3ff' },
+  { Y: '#9ab8d6', y: '#5b7a9c', w: '#dbe9f7', l: '#3a3f45', L: '#eafcff' },
+  { Y: '#ffd34d', y: '#c8871a', w: '#fff7c8', l: '#9c6a12', L: '#ffffff' },
+  { Y: '#c49bff', y: '#7a4fc9', w: '#efe3ff', l: '#4a2c8a', L: '#fff3a8' },
+];
+const HELMET = [
+  '.....oooooo...',
+  '....oYwYYYYYlL',
+  '...oYYYYYYYYlL',
+  '..oyyyyyyyyyy.',
 ];
 const charCache = {};
-export function getCharFrames(charId, jet = 0) {
-  const ck = charId + ':' + jet;
+export function getCharFrames(charId, jet = 0, helmet = 0) {
+  const ck = charId + ':' + jet + ':' + helmet;
   if (charCache[ck]) return charCache[ck];
   const right = {}, left = {};
   for (const [name, [legs, bob, blink]] of Object.entries(FRAME_DEFS)) {
-    right[name] = composeFrame(charId, legs, bob, blink, jet);
+    right[name] = composeFrame(charId, legs, bob, blink, jet, helmet);
     left[name] = flipH(right[name]);
   }
   return (charCache[ck] = { right, left });
@@ -411,13 +431,20 @@ function initIcons() {
     }
     ICON_URL['pala_' + lvl] = outlined(c, '#1d1420').toDataURL();
   }
-  for (let lvl = 0; lvl < 6; lvl++) {
+  for (let lvl = 0; lvl < 7; lvl++) {
     const J = JET_TIERS[lvl];
     const rows = ['...R...', '..RRR..', '..jWj..', '..jbj..', '..jJj..', '.RjJjR.', lvl >= 3 ? 'RR.k.RR' : '.R.k.R.'];
     const fl = 1 + Math.floor(lvl / 2);
     const flames = [['...y...'], ['..yYy..', '...y...'], ['..yYy..', '..yYy..', '...y...'], ['.yyYyy.', '..yYy..', '..yYy..', '...y...']][Math.min(fl, 4) - 1];
     c_ = mapSprite(rows.concat(flames), { ...ICON_PAL, j: J.j, J: J.J, W: '#e8f6ff', R: J.r === '#ffd34d' ? '#ff4d6d' : '#ff4d6d', b: '#3a3f45' });
     ICON_URL['motor_' + lvl] = outlined(c_, '#1d1420').toDataURL();
+  }
+  for (let lvl = 0; lvl < 7; lvl++) {
+    const H = HELMET_TIERS[lvl];
+    const spr = H
+      ? mapSprite(lvl >= 4 ? ['.........W', '..YYYYY.W.', '.YwYYYYlL.', '.YYYYYYlLW', 'yyyyyyyyy.'] : ['..YYYYY...', '.YwYYYYlL.', '.YYYYYYlL.', 'yyyyyyyyy.'], { ...H, W: H.L })
+      : mapSprite(['LLk.....', 'LLkkkkkk', 'LLkkkkkk', 'LLk.....'], { L: '#fff3a8', k: '#5b636d' });
+    ICON_URL['casco_' + lvl] = outlined(spr, '#1d1420').toDataURL();
   }
   ICON_URL.torch = outlined(mapSprite(['..y..', '.yYy.', '.yYy.', '.kkk.', '..w..', '..w..', '..w..', '..w..'], { ...ICON_PAL, y: '#ff9a3d', Y: '#fff3a8', k: '#3a3f45', w: '#a8703f' }), '#1d1420').toDataURL();
   const [gc, gx] = makeCanvas(13, 14);

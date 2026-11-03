@@ -23,7 +23,7 @@ export class Lighting {
 
     // fuentes de luz
     const src = [];
-    for (const p of game.players) if (!p.dead) src.push([p.cx / TILE, (p.y + 4) / TILE, 7.5, 1]);
+    for (const p of game.players) if (!p.dead) src.push([p.cx / TILE, (p.y + 4) / TILE, game.stats.lightR, 1]);
     for (const ch of W.chests) {
       const flick = 0.9 + Math.sin(t * 3) * 0.08;
       src.push([ch.c + 0.5, ch.r - 1, ch.opened ? 4 : 6.5, flick]);

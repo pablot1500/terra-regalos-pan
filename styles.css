@@ -224,6 +224,7 @@ body.touch .inv kbd { display: none; }
 .up .vals .next { color: var(--green); }
 .up .buy { grid-column: 1 / -1; width: 100%; font-size: 16px; padding: 7px; }
 .up.max .buy { background: #6b5a75; }
+.up.supply { grid-column: 1 / -1; }
 .shop-section { grid-column: 1 / -1; margin: 6px 0 -2px; font-size: 15px; color: var(--gold); text-shadow: 0 2px 0 var(--ink); }
 .up .tier { font-size: 13px; color: var(--pink); margin: 0; }
 .up .buy-row { grid-column: 1 / -1; display: flex; gap: 8px; }

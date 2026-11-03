@@ -116,7 +116,7 @@ export class Player {
     const ox = this.cx, oy = this.cy - 1;
     // distancia del centro al borde del personaje en esa dirección
     const edge = Math.min(Math.abs(aim.x) > 0.01 ? (this.w / 2) / Math.abs(aim.x) : 99, Math.abs(aim.y) > 0.01 ? (this.h / 2 + (aim.y > 0 ? 1 : -1)) / Math.abs(aim.y) : 99);
-    const maxD = (edge + DIG.reach + 8 * Math.abs(aim.x * aim.y)) * DIG.reachMult;
+    const maxD = (edge + DIG.reach + 8 * Math.abs(aim.x * aim.y)) * this.game.stats.reach;
     const R = BRUSH_R[this.game.stats.brush];
     const push = R * 0.5;
     const hit = W.probe(ox, oy, aim.x, aim.y, maxD);
@@ -359,7 +359,7 @@ export class Player {
   draw(ctx, camX, camY) {
     if (this.dead) return;
     if (this.hurtT > 0 && Math.floor(this.hurtT * 20) % 2 === 0) return;
-    const frames = getCharFrames(this.char, this.game.upgrades.motor)[this.facing > 0 ? 'right' : 'left'];
+    const frames = getCharFrames(this.char, this.game.upgrades.motor, this.game.upgrades.casco)[this.facing > 0 ? 'right' : 'left'];
     let frame;
     if (!this.onGround) frame = 'air';
     else if (Math.abs(this.vx) > 5 && !this.digging) frame = ['walkA', 'walkB', 'walkC', 'walkB'][Math.floor(this.walkT * 9) % 4];

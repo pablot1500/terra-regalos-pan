@@ -179,7 +179,7 @@ export class UI {
     section('Consumibles');
     for (const [id, it] of Object.entries(SUPPLIES)) {
       const card = document.createElement('div');
-      card.className = 'up';
+      card.className = 'up supply';
       card.innerHTML = `
         <div class="up-ico"><img src="${ICON_URL[id]}" alt=""></div>
         <div><h4>${it.name} · ${fmtMoney(it.price)}</h4><p class="desc">${it.desc}</p></div>
