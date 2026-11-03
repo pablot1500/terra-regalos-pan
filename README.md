@@ -23,13 +23,13 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 | Acción | Teclado / mouse | Celular |
 |---|---|---|
 | Caminar | A / D o ← → | Joystick |
+| Correr (también volando) | Shift | Joystick a fondo |
 | Saltar · volar con el jetpack | Espacio o W (mantener) | SALTAR (mantener) |
 | Bajar volando despacio | Espacio + S | SALTAR + joystick abajo |
 | Cavar hacia abajo | S o ↓ | Joystick abajo |
 | Cavar en cualquier dirección | Click (apuntando con el mouse) | CAVAR + joystick (360°) |
 | Cavar con teclado | J + W/A/S/D (8 direcciones) | — |
 | Poner antorcha | T | Botón de antorcha |
-| Poner dinamita | G | Botón de dinamita |
 | Abrir el taller | E | Botón TALLER |
 | Pausa | Esc | Botón ❚❚ |
 
@@ -38,12 +38,12 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 - Arrancan en el departamento **1B**. Bajan por la escalera al patio y cavan en el **cantero del medio** (las baldosas no se rompen).
 - La tierra esconde monedas, billetes, lingotes y gemas. Todo va a una billetera compartida.
 - En el **Taller** (a la derecha del patio, con el gato) se compran mejoras, compartidas para los dos:
-  - **Pala → Taladro**: más fuerza (desde el nivel 3 pasa a ser un taladro). Cada capa (tierra, arcilla, piedra, granito, basalto, abismo) necesita una pala más fuerte.
+  - **Pala → Taladro**: más fuerza (desde el nivel 3 pasa a ser un taladro; el último es el Taladro cósmico). Cada capa (tierra, arcilla, piedra, granito, basalto, abismo) necesita una pala más fuerte.
   - **Pala ancha**: cava más bloques por palazo.
   - **Batería**: más energía.
   - **Armadura**: menos daño por caídas.
   - **Jetpack: Motor** y **Jetpack: Eficiencia**: volar más rápido y gastando menos.
-- En el taller también se compran **antorchas** ($25, iluminan y no se rompen al cavar) y **dinamita** ($100, explota a los 3 segundos).
+- En el taller también se compran **antorchas** ($25): iluminan una zona grande y no se rompen al cavar.
 - Cavar y volar gastan energía. En el departamento se recargan la energía y la vida.
 - Si te quedás sin energía bajo tierra o te caés muy fuerte, te desmayás: volvés a casa y perdés el 10% de la plata.
 - El medidor de la derecha marca la profundidad y dónde están los regalos.

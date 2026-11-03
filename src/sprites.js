@@ -182,6 +182,7 @@ const DRILL_TIERS = [
   { body: '#ff6b3d', dark: '#a8321a', hi: '#ffc0a8' },  // turbo
   { body: '#6fdcff', dark: '#2c8db5', hi: '#eafcff' },  // diamante
   { body: '#ff7ac8', dark: '#b0307a', hi: '#ffe1f3' },  // del amor
+  { body: '#6a4cff', dark: '#2a1b8a', hi: '#d4c8ff', cosmic: true }, // cósmico
 ];
 
 /** Taladro en la mano, apuntando en `ang` (local, mirando a la derecha). `spin` anima la mecha. */
@@ -210,8 +211,16 @@ export function drawDrill(ctx, sx, sy, facing, bob, ang, level, charId, spin) {
     const wmax = t < 6 ? 1 : 0;
     for (let w = -wmax; w <= wmax; w++) {
       const stripe = (Math.floor(t * 2) + ph) % 2 === 0;
-      px(hx + ca * t + nx * w, hy + sa * t + ny * w, stripe ? '#e8eef3' : '#7d8796');
+      const cols = T.cosmic ? ['#8fe9ff', '#ff7ac8'] : ['#e8eef3', '#7d8796'];
+      px(hx + ca * t + nx * w, hy + sa * t + ny * w, stripe ? cols[0] : cols[1]);
     }
+  }
+  // estrellitas del taladro cósmico
+  if (T.cosmic) {
+    const tw = Math.floor(performance.now() / 120);
+    const stars = ['#ffffff', '#fff3a8', '#8fe9ff', '#ff9ccc'];
+    px(hx + ca * (tw % 5) + nx * ((tw >> 1) % 3 - 1), hy + sa * (tw % 5) + ny * ((tw >> 1) % 3 - 1), stars[tw % 4]);
+    px(hx + ca * 1 + nx * 0, hy + sa * 1, stars[(tw + 2) % 4]);
   }
   // brazo + mano
   pixelLine(ctx, mx(shX), my(shY), mx(hx - ca), my(hy - sa), pal.C);
@@ -387,7 +396,7 @@ function initIcons() {
     ICON_URL[k] = c.toDataURL();
   }
   // íconos que evolucionan con el nivel: pala → taladro, jetpack → cohete
-  for (let lvl = 0; lvl < 7; lvl++) {
+  for (let lvl = 0; lvl < 8; lvl++) {
     let c;
     if (lvl < 3) {
       const b = SHOVEL_BLADES[lvl];
@@ -397,7 +406,8 @@ function initIcons() {
       const T = DRILL_TIERS[lvl];
       const rows = ['.HBBBB....', 'kBBBBBmMm.', 'kBBBBBMmMm', 'kBBBBBmMm.', '.DDkDD....', '...kk.....', '...kk.....'];
       if (lvl >= 5) rows.unshift('......Y...', '.....Y.Y..');
-      c = mapSprite(rows, { ...ICON_PAL, B: T.body, H: T.hi, D: T.dark, k: '#3a3f45', m: '#7d8796', M: '#e8eef3', Y: '#fff3a8' });
+      if (T.cosmic) rows.unshift('..Y.....Y.', '.YyY...YyY', '..Y.....Y.');
+      c = mapSprite(rows, { ...ICON_PAL, B: T.body, H: T.hi, D: T.dark, k: '#3a3f45', m: T.cosmic ? '#ff7ac8' : '#7d8796', M: T.cosmic ? '#8fe9ff' : '#e8eef3', Y: '#fff3a8', y: '#ff9ccc' });
     }
     ICON_URL['pala_' + lvl] = outlined(c, '#1d1420').toDataURL();
   }
@@ -410,7 +420,6 @@ function initIcons() {
     ICON_URL['motor_' + lvl] = outlined(c_, '#1d1420').toDataURL();
   }
   ICON_URL.torch = outlined(mapSprite(['..y..', '.yYy.', '.yYy.', '.kkk.', '..w..', '..w..', '..w..', '..w..'], { ...ICON_PAL, y: '#ff9a3d', Y: '#fff3a8', k: '#3a3f45', w: '#a8703f' }), '#1d1420').toDataURL();
-  ICON_URL.dyn = outlined(mapSprite(['.....Y.', '....y..', '...k...', '.RRRR..', '.RrRR..', '.RWWR..', '.RrRR..', '.RRRR..'], { R: '#d9344e', r: '#ff7b7b', W: '#f4f1ea', k: '#3a3f45', y: '#ffd23f', Y: '#fff3a8' }), '#1d1420').toDataURL();
   const [gc, gx] = makeCanvas(13, 14);
   drawGiftBox(gx, 1, 1);
   ICON_URL.giftBig = outlined(gc, '#1d1420').toDataURL();
@@ -431,15 +440,4 @@ export function drawTorch(ctx, x, y, t, seed) {
   if (f === 0) { R(0, -2, 1, 2, '#ff8a3d'); R(0, -1, 1, 1, '#fff3a8'); }
   else if (f === 1) { R(-1, -1, 1, 1, '#ff8a3d'); R(1, -2, 1, 2, '#ffd34d'); }
   else { R(0, -3, 1, 2, '#ff6b3d'); R(1, -1, 1, 1, '#ffd34d'); }
-}
-
-export function drawDynamite(ctx, x, y, t, left) {
-  // (x, y) = centro de la base
-  const R = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + a, y + b, w, h); };
-  const flash = left < 1 && Math.floor(t * 16) % 2 === 0;
-  R(-2, -6, 4, 6, flash ? '#ffffff' : '#d9344e');
-  R(-2, -6, 1, 6, flash ? '#ffffff' : '#ff7b7b');
-  R(-2, -4, 4, 1, '#f4f1ea');
-  R(0, -8, 1, 2, '#3a3f45');
-  if (Math.floor(t * 20) % 2) R(1, -9, 1, 1, '#fff3a8'); else R(0, -9, 1, 1, '#ffd23f');
 }

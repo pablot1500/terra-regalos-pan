@@ -34,6 +34,7 @@ export const PHYS = {
   safeFallPerArmor: 1.5, // cada nivel de armadura suma bloques de caída segura
   fallDmgPerTile: 4,     // daño por cada bloque extra de caída
   jetAccel: 1050,
+  sprintMult: 1.7,       // Shift: correr (también volando)
 };
 
 export const HP_MAX = 100;
@@ -44,12 +45,13 @@ export const DEATH_MONEY_PENALTY = 0.1; // pierden 10% de la plata si se desmaya
 export const DIG = {
   baseTime: 0.42,    // segundos por palazo cuando fuerza == dureza
   minTime: 0.07,
-  energyCost: [0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4], // energía por palazo según el nivel de pala
+  energyCost: [0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35], // energía por palazo según el nivel de pala
   reach: 6,          // px de alcance más allá del borde del personaje
+  reachMult: 1.3,    // multiplicador del alcance total (+30%)
 };
 
 // Radio (en px) del círculo que saca cada palazo, según el nivel de pala ancha
-export const BRUSH_R = [8.5, 10, 11.5, 13.5, 16];
+export const BRUSH_R = [10, 11.5, 13.5, 16, 19];
 
 // Colores del filo de la pala según el nivel de fuerza
 export const SHOVEL_BLADES = [
@@ -104,15 +106,15 @@ export const UPGRADES = [
   {
     id: 'pala', name: 'Herramienta de cavar', icon: 'shovel',
     desc: 'Más fuerza: rompe materiales más duros y cava más rápido.',
-    levels: [[1, 0], [2, 60], [4, 330], [7, 1350], [11, 4800], [16, 15000], [24, 36000]],
+    levels: [[1, 0], [2, 60], [4, 330], [7, 1350], [11, 4800], [16, 15000], [24, 36000], [34, 80000]],
     label: (v) => `Fuerza ${v}`,
-    tiers: ['Pala de hierro', 'Pala de acero', 'Pala de oro', 'Taladro', 'Taladro turbo', 'Taladro de diamante', 'Mega taladro del amor'],
+    tiers: ['Pala de hierro', 'Pala de acero', 'Pala de oro', 'Taladro', 'Taladro turbo', 'Taladro de diamante', 'Mega taladro del amor', 'Taladro cósmico'],
   },
   {
     id: 'ancho', name: 'Pala ancha', icon: 'wide',
     desc: 'Cava más área de un solo palazo.',
     levels: [[0, 0], [1, 220], [2, 1200], [3, 4500], [4, 13500]],
-    label: (v) => ['Normal', 'Ancha', 'Muy ancha', 'Enorme', 'Gigante'][v],
+    label: (v) => ['Ancha', 'Muy ancha', 'Enorme', 'Gigante', 'Colosal'][v],
   },
   {
     id: 'bateria', name: 'Batería', icon: 'battery',
@@ -144,10 +146,8 @@ export const UPGRADES = [
 // ---- Consumibles (precio fijo, sin límite de cantidad) ----
 export const SUPPLIES = {
   torch: { name: 'Antorcha', price: 25, desc: 'Se clava en la pared e ilumina alrededor. No se rompe al cavar.' },
-  dyn: { name: 'Dinamita', price: 100, desc: 'Mecha de 3 segundos y ¡boom! Rompe un área grande.' },
 };
 export const TORCH = { radius: 14 };           // en bloques
-export const DYNAMITE = { fuse: 3, radius: 38, damage: 40, powerMult: 1.6, powerAdd: 2 };
 
 // ---- Regalos ----
 // Textos de prueba: después los cambiamos por los regalos de verdad.

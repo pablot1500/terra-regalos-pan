@@ -116,7 +116,7 @@ export class Player {
     const ox = this.cx, oy = this.cy - 1;
     // distancia del centro al borde del personaje en esa dirección
     const edge = Math.min(Math.abs(aim.x) > 0.01 ? (this.w / 2) / Math.abs(aim.x) : 99, Math.abs(aim.y) > 0.01 ? (this.h / 2 + (aim.y > 0 ? 1 : -1)) / Math.abs(aim.y) : 99);
-    const maxD = edge + DIG.reach + 8 * Math.abs(aim.x * aim.y);
+    const maxD = (edge + DIG.reach + 8 * Math.abs(aim.x * aim.y)) * DIG.reachMult;
     const R = BRUSH_R[this.game.stats.brush];
     const push = R * 0.5;
     const hit = W.probe(ox, oy, aim.x, aim.y, maxD);
@@ -153,7 +153,8 @@ export class Player {
     }
 
     // ---- movimiento horizontal ----
-    const want = walkIx * PHYS.walk * (this.flying ? 1.12 : 1);
+    this.sprinting = !!inp.sprint && walkIx !== 0;
+    const want = walkIx * PHYS.walk * (this.flying ? 1.12 : 1) * (this.sprinting ? PHYS.sprintMult : 1);
     const acc = this.onGround ? PHYS.accelGround : PHYS.accelAir;
     if (this.vx < want) this.vx = Math.min(want, this.vx + acc * dt);
     else this.vx = Math.max(want, this.vx - acc * dt);
@@ -210,7 +211,11 @@ export class Player {
     const minX = EDGE * TILE, maxX = (WORLD_W - EDGE) * TILE - this.w;
     if (this.x < minX) { this.x = minX; this.vx = 0; }
     if (this.x > maxX) { this.x = maxX; this.vx = 0; }
-    if (this.onGround && Math.abs(this.vx) > 5) this.walkT += dt; else this.walkT = 0;
+    if (this.onGround && Math.abs(this.vx) > 5) this.walkT += dt * Math.max(1, Math.abs(this.vx) / PHYS.walk); else this.walkT = 0;
+    // polvito al correr
+    if (this.sprinting && this.onGround && Math.abs(this.vx) > PHYS.walk * 1.2 && Math.random() < 0.3) {
+      g.particles.add({ x: this.cx - Math.sign(this.vx) * 3, y: this.y + this.h, vx: -Math.sign(this.vx) * (10 + Math.random() * 20), vy: -10 - Math.random() * 15, life: 0.35, max: 0.35, color: 'rgba(220,205,180,0.7)', size: 1, grav: 40 });
+    }
 
     // ---- cavar ----
     this.updateDig(dt, aim, target);
@@ -286,6 +291,8 @@ export class Player {
     this.digging = true;
     this.aim = aim;
     this.digPoint = target;
+    // bajando con la pala/taladro no cuenta como caída libre
+    if (aim.y > 0.5) this.peakY = Math.max(this.peakY, this.y - 3 * 8);
     // si cambia mucho el punto, se reinicia el progreso
     const key = Math.round(target.cx / 4) + ',' + Math.round(target.cy / 4);
     if (key !== this.digKey) { this.digKey = key; this.digProg = Math.min(this.digProg, 0.5); }

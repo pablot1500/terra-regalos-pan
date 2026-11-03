@@ -100,7 +100,6 @@ export class Input {
     btn('t-dig', 'dig');
     btn('t-act', null);
     btn('t-torch', null);
-    btn('t-dyn', null);
   }
 
   read(camX, camY) {
@@ -118,6 +117,7 @@ export class Input {
       jump: k('Space') || (!digKey && upKey) || T.jump,
       jumpPressed: e('Space') || (!digKey && (e('ArrowUp') || e('KeyW'))) || e('t-jump'),
       dig: k('KeyJ') || k('KeyK') || k('KeyX'),
+      sprint: k('ShiftLeft') || k('ShiftRight') || Math.abs(T.sx) > 0.92,
       stickDig: T.dig,
       sx: T.sx,
       sy: T.sy,
@@ -128,7 +128,6 @@ export class Input {
       my: this.mouse.y + camY,
       interact: e('KeyE') || e('Enter') || e('t-act'),
       torchPressed: e('KeyT') || e('Digit1') || e('t-torch'),
-      dynPressed: e('KeyG') || e('Digit2') || e('t-dyn'),
       pause: e('Escape') || e('KeyP'),
     };
   }

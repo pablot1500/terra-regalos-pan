@@ -129,11 +129,11 @@ export class UI {
       L.best = best;
       $('gauge-best').style.top = Math.min(100, (best / MAX_DEPTH) * 100) + '%';
     }
-    const it = g.inv.torch, id = g.inv.dyn;
-    if (L.torch !== it || L.dyn !== id) {
-      L.torch = it; L.dyn = id;
-      $('inv-torch').textContent = it; $('inv-dyn').textContent = id;
-      $('t-torch-n').textContent = it; $('t-dyn-n').textContent = id;
+    const it = g.inv.torch;
+    if (L.torch !== it) {
+      L.torch = it;
+      $('inv-torch').textContent = it;
+      $('t-torch-n').textContent = it;
     }
     const opened = g.openedGifts.length;
     if (L.gifts !== opened) {
@@ -183,7 +183,7 @@ export class UI {
       card.innerHTML = `
         <div class="up-ico"><img src="${ICON_URL[id]}" alt=""></div>
         <div><h4>${it.name} · ${fmtMoney(it.price)}</h4><p class="desc">${it.desc}</p></div>
-        <p class="have">Tienen: ${g.inv[id]} · tecla ${id === 'torch' ? 'T' : 'G'}</p>
+        <p class="have">Tienen: ${g.inv[id]} · tecla T</p>
       `;
       const row = document.createElement('div');
       row.className = 'buy-row';

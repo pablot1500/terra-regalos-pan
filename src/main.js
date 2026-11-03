@@ -1,10 +1,10 @@
 // Terra Regalos — loop principal y estado del juego.
 import {
   TILE, SURFACE, WORLD_W, WORLD_H, DEFAULT_SEED, UPGRADES, ITEMS, GIFTS, HP_MAX,
-  DEATH_MONEY_PENALTY, ENDING_TEXT, CHARACTERS, BRUSH_R, SUPPLIES, TORCH, DYNAMITE, PHYS,
+  DEATH_MONEY_PENALTY, ENDING_TEXT, CHARACTERS, BRUSH_R, SUPPLIES, TORCH,
 } from './config.js';
 import { initTiles } from './tiles.js';
-import { initSprites, drawChest, drawGiftBox, drawTorch, drawDynamite, CAT } from './sprites.js';
+import { initSprites, drawChest, drawGiftBox, drawTorch, CAT } from './sprites.js';
 import { World } from './world.js';
 import { Structures, CAT_POS, PATIO } from './structures.js';
 import { Background } from './background.js';
@@ -86,10 +86,8 @@ class Game {
     this.openedGifts = [];
     this.counters = { tiles: 0, deaths: 0, playTime: 0, best: 0, earned: 0 };
     this.tips = {};
-    this.inv = { torch: 0, dyn: 0 };
+    this.inv = { torch: 0 };
     this.torches = [];
-    this.bombs = [];
-    this.flashes = [];
     this.players = [new Player(this, this.charId)];
     this.pickups.list = [];
     this.particles.list = [];
@@ -124,7 +122,7 @@ class Game {
     for (const ch of this.world.chests) if (this.openedGifts.includes(ch.id)) { ch.opened = true; ch.open = 1; }
     Object.assign(this.counters, d.counters || {});
     this.tips = d.tips || {};
-    this.inv = { torch: 0, dyn: 0, ...(d.inv || {}) };
+    this.inv = { torch: (d.inv && Number.isFinite(d.inv.torch)) ? d.inv.torch : 0 };
     this.torches = Array.isArray(d.torches)
       ? d.torches.filter((t) => t && Number.isFinite(t.x) && Number.isFinite(t.y)).map((t) => ({ x: t.x, y: t.y, seed: Number.isFinite(t.seed) ? t.seed : Math.random() * 10 }))
       : [];
@@ -283,61 +281,6 @@ class Game {
     for (let i = 0; i < 6; i++) this.particles.add({ x, y, vx: (Math.random() - 0.5) * 30, vy: -Math.random() * 30, life: 0.5, max: 0.5, color: '#ffd34d', size: 1, grav: 40 });
   }
 
-  placeDynamite(p) {
-    if (this.inv.dyn <= 0) { this.toast('No tenés dinamita: comprala en el Taller', 'nodyn'); return; }
-    this.inv.dyn--;
-    this.bombs.push({ x: p.cx + p.facing * 4, y: p.y + p.h - 2, vx: p.facing * 45 + p.vx * 0.5, vy: -70, t: DYNAMITE.fuse });
-    this.audio.play('fuse');
-    this.tip('dyn', '¡Alejate! La dinamita explota en 3 segundos');
-  }
-
-  updateBombs(dt) {
-    const W = this.world;
-    for (let i = this.bombs.length - 1; i >= 0; i--) {
-      const b = this.bombs[i];
-      b.t -= dt;
-      b.vy = Math.min(b.vy + PHYS.gravity * dt, PHYS.maxFall);
-      const nx = b.x + b.vx * dt;
-      if (W.solidPx(nx, b.y - 2)) b.vx *= -0.4; else b.x = nx;
-      const ny = b.y + b.vy * dt;
-      if (W.solidPx(b.x, ny)) { b.vy = 0; b.vx *= 0.8; } else b.y = ny;
-      if (Math.random() < 0.5) this.particles.add({ x: b.x + 1, y: b.y - 9, vx: (Math.random() - 0.5) * 30, vy: -20 - Math.random() * 20, life: 0.3, max: 0.3, color: Math.random() < 0.5 ? '#ffd34d' : '#ff8a3d', size: 1, grav: 60 });
-      this.audio.play('fuse');
-      if (b.t <= 0) { this.bombs.splice(i, 1); this.explode(b.x, b.y - 3); }
-    }
-    for (let i = this.flashes.length - 1; i >= 0; i--) { this.flashes[i].t -= dt; if (this.flashes[i].t <= 0) this.flashes.splice(i, 1); }
-  }
-
-  explode(x, y) {
-    const R = DYNAMITE.radius;
-    const power = this.stats.power * DYNAMITE.powerMult + DYNAMITE.powerAdd;
-    const res = this.world.digCircle(x, y, R, power);
-    for (const l of res.loot) this.pickups.spawn(l.x, l.y, l.item);
-    this.counters.tiles += res.n / 16;
-    this.audio.play('boom');
-    this.shake(7);
-    this.flashes.push({ x, y, t: 0.5 });
-    for (let i = 0; i < 40; i++) {
-      const a = Math.random() * Math.PI * 2, sp = 40 + Math.random() * 160;
-      this.particles.add({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40, life: 0.4 + Math.random() * 0.5, max: 0.9, color: ['#fff3a8', '#ffd34d', '#ff8a3d', '#ff4d2d'][i % 4], size: Math.random() < 0.4 ? 2 : 1, grav: 120 });
-    }
-    for (const [t, n] of Object.entries(res.mats)) {
-      const pl = this.players[0];
-      pl.debris(x, y, +t, Math.min(25, 4 + (n >> 4)), R);
-    }
-    for (let i = 0; i < 14; i++) this.particles.add({ x: x + (Math.random() - 0.5) * R, y: y + (Math.random() - 0.5) * R, vx: (Math.random() - 0.5) * 20, vy: -10 - Math.random() * 15, life: 1.4, max: 1.4, color: 'rgba(120,110,105,0.55)', size: 3, grav: -10, smoke: true });
-    for (const p of this.players) {
-      if (p.dead) continue;
-      const d = Math.hypot(p.cx - x, p.cy - y);
-      if (d > R * 1.2) continue;
-      const dmg = Math.round(DYNAMITE.damage * (1 - d / (R * 1.2)) * (1 - this.stats.armor / 100));
-      p.vx += Math.sign(p.cx - x || 1) * 120;
-      p.vy = -160;
-      p.peakY = p.y;
-      if (dmg > 0) p.hurt(dmg);
-    }
-  }
-
   openShop() {
     if (this.state !== 'play') return;
     this.state = 'shop';
@@ -475,8 +418,6 @@ class Game {
     if (this.state === 'play') {
       if (inp.pause) this.pause();
       if (inp.torchPressed) this.placeTorch(p);
-      if (inp.dynPressed) this.placeDynamite(p);
-      this.updateBombs(dt);
       this.counters.playTime += dt;
       for (const pl of this.players) pl.update(dt, inp);
       if (p.inShop) {
@@ -519,8 +460,6 @@ class Game {
       if (tx < cx0 || tx > cx1 || ty < cy0 || ty > cy1) continue;
       this.lights.push([tx, ty, TORCH.radius, 0.95 + Math.sin(this.time * 9 + tq.seed) * 0.04]);
     }
-    for (const b of this.bombs) this.lights.push([b.x / TILE, (b.y - 8) / TILE, 3, 0.7]);
-    for (const f of this.flashes) this.lights.push([f.x / TILE, f.y / TILE, 14 * (f.t / 0.5) + 2, 1]);
     this.particles.update(dt, this.world);
     this.texts.update(dt);
     this.updateCamera(dt);
@@ -535,7 +474,7 @@ class Game {
     if (p.depth > 14) this.tip('jet', this.ui.isTouch ? 'Para subir: mantené SALTAR y volás con el jetpack' : 'Para subir: mantené Espacio y volás con el jetpack');
     if (p.energy < this.stats.energyMax * 0.3 && p.depth > 4) this.tip('energy', 'Energía baja: volvé al departamento a descansar');
     if (this.money >= 60 && this.upgrades.pala === 0) this.tip('afford', '¡Ya te alcanza para mejorar la pala en el Taller!');
-    if (p.depth > 30) this.tip('torch', this.ui.isTouch ? 'Tip: en el Taller venden antorchas y dinamita' : 'Tip: en el Taller venden antorchas (T) y dinamita (G)');
+    if (p.depth > 30) this.tip('torch', this.ui.isTouch ? 'Tip: en el Taller venden antorchas para iluminar' : 'Tip: en el Taller venden antorchas (se ponen con T)');
     if (p.depth > 40) this.tip('fall', this.ui.isTouch ? 'Ojo con las caídas: para bajar despacio mantené SALTAR + joystick abajo' : 'Ojo con las caídas: para bajar despacio mantené Espacio + S');
   }
 
@@ -624,7 +563,6 @@ class Game {
       if (x < -10 || x > vw + 10 || y < -14 || y > vh + 14) continue;
       drawTorch(ctx, x, y, t, tq.seed);
     }
-    for (const b of this.bombs) drawDynamite(ctx, Math.round(b.x - camX), Math.round(b.y - camY), t, b.t);
     this.pickups.draw(ctx, camX, camY, t);
     if (this.state !== 'title') for (const p of this.players) p.draw(ctx, camX, camY);
     this.particles.draw(ctx, camX, camY);
