@@ -1,6 +1,6 @@
 # Terrari Pancha
 
-Un jueguito pixel art para el navegador: dos personajes cavan un pozo en el patio de su edificio, juntan monedas y billetes, mejoran su equipo en el taller y buscan tres regalos escondidos a **300 m**, **600 m** y **1000 m** de profundidad.
+Un jueguito pixel art para el navegador: dos personajes cavan un pozo en el patio de su edificio, juntan monedas y billetes, mejoran su equipo en el taller y buscan tres regalos escondidos a **300 m**, **800 m** y **1500 m** de profundidad.
 
 Funciona en escritorio y en celular (controles táctiles). Por ahora se juega de a uno; el modo online para dos llega después.
 
@@ -52,7 +52,7 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 - Cavar y volar gastan energía. En el departamento se recargan la energía y la vida.
 - Si te quedás sin energía bajo tierra o te caés muy fuerte, te desmayás: volvés a casa y perdés el 10% de la plata.
 - El medidor de la derecha marca la profundidad y dónde están los regalos.
-- La música cambia con la profundidad: dos canciones para la superficie (hasta 300 m), dos para la zona media (300 a 600 m) y dos para lo profundo (600 a 1000 m), con fundidos entre una y otra. Están escritas en texto en [`src/music.js`](src/music.js).
+- La música cambia con la profundidad: dos canciones para la superficie (hasta 300 m), dos para la zona media (300 a 800 m) y dos para lo profundo (800 a 1500 m), con fundidos entre una y otra. Están escritas en texto en [`src/music.js`](src/music.js).
 - El progreso se guarda solo en el navegador (localStorage).
 
 ## Dónde cambiar cosas

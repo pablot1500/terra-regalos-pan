@@ -7,7 +7,7 @@
 //   pad:  un acorde por compás ("A3,C4,E4") o "-".
 //   arp:  arpegia el acorde del pad en corcheas.
 //
-// Zonas: 0 = superficie hasta 300 m, 1 = 300 a 600 m, 2 = 600 a 1000 m.
+// Zonas: 0 = superficie hasta 300 m, 1 = 300 a 800 m, 2 = 800 a 1500 m.
 
 const SONGS = [
   [
@@ -86,7 +86,7 @@ function compile(song) {
 const COMPILED = SONGS.map((zone) => zone.map(compile));
 
 // umbrales con histéresis: para bajar de zona hay que pasar el límite; para volver a subir, 10 m arriba
-const DOWN = [300, 600], UP = [290, 590];
+const DOWN = [300, 800], UP = [290, 790];
 const SETTLE = 1.2;    // segundos en la zona nueva antes de cambiar de canción
 const FADE_OUT = 1.6, FADE_IN = 2.0;
 

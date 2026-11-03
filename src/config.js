@@ -9,7 +9,7 @@ export const CHUNK = 16;             // bloques por chunk de render
 export const WORLD_W = 79;           // ancho del mundo en bloques
 export const SURFACE = 40;           // fila donde empieza el suelo
 export const METERS_PER_TILE = 2;    // cada bloque = 2 metros de profundidad
-export const MAX_DEPTH = 1000;       // metros hasta el fondo
+export const MAX_DEPTH = 1500;       // metros hasta el fondo
 export const BOTTOM_ROW = SURFACE + MAX_DEPTH / METERS_PER_TILE + 1; // primera fila de roca madre
 export const WORLD_H = BOTTOM_ROW + 3;
 export const EDGE = 2;               // columnas de roca madre a cada lado
@@ -170,11 +170,11 @@ export const GIFTS = [
     text: 'Acá va a ir la primera sorpresa.\n(Texto de prueba: después lo cambiamos por el regalo de verdad.)',
   },
   {
-    id: 2, depth: 600, title: 'Segundo regalo',
+    id: 2, depth: 800, title: 'Segundo regalo',
     text: 'Acá va a ir la segunda sorpresa.\n(Texto de prueba.)',
   },
   {
-    id: 3, depth: 1000, title: 'El regalo final', final: true,
+    id: 3, depth: 1500, title: 'El regalo final', final: true,
     text: 'Acá va a ir la última sorpresa.\n(Texto de prueba.)',
   },
 ];
