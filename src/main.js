@@ -131,6 +131,9 @@ class Game {
     this.torches = Array.isArray(d.torches)
       ? d.torches.filter((t) => t && Number.isFinite(t.x) && Number.isFinite(t.y)).map((t) => ({ x: t.x, y: t.y, seed: Number.isFinite(t.seed) ? t.seed : Math.random() * 10 }))
       : [];
+    // antorchas que hayan quedado en el cielo o en la superficie: se devuelven al inventario
+    const sky = this.torches.filter((t) => t.y < (SURFACE + 1) * TILE).length;
+    if (sky) { this.torches = this.torches.filter((t) => t.y >= (SURFACE + 1) * TILE); this.inv.torch += sky; }
     const p = new Player(this, this.charId);
     this.players = [p];
     if (d.player) {
@@ -277,8 +280,9 @@ class Game {
   }
 
   placeTorch(p) {
-    if (this.inv.torch <= 0) { this.toast('No tenés antorchas: compralas en el Taller', 'notorch'); return; }
     const x = Math.round(p.cx + p.facing * 2), y = Math.round(p.y + 2);
+    if (y < (SURFACE + 1) * TILE) { this.toast('Las antorchas se ponen bajo tierra', 'torchsky'); return; }
+    if (this.inv.torch <= 0) { this.toast('No tenés antorchas: compralas en el Taller', 'notorch'); return; }
     if (this.torches.some((t) => Math.abs(t.x - x) < 6 && Math.abs(t.y - y) < 6)) return;
     this.inv.torch--;
     this.torches.push({ x, y, seed: Math.random() * 10 });
