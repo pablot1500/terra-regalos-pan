@@ -443,10 +443,13 @@ class Game {
         else this.ui.setPrompt(null);
       }
       this.counters.best = Math.max(this.counters.best, p.depth);
+      this.audio.setDepth(p.depth);
       this.pickups.update(dt);
       this.updateTips(p);
       this.saveTimer += dt;
       if (this.saveTimer > 12) { this.saveTimer = 0; this.save(); }
+    } else if (this.state === 'title') {
+      this.audio.setDepth(0);
     } else if (this.state === 'shop') {
       this.input.releaseLatch();
       if (inp.pause || inp.interact) this.closeShop();

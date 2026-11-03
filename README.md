@@ -51,6 +51,7 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 - Cavar y volar gastan energía. En el departamento se recargan la energía y la vida.
 - Si te quedás sin energía bajo tierra o te caés muy fuerte, te desmayás: volvés a casa y perdés el 10% de la plata.
 - El medidor de la derecha marca la profundidad y dónde están los regalos.
+- La música cambia con la profundidad: dos canciones para la superficie (hasta 300 m), dos para la zona media (300 a 600 m) y dos para lo profundo (600 a 1000 m), con fundidos entre una y otra. Están escritas en texto en [`src/music.js`](src/music.js).
 - El progreso se guarda solo en el navegador (localStorage).
 
 ## Dónde cambiar cosas
@@ -82,7 +83,8 @@ src/
   lighting.js     oscuridad del subsuelo y luces
   entities.js     partículas, tesoros que saltan, textos flotantes
   input.js        teclado, mouse y táctil
-  audio.js        efectos y música chiptune (WebAudio, sin archivos)
+  audio.js        efectos de sonido (WebAudio, sin archivos)
+  music.js        canciones por zona y director de música (fundidos)
   save.js         guardado (localStorage; preparado para Netlify Blobs)
 ```
 

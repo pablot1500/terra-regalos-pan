@@ -1,23 +1,6 @@
+import { MusicDirector } from './music.js';
+
 // Sonidos chiptune generados con WebAudio (sin archivos).
-const NOTE = (n) => 440 * Math.pow(2, (n - 69) / 12);
-const N = { C3: 48, D3: 50, E3: 52, F3: 53, G3: 55, A3: 57, B3: 59, C4: 60, D4: 62, E4: 64, F4: 65, G4: 67, A4: 69, B4: 71, C5: 72, D5: 74, E5: 76, F5: 77, G5: 79, A5: 81, B5: 83, C6: 84, G2: 43, A2: 45, F2: 41 };
-
-// melodía (corcheas) y bajo (negras) — 8 compases en loop
-const MELODY = [
-  'E5', 'G5', 'C6', 'G5', 'A5', 'G5', 'E5', 'D5',
-  'C5', 'E5', 'A5', 'E5', 'G5', 'E5', 'C5', 'B4',
-  'A4', 'C5', 'F5', 'C5', 'E5', 'D5', 'C5', 'A4',
-  'B4', 'D5', 'G5', 'D5', 'F5', 'E5', 'D5', null,
-  'E5', null, 'E5', 'G5', 'C6', null, 'B5', 'A5',
-  'G5', null, 'E5', 'G5', 'A5', 'G5', 'E5', 'C5',
-  'D5', 'E5', 'F5', 'A5', 'G5', 'F5', 'E5', 'D5',
-  'C5', 'E5', 'D5', 'B4', 'C5', null, null, null,
-];
-const BASS = [
-  'C3', 'G3', 'C3', 'G3', 'A2', 'E3', 'A2', 'E3', 'F2', 'C3', 'F2', 'C3', 'G2', 'D3', 'G2', 'D3',
-  'C3', 'G3', 'C3', 'G3', 'A2', 'E3', 'A2', 'E3', 'F2', 'C3', 'G2', 'D3', 'C3', 'G3', 'C3', null,
-];
-
 export class Audio {
   constructor() {
     this.ctx = null;
@@ -138,23 +121,11 @@ export class Audio {
   }
 
   startMusic() {
-    const c = this.ctx;
-    const step = 60 / 104 / 2; // corchea a 104 bpm
-    let i = 0;
-    let next = c.currentTime + 0.1;
-    const tick = () => {
-      while (next < c.currentTime + 0.25) {
-        const m = MELODY[i % MELODY.length];
-        if (m) this.tone(NOTE(N[m]), step * 0.9, { type: 'square', vol: 0.09, out: this.mus, delay: next - c.currentTime });
-        if (i % 2 === 0) {
-          const b = BASS[(i / 2) % BASS.length];
-          if (b) this.tone(NOTE(N[b]), step * 1.8, { type: 'triangle', vol: 0.3, out: this.mus, delay: next - c.currentTime });
-        }
-        if (i % 4 === 2) this.tone(NOTE(N[m || 'C5']) * 2, 0.04, { type: 'triangle', vol: 0.03, out: this.mus, delay: next - c.currentTime });
-        next += step;
-        i++;
-      }
-    };
-    this.musicTimer = setInterval(tick, 60);
+    this.music = new MusicDirector(this);
+  }
+
+  /** la música cambia según la profundidad del jugador */
+  setDepth(depth) {
+    if (this.music) this.music.setDepth(depth);
   }
 }
