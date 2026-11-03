@@ -41,19 +41,14 @@ export const DEATH_MONEY_PENALTY = 0.1; // pierden 10% de la plata si se desmaya
 
 // ---- Cavado ----
 export const DIG = {
-  baseTime: 0.36,    // segundos por bloque cuando fuerza == dureza
+  baseTime: 0.42,    // segundos por palazo cuando fuerza == dureza
   minTime: 0.07,
   energyCost: 1,     // energía por palazo (sin importar el área)
+  reach: 6,          // px de alcance más allá del borde del personaje
 };
 
-// Área de la pala ancha por nivel: extra = bloques a los costados, depth = profundidad
-export const BRUSH = [
-  { extra: 0, depth: 1 },
-  { extra: 1, depth: 1 },
-  { extra: 1, depth: 2 },
-  { extra: 1, depth: 3 },
-  { extra: 2, depth: 3 },
-];
+// Radio (en px) del círculo que saca cada palazo, según el nivel de pala ancha
+export const BRUSH_R = [8.5, 10, 11.5, 13.5, 16];
 
 // Colores del filo de la pala según el nivel de fuerza
 export const SHOVEL_BLADES = [
@@ -105,37 +100,37 @@ export const UPGRADES = [
   {
     id: 'pala', name: 'Pala', icon: 'shovel',
     desc: 'Más fuerza: rompe materiales más duros y cava más rápido.',
-    levels: [[1, 0], [2, 40], [4, 220], [7, 900], [11, 3200], [16, 10000], [24, 24000]],
+    levels: [[1, 0], [2, 60], [4, 330], [7, 1350], [11, 4800], [16, 15000], [24, 36000]],
     label: (v) => `Fuerza ${v}`,
   },
   {
     id: 'ancho', name: 'Pala ancha', icon: 'wide',
     desc: 'Cava más área de un solo palazo.',
-    levels: [[0, 0], [1, 150], [2, 800], [3, 3000], [4, 9000]],
-    label: (v) => ['1 bloque', '3 bloques', '6 bloques', '9 bloques', '15 bloques'][v],
+    levels: [[0, 0], [1, 220], [2, 1200], [3, 4500], [4, 13500]],
+    label: (v) => ['Normal', 'Ancha', 'Muy ancha', 'Enorme', 'Gigante'][v],
   },
   {
     id: 'bateria', name: 'Batería', icon: 'battery',
     desc: 'Más energía para cavar y volar sin volver a casa.',
-    levels: [[100, 0], [140, 60], [200, 250], [280, 900], [400, 2800], [560, 7500], [800, 16000]],
+    levels: [[100, 0], [140, 90], [200, 380], [280, 1350], [400, 4200], [560, 11250], [800, 24000]],
     label: (v) => `${v} de energía`,
   },
   {
     id: 'armadura', name: 'Armadura', icon: 'armor',
     desc: 'Te protege de los golpes cuando caés de muy alto.',
-    levels: [[0, 0], [25, 80], [45, 400], [60, 1500], [75, 4500], [90, 11000]],
+    levels: [[0, 0], [25, 120], [45, 600], [60, 2250], [75, 6750], [90, 16500]],
     label: (v) => (v ? `-${v}% de daño` : 'Sin armadura'),
   },
   {
     id: 'motor', name: 'Jetpack: Motor', icon: 'rocket',
     desc: 'Volás más rápido y con más fuerza.',
-    levels: [[85, 0], [115, 100], [150, 450], [190, 1600], [235, 5000], [290, 12000]],
+    levels: [[85, 0], [115, 150], [150, 680], [190, 2400], [235, 7500], [290, 18000]],
     label: (v) => `Velocidad ${v}`,
   },
   {
     id: 'eficiencia', name: 'Jetpack: Eficiencia', icon: 'leaf',
     desc: 'El jetpack gasta menos energía por segundo.',
-    levels: [[8, 0], [6, 90], [4.5, 400], [3.3, 1400], [2.4, 4200], [1.6, 10000]],
+    levels: [[8, 0], [6, 140], [4.5, 600], [3.3, 2100], [2.4, 6300], [1.6, 15000]],
     label: (v) => `${String(v).replace('.', ',')} energía/seg`,
   },
 ];

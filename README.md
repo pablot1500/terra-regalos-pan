@@ -26,8 +26,8 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 | Saltar · volar con el jetpack | Espacio o W (mantener) | SALTAR (mantener) |
 | Bajar volando despacio | Espacio + S | SALTAR + joystick abajo |
 | Cavar hacia abajo | S o ↓ | Joystick abajo |
-| Cavar hacia adelante / arriba | J (+ W para arriba) | CAVAR (+ joystick) |
-| Cavar hacia el mouse | Click | — |
+| Cavar en cualquier dirección | Click (apuntando con el mouse) | CAVAR + joystick (360°) |
+| Cavar con teclado | J + W/A/S/D (8 direcciones) | — |
 | Abrir el taller | E | Botón TALLER |
 | Pausa | Esc | Botón ❚❚ |
 
@@ -66,12 +66,12 @@ server.js         servidor local sin dependencias
 src/
   main.js         loop del juego, estados, eventos (taller, cofres, desmayos)
   config.js       todos los números y textos ajustables
-  world.js        generación del mundo, cavado, render por chunks
+  world.js        generación del mundo, cavado libre (terreno de 2 px), render por chunks
   tiles.js        tipos de bloque y texturas pixel art
   structures.js   edificio, departamento, escalera, taller, patio
   sprites.js      personajes, tesoros, cofre, gato, íconos, fuente pixel
   player.js       física, cavado, jetpack, energía, caídas, animación
-  background.js   cielo, nubes, sol, ciudad y colinas
+  background.js   cielo, nubes, barrio, costa y mar
   lighting.js     oscuridad del subsuelo y luces
   entities.js     partículas, tesoros que saltan, textos flotantes
   input.js        teclado, mouse y táctil

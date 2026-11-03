@@ -1,10 +1,10 @@
 // Terra Regalos — loop principal y estado del juego.
 import {
   TILE, SURFACE, WORLD_W, WORLD_H, DEFAULT_SEED, UPGRADES, ITEMS, GIFTS, HP_MAX,
-  DEATH_MONEY_PENALTY, ENDING_TEXT, CHARACTERS,
+  DEATH_MONEY_PENALTY, ENDING_TEXT, CHARACTERS, BRUSH_R,
 } from './config.js';
 import { initTiles } from './tiles.js';
-import { initSprites, drawChest, drawGiftBox, CAT, CRACKS } from './sprites.js';
+import { initSprites, drawChest, drawGiftBox, CAT } from './sprites.js';
 import { World } from './world.js';
 import { Structures, CAT_POS, PATIO } from './structures.js';
 import { Background } from './background.js';
@@ -24,6 +24,7 @@ function computeStats(u) {
   return {
     power: v('pala'),
     brush: v('ancho'),
+    brushR: BRUSH_R[v('ancho')],
     energyMax: v('bateria'),
     armor: v('armadura'),
     jetSpeed: v('motor'),
@@ -63,7 +64,7 @@ class Game {
     document.addEventListener('visibilitychange', () => { if (document.hidden) { this.save(); if (this.state === 'play') this.pause(); } });
     window.addEventListener('pagehide', () => this.save());
     store.load().then((d) => {
-      this.savedData = d && d.v === 1 ? d : null;
+      this.savedData = d && (d.v === 1 || d.v === 2) ? d : null;
       this.ui.updateTitle();
       // al recibir una versión nueva en vivo, retomar la partida donde estaba
       if (boot.resume && this.savedData) this.continueGame();
@@ -110,7 +111,8 @@ class Game {
     const d = this.savedData;
     if (!d) return this.startNew();
     this.freshGame(d.seed || DEFAULT_SEED);
-    this.world.importDug(d.dug);
+    if (d.v === 2) this.world.importDug(d.dug);
+    else this.world.importDugTiles(d.dug);
     this.money = d.money || 0;
     for (const u of UPGRADES) this.upgrades[u.id] = clamp((d.upgrades && d.upgrades[u.id]) || 0, 0, u.levels.length - 1);
     this.stats = computeStats(this.upgrades);
@@ -141,7 +143,7 @@ class Game {
   serialize() {
     const p = this.players[0];
     return {
-      v: 1,
+      v: 2,
       seed: this.seed,
       money: Math.floor(this.money),
       upgrades: this.upgrades,
@@ -300,7 +302,7 @@ class Game {
     if (ch && ch.gift.final) {
       const mins = Math.floor(this.counters.playTime / 60);
       this.state = 'paused';
-      this.ui.showMsg('¡Fin! ♥', `${ENDING_TEXT}\n\nTiempo: ${mins} min · Bloques cavados: ${this.counters.tiles}\nPlata juntada: ${fmtMoney(this.counters.earned)}`, [
+      this.ui.showMsg('¡Fin! ♥', `${ENDING_TEXT}\n\nTiempo: ${mins} min · Bloques cavados: ${Math.round(this.counters.tiles)}\nPlata juntada: ${fmtMoney(this.counters.earned)}`, [
         { label: 'Seguir jugando', onClick: () => { this.state = 'play'; } },
       ]);
     } else if (this.openedGifts.length < GIFTS.length) {
@@ -425,7 +427,7 @@ class Game {
     }
     if (p.depth > 14) this.tip('jet', this.ui.isTouch ? 'Para subir: mantené SALTAR y volás con el jetpack' : 'Para subir: mantené Espacio y volás con el jetpack');
     if (p.energy < this.stats.energyMax * 0.3 && p.depth > 4) this.tip('energy', 'Energía baja: volvé al departamento a descansar');
-    if (this.money >= 40 && this.upgrades.pala === 0) this.tip('afford', '¡Ya te alcanza para mejorar la pala en el Taller!');
+    if (this.money >= 60 && this.upgrades.pala === 0) this.tip('afford', '¡Ya te alcanza para mejorar la pala en el Taller!');
     if (p.depth > 40) this.tip('fall', this.ui.isTouch ? 'Ojo con las caídas: para bajar despacio mantené SALTAR + joystick abajo' : 'Ojo con las caídas: para bajar despacio mantené Espacio + S');
   }
 
@@ -460,15 +462,25 @@ class Game {
     this.structs.drawBuildings(ctx, camX, camY);
     this.world.draw(ctx, camX, camY, vw, vh);
 
-    // grietas sobre los bloques que se están cavando
+    // círculo de cavado: puntitos que se van cerrando a medida que avanza el palazo
     for (const p of this.players) {
-      if (!p.digging || p.tooHard || !p.digKey) continue;
-      const stage = Math.min(2, Math.floor(p.digProg * 3));
-      const tg = p.digTargets(p.digDir);
-      for (const c of tg.list) {
-        if (c.hard > this.stats.power) continue;
-        ctx.drawImage(CRACKS[stage], c.c * TILE - camX, c.r * TILE - camY);
+      if (!p.digging || !p.digPoint) continue;
+      const { cx, cy, R } = p.digPoint;
+      const n = 22;
+      const shown = p.tooHard ? n : Math.ceil(n * Math.min(1, p.digProg + 0.08));
+      ctx.fillStyle = p.tooHard ? 'rgba(255,90,110,0.75)' : 'rgba(255,244,224,0.55)';
+      for (let i = 0; i < shown; i++) {
+        const a = -Math.PI / 2 + (i / n) * Math.PI * 2;
+        ctx.fillRect(Math.round(cx + Math.cos(a) * R - camX), Math.round(cy + Math.sin(a) * R - camY), 1, 1);
       }
+    }
+    // mira del mouse
+    if (this.state === 'play' && !this.ui.isTouch && this.input.mouseSeen) {
+      const mx = Math.round(this.input.mouse.x), my = Math.round(this.input.mouse.y);
+      ctx.fillStyle = 'rgba(29,20,32,0.7)';
+      ctx.fillRect(mx - 3, my, 2, 1); ctx.fillRect(mx + 2, my, 2, 1); ctx.fillRect(mx, my - 3, 1, 2); ctx.fillRect(mx, my + 2, 1, 2);
+      ctx.fillStyle = '#fff4e0';
+      ctx.fillRect(mx - 3, my - 1, 2, 1); ctx.fillRect(mx + 2, my - 1, 2, 1); ctx.fillRect(mx - 1, my - 3, 1, 2); ctx.fillRect(mx - 1, my + 2, 1, 2);
     }
 
     // cofres

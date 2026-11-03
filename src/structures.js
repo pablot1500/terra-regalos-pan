@@ -12,7 +12,7 @@ export const HOME_ZONE = { x0: 11 * TILE, x1: 19 * TILE, y0: (S - 11) * TILE, y1
 export const SHOP_ZONE = { x0: 65 * TILE, x1: 76 * TILE, y0: (S - 6) * TILE, y1: S * TILE };
 export const SPAWN = { x: 14 * TILE + 1, y: (S - 6) * TILE - 15 };
 export const PATIO = { c0: 27, c1: 64 };
-export const CAT_POS = { x: 64 * TILE + 52, y: (S - 9) * TILE + 56 - 9 };
+export const CAT_POS = { x: 64 * TILE + 50, y: (S - 9) * TILE + 56 - 10 };
 
 export function placeStructures(world) {
   const set = (c, r, t) => world.setRaw(c, r, t);
@@ -345,6 +345,26 @@ function paintShed() {
   // barril
   R(12, 58, 11, 14, '#7a4a2a'); R(13, 58, 2, 14, '#9b6a43');
   R(12, 60, 11, 1, '#3a3f45'); R(12, 68, 11, 1, '#3a3f45');
+  // guirnalda de lamparitas bajo el techo
+  for (let xx = 10; xx < 95; xx++) {
+    const yy = 25 + Math.round(Math.sin((xx - 10) / 85 * Math.PI * 2) * 1);
+    P(xx, yy, '#5a4a40');
+    if (xx % 7 === 3) { P(xx, yy + 1, ['#ffd34d', '#ff6b8a', '#7fd0ff', '#9fe870'][(xx / 7 | 0) % 4]); }
+  }
+  // calendario con un corazón
+  R(70, 29, 10, 11, '#ffffff'); R(70, 29, 10, 3, '#e04848'); R(74, 28, 2, 2, '#3a3f45');
+  for (let yy = 33; yy < 39; yy += 2) for (let xx = 71; xx < 79; xx += 2) P(xx, yy, '#b9b0a5');
+  P(75, 35, '#ff4d6d'); P(77, 35, '#ff4d6d'); R(75, 36, 3, 1, '#ff4d6d'); P(76, 37, '#ff4d6d');
+  // estante con latas de pintura
+  R(68, 48, 14, 2, '#6b4429'); R(68, 48, 14, 1, '#8a5a36');
+  R(69, 43, 4, 5, '#4fa3ff'); R(69, 43, 4, 1, '#9aa3ad'); R(70, 45, 2, 2, '#ffffff');
+  R(74, 44, 3, 4, '#ff6b8a'); R(74, 44, 3, 1, '#9aa3ad');
+  R(78, 42, 3, 6, '#ffd34d'); R(78, 42, 3, 1, '#9aa3ad');
+  // radio en el banco
+  R(62, 51, 8, 5, '#c0392b'); R(63, 52, 3, 3, '#3a3f45'); P(67, 52, '#ffd34d'); P(68, 52, '#ffd34d'); R(67, 54, 2, 1, '#ffffff');
+  R(64, 49, 1, 2, '#9aa3ad');
+  // plantita sobre el barril
+  R(15, 54, 4, 4, '#c0663a'); P(15, 51, '#5cb24f'); P(17, 50, '#3f9a3f'); P(18, 52, '#5cb24f'); P(16, 52, '#3f9a3f'); P(17, 53, '#2f6e2c');
   // cajas
   R(24, 62, 10, 10, '#b98b54'); R(24, 62, 10, 1, '#d6a96c'); R(24, 66, 10, 1, '#8a6440'); R(28, 62, 1, 10, '#8a6440');
   return cv;
@@ -418,6 +438,17 @@ function paintHedge(w, h, seed) {
   return cv;
 }
 
+function paintFence(w, h) {
+  const [cv, x] = makeCanvas(w, h);
+  const { R, P } = painter(x);
+  R(0, 8, w, 2, '#e9e3d6'); R(0, 16, w, 2, '#e9e3d6');
+  for (let xx = 0; xx < w; xx += 4) {
+    R(xx, 2, 3, h - 2, '#ffffff'); P(xx + 1, 1, '#ffffff'); R(xx + 2, 3, 1, h - 3, '#d6cfc2');
+  }
+  for (let xx = 0; xx < w; xx += 3) { P(xx, h - 1, '#5cb24f'); P(xx + 1, h - 2, '#7cd65a'); }
+  return cv;
+}
+
 const CLOTHES = {
   shirt: [['gg.gg', 'ggggg', '.ggg.', '.ggg.'], { g: '#3e9b6a' }],
   dress: [['.pp.', 'pppp', '.pp.', 'pppp', 'pppppp'.slice(0, 4)], { p: '#f07aa6' }],
@@ -433,7 +464,7 @@ export class Structures {
     this.brick = paintBrickWall(304, 40);
     this.tree = paintTree();
     this.hedgeL = paintHedge(16, 60, 5);
-    this.hedgeR = paintHedge(16, 60, 9);
+    this.fenceR = paintFence(16, 24);
     this.clothes = Object.fromEntries(Object.entries(CLOTHES).map(([k, [m, p]]) => [k, mapSprite(m, p)]));
   }
 
@@ -442,7 +473,7 @@ export class Structures {
     const gy = S * TILE - camY;
     ctx.drawImage(this.brick, 216 - camX, gy - 40);
     ctx.drawImage(this.hedgeL, 0 - camX, gy - 60);
-    ctx.drawImage(this.hedgeR, 77 * TILE - camX, gy - 60);
+    ctx.drawImage(this.fenceR, 77 * TILE - camX, gy - 24);
     ctx.drawImage(this.tree, 30 * TILE - camX, gy - 72);
     // tendedero
     const p1 = 45 * TILE - camX, p2 = 56 * TILE - camX, top = gy - 30;

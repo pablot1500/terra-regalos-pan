@@ -16,7 +16,7 @@ export class Particles {
       if (p.life <= 0) { L[i] = L[L.length - 1]; L.pop(); continue; }
       p.vy += (p.grav || 0) * dt;
       const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt;
-      if (p.collide && world.solid(Math.floor(nx / TILE), Math.floor(ny / TILE))) {
+      if (p.collide && world.solidPx(nx, ny)) {
         p.vx *= -0.3; p.vy *= -0.25;
       } else { p.x = nx; p.y = ny; }
     }

@@ -35,6 +35,10 @@ export const VARIANTS = 4;
 const TEX = [];
 const WALL = [];
 export const WALL_MID = [];
+// píxeles crudos para el render por ImageData
+export const TEXPX = [];
+export const WALLPX = [];
+export const PALRGB = [];
 
 export function isDiggable(t) {
   const d = DEF[t];
@@ -173,6 +177,9 @@ export function initTiles() {
       TEX[id][v] = t;
       WALL[id][v] = genWall(t, id);
     }
+    TEXPX[id] = TEX[id].map((cv) => cv.getContext('2d').getImageData(0, 0, 8, 8).data);
+    WALLPX[id] = WALL[id].map((cv) => cv.getContext('2d').getImageData(0, 0, 8, 8).data);
+    PALRGB[id] = DEF[id].pal.map(hexToRgb);
     const [r, g, b] = hexToRgb(DEF[id].pal[2]);
     const f = id === T.CRYSTAL ? 0.5 : 0.4;
     WALL_MID[id] = rgb(r * f, g * f, b * f);

@@ -34,6 +34,7 @@ export class Input {
   }
 
   setMouse(e, canvas) {
+    this.mouseSeen = true;
     const r = canvas.getBoundingClientRect();
     this.mouse.x = (e.clientX - r.left) / this.scale;
     this.mouse.y = (e.clientY - r.top) / this.scale;
@@ -114,7 +115,10 @@ export class Input {
       down: k('ArrowDown') || k('KeyS') || T.sy > 0.55,
       jump: k('Space') || (!digKey && upKey) || T.jump,
       jumpPressed: e('Space') || (!digKey && (e('ArrowUp') || e('KeyW'))) || e('t-jump'),
-      dig: digKey,
+      dig: k('KeyJ') || k('KeyK') || k('KeyX'),
+      stickDig: T.dig,
+      sx: T.sx,
+      sy: T.sy,
       digPressed: e('KeyJ') || e('KeyK') || e('KeyX') || e('t-dig'),
       downPressed: e('ArrowDown') || e('KeyS') || e('t-down'),
       mouseDig: this.mouse.down,

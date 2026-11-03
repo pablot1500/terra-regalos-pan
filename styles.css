@@ -259,7 +259,7 @@ body.touch .ctl-desk { display: none; }
   .tbtn.jump { bottom: calc(66px + env(safe-area-inset-bottom)); }
   .tbtn.act { bottom: calc(160px + env(safe-area-inset-bottom)); }
   #stick { width: 112px; height: 112px; }
-  #toasts { top: calc(8px + env(safe-area-inset-top)); width: 46vw; }
+  #toasts { top: auto; bottom: calc(10px + env(safe-area-inset-bottom)); width: 42vw; flex-direction: column-reverse; }
   .toast { font-size: 13px; padding: 4px 8px; }
   #prompt { font-size: 14px; }
 }

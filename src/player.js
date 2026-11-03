@@ -1,8 +1,8 @@
-import { TILE, WORLD_W, EDGE, PHYS, DIG, BRUSH, HP_MAX, REST, SURFACE } from './config.js';
-import { DEF, isDiggable, hardness } from './tiles.js';
-import { getCharFrames, drawArmShovel } from './sprites.js';
+import { TILE, WORLD_W, EDGE, PHYS, DIG, BRUSH_R, HP_MAX, REST } from './config.js';
+import { DEF, T, isDiggable, hardness } from './tiles.js';
+import { getCharFrames, drawArmShovel, CHAR_W, CHAR_H } from './sprites.js';
 import { HOME_ZONE, SHOP_ZONE, SPAWN, inZone } from './structures.js';
-import { depthAtY } from './world.js';
+import { depthAtY, SUB } from './world.js';
 import { clamp } from './util.js';
 
 const STRIKE_AT = 0.62; // momento del golpe dentro del ciclo de animación
@@ -28,7 +28,8 @@ export class Player {
     this.flying = false;
     this.jumpT = 1;
     this.digging = false;
-    this.digDir = null;
+    this.aim = null;          // vector de cavado {x, y}
+    this.digPoint = null;     // centro del círculo que se está cavando
     this.digKey = null;
     this.digProg = 0;
     this.digAnim = 0;
@@ -50,9 +51,9 @@ export class Player {
 
   collides(x, y) {
     const W = this.game.world;
-    const c0 = Math.floor(x / TILE), c1 = Math.floor((x + this.w - 0.001) / TILE);
-    const r0 = Math.floor(y / TILE), r1 = Math.floor((y + this.h - 0.001) / TILE);
-    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) if (W.solid(c, r)) return true;
+    const s0 = Math.floor(x / SUB), s1 = Math.floor((x + this.w - 0.001) / SUB);
+    const r0 = Math.floor(y / SUB), r1 = Math.floor((y + this.h - 0.001) / SUB);
+    for (let r = r0; r <= r1; r++) for (let s = s0; s <= s1; s++) if (W.subAt(s, r)) return true;
     return false;
   }
 
@@ -65,9 +66,9 @@ export class Player {
         if (!this.collides(nx, this.y - s)) { this.x = nx; this.y -= s; return false; }
       }
     }
-    if (dx > 0) this.x = Math.floor((nx + this.w - 0.001) / TILE) * TILE - this.w;
-    else this.x = (Math.floor(nx / TILE) + 1) * TILE;
-    if (this.collides(this.x, this.y)) this.x = nx - dx; // seguridad
+    if (dx > 0) this.x = Math.floor((nx + this.w - 0.001) / SUB) * SUB - this.w;
+    else this.x = (Math.floor(nx / SUB) + 1) * SUB;
+    if (this.collides(this.x, this.y)) this.x = nx - dx;
     return true;
   }
 
@@ -75,47 +76,51 @@ export class Player {
     if (!dy) return false;
     const ny = this.y + dy;
     if (!this.collides(this.x, ny)) { this.y = ny; return false; }
-    if (dy > 0) this.y = Math.floor((ny + this.h - 0.001) / TILE) * TILE - this.h;
-    else this.y = (Math.floor(ny / TILE) + 1) * TILE;
+    if (dy > 0) this.y = Math.floor((ny + this.h - 0.001) / SUB) * SUB - this.h;
+    else this.y = (Math.floor(ny / SUB) + 1) * SUB;
     if (this.collides(this.x, this.y)) this.y = ny - dy;
     return true;
   }
 
-  aimDir(mx, my) {
-    const dx = mx - this.cx, dy = my - this.cy;
-    if (Math.abs(dy) > Math.abs(dx) * 0.8) return dy > 0 ? 'down' : 'up';
-    return dx > 0 ? 'right' : 'left';
+  /** Vector de cavado según el control que se esté usando */
+  readAim(inp, ix) {
+    if (inp.mouseDig) {
+      const dx = inp.mx - this.cx, dy = inp.my - (this.cy - 1);
+      const d = Math.hypot(dx, dy);
+      return d > 0.5 ? { x: dx / d, y: dy / d } : { x: this.facing, y: 0 };
+    }
+    if (inp.stickDig) {
+      const { sx, sy } = inp;
+      const d = Math.hypot(sx, sy);
+      if (d > 0.3) return { x: sx / d, y: sy / d };
+      return { x: this.facing, y: 0 };
+    }
+    if (inp.dig) {
+      const iy = inp.up ? -1 : inp.down ? 1 : 0;
+      let x = ix, y = iy;
+      if (!x && !y) x = this.facing;
+      const d = Math.hypot(x, y);
+      return { x: x / d, y: y / d };
+    }
+    if (inp.down) {
+      // abajo solo (o joystick en diagonal hacia abajo)
+      if (inp.sy > 0.55) { const d = Math.hypot(inp.sx, inp.sy); return { x: inp.sx / d, y: inp.sy / d }; }
+      return { x: 0, y: 1 };
+    }
+    return null;
   }
 
-  digTargets(dir) {
+  /** Busca qué hay para cavar en la dirección `aim` */
+  findTarget(aim) {
     const W = this.game.world;
-    const B = BRUSH[this.game.stats.brush];
-    const left = this.x, right = this.x + this.w;
-    const pc = Math.floor((left + right) / 2 / TILE);
-    const hr = Math.floor(this.y / TILE), fr = Math.floor((this.y + this.h - 0.01) / TILE);
-    const cells = [];
-    let primary;
-    if (dir === 'down' || dir === 'up') {
-      const s = dir === 'down' ? 1 : -1;
-      const r0 = dir === 'down' ? fr + 1 : hr - 1;
-      for (let d = 0; d < B.depth; d++) for (let dc = -B.extra; dc <= B.extra; dc++) cells.push([pc + dc, r0 + s * d]);
-      primary = [pc, r0];
-    } else {
-      const s = dir === 'right' ? 1 : -1;
-      const c0 = dir === 'right' ? Math.floor((right - 0.01) / TILE) + 1 : Math.floor(left / TILE) - 1;
-      for (let d = 0; d < B.depth; d++) for (let r = fr; r >= hr - B.extra; r--) cells.push([c0 + s * d, r]);
-      primary = [c0, fr];
-      for (let r = fr; r >= hr; r--) if (W.solid(c0, r)) { primary = [c0, r]; break; }
-    }
-    const list = [];
-    let blocked = false;
-    for (const [c, r] of cells) {
-      const t = W.get(c, r);
-      if (!W.solid(c, r)) continue;
-      if (!isDiggable(t)) { blocked = true; continue; }
-      list.push({ c, r, t, hard: hardness(t) });
-    }
-    return { list, primary, pc, blocked };
+    const ox = this.cx, oy = this.cy - 1;
+    // distancia del centro al borde del personaje en esa dirección
+    const edge = Math.min(Math.abs(aim.x) > 0.01 ? (this.w / 2) / Math.abs(aim.x) : 99, Math.abs(aim.y) > 0.01 ? (this.h / 2 + (aim.y > 0 ? 1 : -1)) / Math.abs(aim.y) : 99);
+    const hit = W.probe(ox, oy, aim.x, aim.y, edge + DIG.reach + 8 * Math.abs(aim.x * aim.y));
+    if (!hit) return null;
+    const R = BRUSH_R[this.game.stats.brush];
+    const push = R * 0.5;
+    return { hit, cx: hit.x + aim.x * push, cy: hit.y + aim.y * push, R };
   }
 
   update(dt, inp) {
@@ -126,33 +131,27 @@ export class Player {
 
     const ix = (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
 
-    // ---- dirección de cavado ----
-    let digDir = null;
-    if (inp.mouseDig) digDir = this.aimDir(inp.mx, inp.my);
-    else if (inp.dig) digDir = inp.up ? 'up' : inp.down ? 'down' : ix > 0 ? 'right' : ix < 0 ? 'left' : this.facing > 0 ? 'right' : 'left';
-    else if (inp.down) digDir = 'down';
-
-    if (digDir === 'left') this.facing = -1;
-    else if (digDir === 'right') this.facing = 1;
+    // ---- apuntar ----
+    let aim = this.readAim(inp, ix);
+    if (aim && Math.abs(aim.x) > 0.2) this.facing = aim.x > 0 ? 1 : -1;
     else if (ix) this.facing = ix;
 
     let walkIx = ix;
-    let targets = null;
-    if (digDir) {
-      targets = this.digTargets(digDir);
-      if (!targets.list.length) {
-        if (targets.blocked && (inp.digPressed || inp.downPressed)) g.toast('Acá no se puede cavar', 'nodig');
-        digDir = null;
-      } else {
-        walkIx = 0;
-      }
+    let target = null;
+    if (aim) {
+      target = this.findTarget(aim);
+      if (!target) aim = null;
+      else if (!isDiggable(target.hit.t)) {
+        if (inp.digPressed || inp.downPressed) g.toast('Acá no se puede cavar', 'nodig');
+        aim = null; target = null;
+      } else walkIx = 0;
     }
 
     // ---- movimiento horizontal ----
-    const target = walkIx * PHYS.walk * (this.flying ? 1.12 : 1);
+    const want = walkIx * PHYS.walk * (this.flying ? 1.12 : 1);
     const acc = this.onGround ? PHYS.accelGround : PHYS.accelAir;
-    if (this.vx < target) this.vx = Math.min(target, this.vx + acc * dt);
-    else this.vx = Math.max(target, this.vx - acc * dt);
+    if (this.vx < want) this.vx = Math.min(want, this.vx + acc * dt);
+    else this.vx = Math.max(want, this.vx - acc * dt);
 
     // ---- salto y jetpack ----
     this.jumpT += dt;
@@ -208,15 +207,8 @@ export class Player {
     if (this.x > maxX) { this.x = maxX; this.vx = 0; }
     if (this.onGround && Math.abs(this.vx) > 5) this.walkT += dt; else this.walkT = 0;
 
-    // centrarse en el pozo al cavar hacia abajo
-    if (targets && digDir === 'down' && this.onGround) {
-      const tx = targets.pc * TILE + 1;
-      const d = tx - this.x;
-      if (Math.abs(d) > 0.3) this.moveX(clamp(d, -50 * dt, 50 * dt));
-    }
-
     // ---- cavar ----
-    this.updateDig(dt, digDir, targets);
+    this.updateDig(dt, aim, target);
 
     // ---- zonas ----
     this.resting = inZone(HOME_ZONE, this.cx, this.cy);
@@ -228,7 +220,7 @@ export class Player {
       this.restFx += dt;
       if (before && this.restFx > 0.25) {
         this.restFx = 0;
-        g.particles.add({ x: this.cx + (Math.random() - 0.5) * 8, y: this.y, vx: (Math.random() - 0.5) * 10, vy: -18, life: 1, max: 1, heart: true, grav: 0 });
+        g.particles.add({ x: this.cx + (Math.random() - 0.5) * 8, y: this.y - 2, vx: (Math.random() - 0.5) * 10, vy: -18, life: 1, max: 1, heart: true, grav: 0 });
       }
     }
 
@@ -266,82 +258,86 @@ export class Player {
     this.hp -= dmg;
     this.hurtT = 0.8;
     g.audio.play('hurt');
-    g.addText(this.cx, this.y - 4, '-' + dmg, '#ff5d6c');
+    g.addText(this.cx, this.y - 6, '-' + dmg, '#ff5d6c');
     g.shake(Math.min(6, 2 + dmg / 12));
     for (let i = 0; i < 8; i++) g.particles.add({ x: this.cx, y: this.cy, vx: (Math.random() - 0.5) * 60, vy: -Math.random() * 60, life: 0.5, max: 0.5, color: '#ff5d6c', size: 1, grav: 200 });
     if (this.hp <= 0) { this.hp = 0; g.faint(this, 'fall'); }
   }
 
-  updateDig(dt, digDir, targets) {
-    const g = this.game, st = g.stats;
-    if (!digDir || !targets || !targets.list.length) {
-      this.digging = false; this.digProg = 0; this.digKey = null; this.tooHard = false;
+  updateDig(dt, aim, target) {
+    const g = this.game, st = g.stats, W = g.world;
+    if (!aim || !target) {
+      this.digging = false; this.digProg = 0; this.digKey = null; this.tooHard = false; this.digPoint = null;
       return;
     }
     if (this.energy < DIG.energyCost) {
       this.digging = false;
+      this.digPoint = null;
       g.toast('Sin energía: volvé a casa a descansar', 'noen2');
       return;
     }
     this.digging = true;
-    this.digDir = digDir;
-    const key = digDir + ':' + targets.primary[0] + ',' + targets.primary[1];
-    if (key !== this.digKey) { this.digKey = key; this.digProg = 0; }
-    const ok = targets.list.filter((t) => t.hard <= st.power);
+    this.aim = aim;
+    this.digPoint = target;
+    // si cambia mucho el punto, se reinicia el progreso
+    const key = Math.round(target.cx / 4) + ',' + Math.round(target.cy / 4);
+    if (key !== this.digKey) { this.digKey = key; this.digProg = Math.min(this.digProg, 0.5); }
+
     const prevPhase = this.digAnim % 1;
-    if (!ok.length) {
+    const hitHard = hardness(target.hit.t);
+    if (hitHard > st.power) {
       this.tooHard = true;
       this.digAnim += dt * 2.6;
       const ph = this.digAnim % 1;
       if (prevPhase < STRIKE_AT && ph >= STRIKE_AT) {
         g.audio.play('clink');
-        const t0 = targets.list[0];
-        this.sparks(t0.c, t0.r, ['#ffffff', '#ffe58a']);
-        g.toast(`¡Muy duro! Necesitás una pala con fuerza ${t0.hard}`, 'hard');
+        this.sparks(target.hit.x, target.hit.y, ['#ffffff', '#ffe58a']);
+        g.toast(`¡Muy duro! Necesitás una pala con fuerza ${hitHard}`, 'hard');
       }
       return;
     }
     this.tooHard = false;
-    const hmax = Math.max(...ok.map((t) => t.hard));
+    const info = W.circleInfo(target.cx, target.cy, target.R, st.power);
+    const hmax = Math.max(hitHard, info.hard, 1);
     const time = Math.max(DIG.minTime, (DIG.baseTime * hmax) / st.power);
     const rate = clamp(1.1 / time, 2.4, 7);
     this.digAnim += dt * rate;
     const ph = this.digAnim % 1;
     if (prevPhase < STRIKE_AT && ph >= STRIKE_AT) {
-      const p = ok[0];
-      this.debris(p.c, p.r, p.t, 3);
+      this.debris(target.hit.x, target.hit.y, target.hit.t, 3);
       g.audio.play('dig');
     }
     this.digProg += dt / time;
     if (this.digProg >= 1) {
       this.digProg = 0;
-      this.energy = Math.max(0, this.energy - DIG.energyCost);
-      for (const t of ok) {
-        const item = g.world.dig(t.c, t.r);
-        if (item < 0) continue;
-        g.counters.tiles++;
-        this.debris(t.c, t.r, t.t, 6);
-        if (item > 0) g.pickups.spawn(t.c * TILE + 4, t.r * TILE + 4, item);
+      const res = W.digCircle(target.cx, target.cy, target.R, st.power);
+      if (res.n > 0) {
+        this.energy = Math.max(0, this.energy - DIG.energyCost);
+        g.counters.tiles += res.n / 16;
+        for (const [t, n] of Object.entries(res.mats)) this.debris(target.cx, target.cy, +t, Math.min(10, 2 + (n >> 3)), target.R);
+        for (const l of res.loot) g.pickups.spawn(l.x, l.y, l.item);
+        g.audio.play('break');
       }
-      g.audio.play('break');
     }
   }
 
-  debris(c, r, t, n) {
-    const pal = DEF[t].pal;
+  debris(x, y, t, n, spread = 4) {
+    const def = DEF[t];
+    if (!def) return;
+    const pal = def.pal;
     const g = this.game;
     for (let i = 0; i < n; i++) {
       g.particles.add({
-        x: c * TILE + 1 + Math.random() * 6, y: r * TILE + 1 + Math.random() * 6,
+        x: x + (Math.random() - 0.5) * spread, y: y + (Math.random() - 0.5) * spread,
         vx: (Math.random() - 0.5) * 70, vy: -20 - Math.random() * 70,
         life: 0.5 + Math.random() * 0.4, max: 0.9, color: pal[1 + Math.floor(Math.random() * 3)], size: Math.random() < 0.3 ? 2 : 1, grav: 380, collide: true,
       });
     }
   }
 
-  sparks(c, r, cols) {
+  sparks(x, y, cols) {
     for (let i = 0; i < 5; i++) {
-      this.game.particles.add({ x: c * TILE + 4, y: r * TILE + 4, vx: (Math.random() - 0.5) * 90, vy: -Math.random() * 70, life: 0.25, max: 0.25, color: cols[i % cols.length], size: 1, grav: 200 });
+      this.game.particles.add({ x, y, vx: (Math.random() - 0.5) * 90, vy: -Math.random() * 70, life: 0.25, max: 0.25, color: cols[i % cols.length], size: 1, grav: 200 });
     }
   }
 
@@ -358,36 +354,32 @@ export class Player {
       frame = b > 3.25 ? 'blink' : (this.anim % 1.6) > 1.0 ? 'idleB' : 'idle';
     }
     const bob = frame === 'idleB' || frame === 'walkB' ? 1 : 0;
-    const sx = Math.round(this.x - 3 - camX), sy = Math.round(this.y - 1 - camY);
+    const sx = Math.round(this.x + this.w / 2 - CHAR_W / 2 - camX), sy = Math.round(this.y + this.h - CHAR_H - camY);
 
     // llama del jetpack
     if (this.flying) {
-      const nx = this.facing > 0 ? sx + 1 : sx + 9;
+      const nx = this.facing > 0 ? sx + 1 : sx + CHAR_W - 3;
       const len = 3 + Math.floor(Math.random() * 3);
-      ctx.fillStyle = '#ff8a3d'; ctx.fillRect(nx, sy + 16, 2, len);
-      ctx.fillStyle = '#ffd34d'; ctx.fillRect(nx, sy + 16, 2, len - 2);
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(nx, sy + 16, 2, 1);
+      ctx.fillStyle = '#ff8a3d'; ctx.fillRect(nx, sy + 15, 2, len);
+      ctx.fillStyle = '#ffd34d'; ctx.fillRect(nx, sy + 15, 2, len - 2);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(nx, sy + 15, 2, 1);
     }
 
     ctx.drawImage(frames[frame], sx, sy);
 
     // brazo + pala
     let arm, sh, len = 7;
-    if (this.digging) {
+    if (this.digging && this.aim) {
+      const a = Math.atan2(this.aim.y, this.aim.x * this.facing); // ángulo local (mirando a la derecha)
       const p = this.digAnim % 1;
-      const wind = p < STRIKE_AT ? p / STRIKE_AT : 1;
-      const strike = p < STRIKE_AT ? 0 : (p - STRIKE_AT) / (1 - STRIKE_AT);
-      const e = wind * wind;
-      if (this.digDir === 'down') {
-        arm = p < STRIKE_AT ? 0.6 - e * 1.9 : -1.3 + strike * 2.8;
-        sh = p < STRIKE_AT ? 0.4 - e * 2.0 : -1.6 + strike * 3.2;
-        if (sh > 1.57) sh = 1.57;
-      } else if (this.digDir === 'up') {
-        arm = p < STRIKE_AT ? -0.4 + e * 1.2 : 0.8 - strike * 2.4;
-        sh = p < STRIKE_AT ? -0.6 + e * 1.0 : 0.4 - strike * 2.2;
+      if (p < STRIKE_AT) {
+        const e = (p / STRIKE_AT) ** 2;
+        arm = a + 0.2 - e * 1.9;
+        sh = a + 0.1 - e * 2.1;
       } else {
-        arm = p < STRIKE_AT ? 0.3 - e * 1.8 : -1.5 + strike * 1.9;
-        sh = p < STRIKE_AT ? 0.2 - e * 2.0 : -1.8 + strike * 2.1;
+        const s = (p - STRIKE_AT) / (1 - STRIKE_AT);
+        arm = a - 1.7 + s * 1.9;
+        sh = a - 2.0 + s * 2.1;
       }
     } else if (this.flying) { arm = 1.1; sh = 1.35; len = 5; }
     else if (!this.onGround) { arm = -0.4; sh = -0.95; len = 5; }
@@ -398,3 +390,5 @@ export class Player {
     drawArmShovel(ctx, sx, sy, this.facing, bob, arm, sh, this.game.upgrades.pala, this.char, len);
   }
 }
+
+export { T };

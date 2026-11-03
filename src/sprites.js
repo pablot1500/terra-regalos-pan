@@ -59,48 +59,27 @@ export function drawText(ctx, s, x, y, color, outline = null) {
 // ============================================================
 //  Personajes (12x16, mirando a la derecha)
 // ============================================================
+// Generado con un script de pintado (14x18, mirando a la derecha)
 const BODY_TOP = [
-  '............',
-  '....oooooo..',
-  '...osssssso.',
-  '...osssssso.',
-  '...ossesseo.',
-  '...osmsssmo.',
-  '...ossssqso.',
-  '.kk.oooooo..',
-  'kjJoCccccco.',
-  'kjyoCccccco.',
-  'kjJoSccccco.',
-  'krkoPPPPPPo.',
+ "..............",
+ ".....ooooooo..",
+ "....ossssssso.",
+ "....ossssssso.",
+ "....oSsesseso.",
+ "....oSsessesso",
+ "....oSmssssmo.",
+ ".....oSsssqso.",
+ ".kk...oooooo..",
+ "kjJkoccCSSCo..",
+ "kJjkoCcccdco..",
+ "kJrkoCcccdco..",
+ "kjjkosccccCo..",
+ "kkkkoPPPPyPo.."
 ];
-const LEGS = {
-  idle: ['.kkoppoppo..', '...oPpoPpo..', '...obbobbbo.', '...oooooooo.'],
-  walkA: ['.kkopppppo..', '..oppo.oPpo.', '.obbo..obbbo', '.oooo..ooooo'],
-  walkC: ['.kkopppppo..', '..oPpo.oppo.', '.obbo..obbbo', '.oooo..ooooo'],
-  air: ['.kkopppppo..', '...oPppPo...', '..obbo.obbo.', '..oooo.oooo.'],
-};
-const HAIR = {
-  el: [
-    '....HHHHH...',
-    '...HhhhhhhH.',
-    '..Hhhhhhh...',
-    '..Hhh.h.....',
-    '..Hh........',
-  ],
-  ella: [
-    '...HHHHHf...',
-    '..HhhhhhfFf.',
-    '.Hhhhhhhhf..',
-    '.Hhhh....e..',
-    '.Hhhh.......',
-    '.Hhhh.......',
-    '.Hhhh.......',
-    '.HhhH.......',
-    '..Hhh.......',
-    '..HHh.......',
-    '...H........',
-  ],
-};
+const LEGS = {"idle": [".kk.oPppppo...", "....oPpopPo...", "....obbobbBo..", "....oooooooo.."], "walkA": [".kk.oppppppo..", "...oPPo.oppo..", "...obbo.obbBo.", "...oooo.ooooo."], "walkC": [".kk.oppppppo..", "...oppo.oPPo..", "...obbo.obbBo.", "...oooo.ooooo."], "air": [".kk.oppppppo..", "....oPppPppo..", "....obbobbbo..", "....ooo.oooo.."]};
+const HAIR = {"el": [".....HH.HH.H..", "....HhhghhghH.", "...HhhghhghhH.", "...Hhh.hH.hH..", "...Hh.........", "....H........."], "ella": [".....HHHHHHf..", "....HhhgghfFf.", "...HhhghhhhfH.", "..HhhhhhhHhH..", "..Hhgh........", ".HHhhh........", ".HHhgh..zz....", "..Hhhh........", ".HHhgH........", ".HHhhH........", "..HhgH........", "..HhhH........", "..HhhH........", "...hH........."]};
+
+export const CHAR_W = 14, CHAR_H = 18;
 
 const BASE_PAL = {
   o: '#2b1d2b', e: '#2b1d2b', k: '#4a5260', j: '#c3cad4', J: '#8a94a3', r: '#ff5a5a', y: '#f2c14e',
@@ -108,24 +87,24 @@ const BASE_PAL = {
 export const CHAR_PAL = {
   el: {
     ...BASE_PAL,
-    s: '#f2c7a5', S: '#d9a17f', m: '#f0a7a0', q: '#a8574f',
-    c: '#3e9b6a', C: '#2b744e', p: '#3d5c9c', P: '#2c4475', b: '#5a3a26',
-    h: '#4a2c1a', H: '#2a170c',
+    s: '#f2c7a5', S: '#d9a17f', w: '#ffffff', m: '#f0a7a0', q: '#a8574f',
+    c: '#3e9b6a', C: '#2b744e', d: '#62c08e', p: '#3d5c9c', P: '#2c4475', b: '#5a3a26', B: '#8a5a36',
+    h: '#2a2733', H: '#121018', g: '#58536e',
   },
   ella: {
     ...BASE_PAL,
-    s: '#f7d3bb', S: '#e0ab8d', m: '#ff9aa8', q: '#c0505e',
-    c: '#f07aa6', C: '#c9578a', p: '#6b56a8', P: '#4d3d80', b: '#7a4a3a',
-    h: '#8c3d24', H: '#5c2414', f: '#ff9ccc', F: '#ffe066',
+    s: '#fde9dd', S: '#f0c8b2', w: '#ffffff', m: '#ffaab6', q: '#d0606e', z: '#dc9a7c',
+    c: '#f07aa6', C: '#c9578a', d: '#ffa3c6', p: '#6b56a8', P: '#4d3d80', b: '#7a4a3a', B: '#a8705a',
+    h: '#d9572b', H: '#8e2c14', g: '#f6955a', f: '#ff9ccc', F: '#ffe066',
   },
 };
 
 function composeFrame(charId, legsKey, bob, blink) {
   const pal = { ...CHAR_PAL[charId] };
-  const [c, x] = makeCanvas(12, 16);
+  const [c, x] = makeCanvas(CHAR_W, CHAR_H);
   const legs = mapSprite(LEGS[legsKey], pal);
-  x.drawImage(legs, 0, 12);
-  const top = blink ? BODY_TOP.map((r) => r.replace(/e/g, 'S')) : BODY_TOP;
+  x.drawImage(legs, 0, 14);
+  const top = blink ? BODY_TOP.map((r, i) => (i === 4 || i === 5 ? r.replace(/[ew]/g, i === 5 ? 'S' : 's') : r)) : BODY_TOP;
   x.drawImage(mapSprite(top, pal), 0, bob);
   x.drawImage(mapSprite(HAIR[charId], pal), 0, bob);
   return c;
@@ -155,9 +134,9 @@ export function getCharFrames(charId) {
 /** Retrato grande para el menú */
 export function charPortrait(charId, scale = 6) {
   const f = getCharFrames(charId).right.idle;
-  const [c, x] = makeCanvas(14 * scale, 18 * scale);
+  const [c, x] = makeCanvas((CHAR_W + 2) * scale, (CHAR_H + 2) * scale);
   x.imageSmoothingEnabled = false;
-  x.drawImage(f, 1 * scale, 1 * scale, 12 * scale, 16 * scale);
+  x.drawImage(f, 1 * scale, 1 * scale, CHAR_W * scale, CHAR_H * scale);
   return c;
 }
 
@@ -167,9 +146,9 @@ export function charPortrait(charId, scale = 6) {
  */
 export function drawArmShovel(ctx, sx, sy, facing, bob, armAng, shovelAng, palaLevel, charId, len = 7) {
   const pal = CHAR_PAL[charId];
-  const mx = (lx) => (facing > 0 ? sx + Math.round(lx) : sx + 11 - Math.round(lx));
+  const mx = (lx) => (facing > 0 ? sx + Math.round(lx) : sx + CHAR_W - 1 - Math.round(lx));
   const my = (ly) => sy + Math.round(ly);
-  const shX = 8, shY = 9 + bob;
+  const shX = 9, shY = 10 + bob;
   const hx = shX + Math.cos(armAng) * 3, hy = shY + Math.sin(armAng) * 3;
   const ca = Math.cos(shovelAng), sa = Math.sin(shovelAng);
   const tipX = hx + ca * len, tipY = hy + sa * len;
@@ -271,34 +250,39 @@ export function drawGiftBox(ctx, x, y) {
 // ============================================================
 //  Gato del taller
 // ============================================================
-const CAT_PAL = { o: '#3b2418', a: '#f2a24e', A: '#c9782c', w: '#fff1dc', e: '#3e9b4a', n: '#ff9db5' };
+const CAT_PAL = {
+  o: '#3b2418', a: '#f2a24e', A: '#c9782c', w: '#fff1dc', G: '#5bd16a', n: '#ff9db5',
+  R: '#d9344e', y: '#ffd34d', '-': '#c9b8a8',
+};
 const CAT_A = [
-  '.o...o.....',
-  'oao.oao....',
-  'oaaaaao...o',
-  'oeaaeao..oa',
-  'oawnwao..oa',
-  '.oaaaoooao.',
-  '..oawAaaao.',
-  '..oawaAaao.',
-  '..owwoooo..',
+  '..o...o......',
+  '.ono.ono.....',
+  '.oaAaAao....o',
+  '.oGaaGao...oa',
+  '-oawnwao...oA',
+  '..oRyRoooaAo.',
+  '...oawAaAaao.',
+  '...oawaAaAao.',
+  '...oawaaaaAo.',
+  '...owwoowwoo.',
 ];
 const CAT_B = [
-  '.o...o.....',
-  'oao.oao....',
-  'oaaaaao..o.',
-  'oeaaeao.oa.',
-  'oawnwao.oa.',
-  '.oaaaoooa..',
-  '..oawAaaao.',
-  '..oawaAaao.',
-  '..owwoooo..',
+  '..o...o......',
+  '.ono.ono.....',
+  '.oaAaAao...o.',
+  '.oGaaGao..oa.',
+  '-oawnwao..oA.',
+  '..oRyRoooaAo.',
+  '...oawAaAaao.',
+  '...oawaAaAao.',
+  '...oawaaaaAo.',
+  '...owwoowwoo.',
 ];
 export const CAT = {};
 function initCat() {
   CAT.a = mapSprite(CAT_A, CAT_PAL);
   CAT.b = mapSprite(CAT_B, CAT_PAL);
-  CAT.blink = mapSprite(CAT_A.map((r) => r.replace(/e/g, 'A')), CAT_PAL);
+  CAT.blink = mapSprite(CAT_A.map((r) => r.replace(/G/g, 'o')), CAT_PAL);
 }
 
 // ============================================================
