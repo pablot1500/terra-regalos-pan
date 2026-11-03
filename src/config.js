@@ -51,6 +51,13 @@ export const DIG = {
   reachPerUpgrade: 0.07, // +7% de alcance por cada mejora de fuerza o de pala ancha
 };
 
+// cáscara de cristal de las cámaras de regalo: se pica de a poquito, sin importar la pala
+export const CRYSTAL_DIG = {
+  depth: 5,      // px de cristal que avanza cada palazo (aunque la pala sea muy ancha)
+  width: 9,      // medio ancho del hueco, de costado a la pala: entra el personaje justo
+  time: 0.55,    // segundos mínimos por palazo cuando hay cristal en juego
+};
+
 // Radio (en px) del círculo que saca cada palazo, según el nivel de pala ancha
 export const BRUSH_R = [10, 11.5, 13.5, 16, 19, 23, 28];
 

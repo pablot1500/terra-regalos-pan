@@ -106,7 +106,7 @@ export class World {
       c: PATIO.c0 + 4 + Math.floor(hash2(i * 13 + 5, 7, seed) * (PATIO.c1 - PATIO.c0 - 8)),
       r: rowForDepth(g.depth),
     }));
-    const nearChamber = (c, r) => chambers.some((ch) => Math.abs(c - ch.c) < 10 && Math.abs(r - ch.r) < 9);
+    const nearChamber = (c, r) => chambers.some((ch) => Math.abs(c - ch.c) < 14 && Math.abs(r - ch.r) < 13);
 
     // 1) materiales y tesoros por bloque
     for (let r = 0; r < h; r++) {
@@ -156,15 +156,16 @@ export class World {
     // 3) cámaras de los regalos (cúpula de cristales con piso plano)
     for (const ch of chambers) {
       const t = LAYER_TILES[layerIndex((ch.r - SURFACE) * METERS_PER_TILE)];
-      for (let rr = ch.r - 7; rr <= ch.r + 2; rr++) {
-        for (let cc = ch.c - 7; cc <= ch.c + 7; cc++) {
+      for (let rr = ch.r - 10; rr <= ch.r + 2; rr++) {
+        for (let cc = ch.c - 11; cc <= ch.c + 11; cc++) {
           if (rr >= BOTTOM_ROW || cc < EDGE || cc >= w - EDGE) continue;
           const i = rr * w + cc;
           loot[i] = 0;
           const dx = cc + 0.5 - (ch.c + 0.5), dy = rr + 0.5 - ch.r;
-          const e = (dx / 6) ** 2 + (dy / 4.4) ** 2;
+          // cáscara gruesa de cristal (con el borde de afuera irregular)
+          const e = (dx / 10) ** 2 + (dy / 8) ** 2;
           let v = t;
-          if (e <= 1.15 && rr < ch.r) v = hash2(cc, rr, seed + 300) < 0.85 ? T.CRYSTAL : t;
+          if (rr < ch.r && e <= 1 + (hash2(cc, rr, seed + 301) - 0.5) * 0.3) v = hash2(cc, rr, seed + 300) < 0.92 ? T.CRYSTAL : t;
           tiles[i] = mat[i] = v;
           this.fillTileSubs(cc, rr, 1);
         }
@@ -271,10 +272,10 @@ export class World {
   }
 
   /**
-   * Saca un círculo de terreno. Devuelve cuántas sub-celdas se rompieron,
+   * Saca un círculo de terreno (el cristal solo dentro de `chip`, si se pasa). Devuelve cuántas sub-celdas se rompieron,
    * los tesoros liberados y cuántas sub-celdas de cada material.
    */
-  digCircle(cx, cy, R, power) {
+  digCircle(cx, cy, R, power, chip = null) {
     const { sw, sub, w } = this;
     const sx0 = Math.max(0, Math.floor((cx - R) / SUB)), sx1 = Math.min(sw - 1, Math.floor((cx + R) / SUB));
     const sy0 = Math.max(0, Math.floor((cy - R) / SUB)), sy1 = Math.min(this.sh - 1, Math.floor((cy + R) / SUB));
@@ -292,6 +293,12 @@ export class World {
         const ti = (sy >> 2) * w + (sx >> 2);
         const t = this.tiles[ti];
         if (!isDiggable(t) || hardness(t) > power) continue;
+        // el cristal solo se rompe de a poquito alrededor de donde pega la pala
+        if (t === T.CRYSTAL) {
+          if (!chip) continue;
+          const dx = px - chip.x, dy = py - chip.y;
+          if (((dx * chip.ax + dy * chip.ay) / chip.depth) ** 2 + ((dy * chip.ax - dx * chip.ay) / chip.width) ** 2 > 1) continue;
+        }
         sub[j] = 0;
         this.subDug[j] = 1;
         touched.add(ti);

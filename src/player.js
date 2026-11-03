@@ -1,4 +1,4 @@
-import { TILE, WORLD_W, EDGE, PHYS, DIG, BRUSH_R, HP_MAX, REST } from './config.js';
+import { TILE, WORLD_W, EDGE, PHYS, DIG, CRYSTAL_DIG, BRUSH_R, HP_MAX, REST } from './config.js';
 import { DEF, T, isDiggable, hardness } from './tiles.js';
 import { getCharFrames, drawArmShovel, drawDrill, CHAR_W, CHAR_H } from './sprites.js';
 import { HOME_ZONE, SHOP_ZONE, SPAWN, inZone } from './structures.js';
@@ -333,19 +333,23 @@ export class Player {
     this.tooHard = false;
     const info = W.circleInfo(target.cx, target.cy, target.R, st.power);
     const hmax = Math.max(hitHard, info.hard, 1);
-    const time = Math.max(DIG.minTime, (DIG.baseTime * hmax) / st.power);
+    const crystal = target.hit.t === T.CRYSTAL;
+    let time = Math.max(DIG.minTime, (DIG.baseTime * hmax) / st.power);
+    if (crystal) time = Math.max(time, CRYSTAL_DIG.time);
     const rate = clamp(1.1 / time, 2.4, 7);
     this.digAnim += dt * rate;
     const ph = this.digAnim % 1;
     if (prevPhase < STRIKE_AT && ph >= STRIKE_AT) {
       this.debris(target.hit.x, target.hit.y, target.hit.t, 3);
       this.materialFx(target.hit.x, target.hit.y, target.hit.t, 0, 6);
-      g.audio.play(g.upgrades.pala >= 3 ? 'drill' : 'dig');
+      if (crystal) { g.audio.play('clink'); this.sparks(target.hit.x, target.hit.y, ['#ffd6ec', '#ff86c2', '#ffffff']); }
+      else g.audio.play(g.upgrades.pala >= 3 ? 'drill' : 'dig');
     }
     this.digProg += dt / time;
     if (this.digProg >= 1) {
       this.digProg = 0;
-      const res = W.digCircle(target.cx, target.cy, target.R, st.power);
+      const chip = { x: target.hit.x, y: target.hit.y, ax: aim.x, ay: aim.y, depth: CRYSTAL_DIG.depth, width: CRYSTAL_DIG.width };
+      const res = W.digCircle(target.cx, target.cy, target.R, st.power, chip);
       if (res.n > 0) {
         this.energy = Math.max(0, this.energy - eCost);
         g.counters.tiles += res.n / 16;
