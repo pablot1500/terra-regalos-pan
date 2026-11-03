@@ -125,7 +125,9 @@ class Game {
     Object.assign(this.counters, d.counters || {});
     this.tips = d.tips || {};
     this.inv = { torch: 0, dyn: 0, ...(d.inv || {}) };
-    this.torches = Array.isArray(d.torches) ? d.torches.filter((t) => Number.isFinite(t.x) && Number.isFinite(t.y)) : [];
+    this.torches = Array.isArray(d.torches)
+      ? d.torches.filter((t) => t && Number.isFinite(t.x) && Number.isFinite(t.y)).map((t) => ({ x: t.x, y: t.y, seed: Number.isFinite(t.seed) ? t.seed : Math.random() * 10 }))
+      : [];
     const p = new Player(this, this.charId);
     this.players = [p];
     if (d.player) {
@@ -158,7 +160,7 @@ class Game {
       counters: this.counters,
       tips: this.tips,
       inv: this.inv,
-      torches: this.torches.map((t) => ({ x: t.x, y: t.y })),
+      torches: this.torches.map((t) => ({ x: t.x, y: t.y, seed: t.seed })),
       player: p ? { char: p.char, x: p.x, y: p.y, hp: p.hp, energy: p.energy } : null,
       savedAt: Date.now(),
     };

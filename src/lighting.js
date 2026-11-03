@@ -49,11 +49,13 @@ export class Lighting {
         if (r < SURFACE) light = 1;
         else {
           light = 0;
-          for (let dc = -3; dc <= 3; dc++) {
+          // luz del cielo: entra un poco por los pozos, pero se apaga con la profundidad
+          const depthFade = 1 - (r - SURFACE) * 0.04;
+          for (let dc = -2; dc <= 2; dc++) {
             const cc = c + dc;
             if (cc < 0 || cc >= W.w) continue;
             const st = Math.max(W.skyTop[cc], SURFACE);
-            const v = 1 - Math.max(0, r - st + 1) * 0.105 - Math.abs(dc) * 0.15;
+            const v = Math.min(depthFade, 1 - Math.max(0, r - st + 1) * 0.105) - Math.abs(dc) * 0.3;
             if (v > light) light = v;
           }
           if (light < 1) {
