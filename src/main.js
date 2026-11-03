@@ -309,7 +309,7 @@ class Game {
     if (this.popi) {
       this.popi.poof();
       this.popi = null;
-      this.ui.toast('Popi se quedó en el taller', 'good');
+      this.ui.toast('Popi te espera en el patio', 'good');
     } else {
       this.popi = new Popi(this);
       this.popi.poof();
@@ -464,12 +464,19 @@ class Game {
       this.counters.playTime += dt;
       for (const pl of this.players) pl.update(dt, inp);
       if (this.popi) this.popi.update(dt);
-      if (p.inShop && !this.wasInShop && !this.popi) {
+      // Popi espera en el patio: al acercarte te ladra y te lo podés llevar
+      const nearDog = !this.popi && Math.abs(p.cx - (DOG_POS.x + 10)) < 22 && Math.abs(p.y + p.h - (DOG_POS.y + 14)) < 12;
+      if (nearDog && !this.wasNearDog) {
         this.audio.play('bark');
-        this.addText(DOG_POS.x + 9, DOG_POS.y - 4, '¡GUAU!', '#fff4e0');
+        this.addText(DOG_POS.x + 10, DOG_POS.y - 2, '¡GUAU!', '#fff4e0');
       }
-      this.wasInShop = p.inShop;
-      if (p.inShop) {
+      this.wasNearDog = nearDog;
+      if (nearDog) {
+        this.ui.setPrompt(this.ui.isTouch ? null : 'Presioná E para llevar a Popi');
+        this.ui.setActButton('POPI');
+        if (inp.interact) this.togglePopi();
+        this.tip('popi', '¡Es Popi! Te puede acompañar y ayudar a cavar');
+      } else if (p.inShop) {
         this.ui.setPrompt(this.ui.isTouch ? null : 'Presioná E para entrar al Taller');
         this.ui.setActButton('TALLER');
         if (inp.interact) this.openShop();
@@ -646,7 +653,7 @@ class Game {
 
     // perro salchicha del taller: mueve la cola más rápido si estás cerca
     const p0 = this.players[0];
-    const near = this.state === 'play' && p0 && p0.inShop;
+    const near = this.state === 'play' && p0 && this.wasNearDog;
     const blink = (t % 4.3) > 4.15;
     const wag = Math.floor(t / (near ? 0.11 : 0.55)) % 2;
     const dogSpr = blink ? DOG.blink : near ? (wag ? DOG.happyB : DOG.happyA) : (wag ? DOG.b : DOG.a);

@@ -244,11 +244,11 @@ export class UI {
       card.innerHTML = `
         <div class="up-ico"><img src="${(withMe ? POPI.right.idleA : DOG.happyA).toDataURL()}" alt="" style="width:36px;height:26px"></div>
         <div><h4>Popi</h4><p class="desc">Tu perro salchicha. Con su casquito y su mini jetpack camina, salta y vuela solo detrás tuyo, y te ayuda a cavar los bloques de al lado. No gasta energía ni se lastima.</p></div>
-        <p class="have">${withMe ? 'Está con vos' : 'Está en el taller'}</p>
+        <p class="have">${withMe ? 'Está con vos' : 'Te espera en el patio (acercate y apretá E, o tocá POPI)'}</p>
       `;
       const b = document.createElement('button');
       b.className = 'btn buy' + (withMe ? ' alt' : '');
-      b.textContent = withMe ? 'Dejar a Popi en el taller' : 'Llevar a Popi';
+      b.textContent = withMe ? 'Dejar a Popi en el patio' : 'Llevar a Popi';
       b.addEventListener('click', () => g.togglePopi());
       card.appendChild(b);
       list.appendChild(card);

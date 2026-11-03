@@ -47,7 +47,7 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
   - **Jetpack**: volar más rápido y gastando menos energía.
   - **Casco de minero**: la lámpara ilumina más lejos bajo tierra.
   - Cada mejora de la pala/taladro y de la pala ancha también suma un poco de alcance para cavar.
-- En el taller podés llevarte a **Popi**, el perro salchicha: con casquito y mini jetpack te sigue solo (camina, salta y vuela), te ayuda a cavar los bloques de al lado al 25% de tu ritmo, y no gasta energía ni se lastima.
+- En el patio te espera **Popi**, el perro salchicha (acercate y apretá E para llevarlo, o desde el taller): con casquito y mini jetpack te sigue solo (camina, salta y vuela), te ayuda a cavar los bloques de al lado al 25% de tu ritmo, y no gasta energía ni se lastima.
 - En el taller también se compran **antorchas** ($25): iluminan una zona grande y no se rompen al cavar.
 - Cavar y volar gastan energía. En el departamento se recargan la energía y la vida.
 - Si te quedás sin energía bajo tierra o te caés muy fuerte, te desmayás: volvés a casa y perdés el 10% de la plata.

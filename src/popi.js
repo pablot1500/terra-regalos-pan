@@ -1,6 +1,6 @@
 // Popi, el perro salchicha compañero: sigue al personaje, salta, vuela con su
 // mini jetpack y ayuda a cavar los bloques de al lado (al 25% del ritmo).
-import { TILE, PHYS, DIG } from './config.js';
+import { TILE, PHYS, DIG, SURFACE } from './config.js';
 import { POPI } from './sprites.js';
 import { SUB } from './world.js';
 
@@ -37,6 +37,8 @@ export class Popi {
     if (this.collides(this.x, this.y)) this.x = p.cx - this.w / 2;
     this.vx = 0; this.vy = 0;
     this.stuckT = 0;
+    this.surfT = 0;
+    this.chkX = this.x; this.chkY = this.y;
   }
 
   poof() {
@@ -88,8 +90,15 @@ export class Popi {
     const dist = Math.hypot(p.cx - this.cx, p.cy - this.cy);
 
     // muy lejos o trabado: aparece al lado con un "puf"
-    if (dist > 60) this.stuckT += dt; else this.stuckT = 0;
-    if (dist > 220 || this.stuckT > 1.6) { this.poof(); this.place(); this.poof(); return; }
+    // ¿está trabado? si está a más de ~3 bloques y en 1 s casi no se movió de su lugar
+    // (por ejemplo, volando contra un techo mientras el personaje subió por otro lado), aparece al lado
+    if (dist <= 24 || Math.hypot(this.x - this.chkX, this.y - this.chkY) > 6) {
+      this.chkX = this.x; this.chkY = this.y; this.stuckT = 0;
+    } else this.stuckT += dt;
+    // el personaje ya está en la superficie y Popi sigue bajo tierra
+    const surfaceGap = p.depth < 1 && (this.y + this.h) / TILE > SURFACE + 0.5;
+    this.surfT = surfaceGap ? (this.surfT || 0) + dt : 0;
+    if (dist > 220 || this.stuckT > 1.0 || this.surfT > 0.7) { this.poof(); this.place(); this.poof(); return; }
 
     // caminar hacia su lugar (corre si el personaje corre)
     const speed = Math.max(PHYS.walk, Math.abs(p.vx)) * 1.2;
