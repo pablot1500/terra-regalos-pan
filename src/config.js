@@ -48,7 +48,7 @@ export const DIG = {
   energyCost: [0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35], // energía por palazo según el nivel de pala
   reach: 6,          // px de alcance más allá del borde del personaje
   reachMult: 1.3,    // multiplicador del alcance total (+30%)
-  reachPerUpgrade: 0.05, // +5% de alcance por cada mejora de fuerza o de pala ancha
+  reachPerUpgrade: 0.07, // +7% de alcance por cada mejora de fuerza o de pala ancha
 };
 
 // Radio (en px) del círculo que saca cada palazo, según el nivel de pala ancha
