@@ -177,6 +177,14 @@ export class World {
         }
       }
       for (let rr = ch.r - 5; rr < ch.r; rr++) for (let cc = ch.c - 6; cc <= ch.c + 6; cc++) mat[rr * w + cc] = T.CRYSTAL;
+      // piso de mármol indestructible debajo del cofre
+      for (let cc = ch.c - 6; cc <= ch.c + 6; cc++) {
+        if (cc < EDGE || cc >= w - EDGE || ch.r >= BOTTOM_ROW) continue;
+        const i = ch.r * w + cc;
+        tiles[i] = mat[i] = T.GIFTFLOOR;
+        loot[i] = 0;
+        this.fillTileSubs(cc, ch.r, 1);
+      }
       this.chests.push({ id: ch.gift.id, gift: ch.gift, c: ch.c, r: ch.r, opened: false, open: 0 });
     }
 

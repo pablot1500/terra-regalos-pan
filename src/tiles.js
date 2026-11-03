@@ -16,6 +16,7 @@ export const T = {
   STAIR: 10,   // escalera (sólida, invisible)
   CRYSTAL: 11, // cristales rosados que rodean las cámaras de regalos
   PAVER: 12,   // baldosas del patio (no se rompen)
+  GIFTFLOOR: 13, // piso de mármol de las cámaras de regalo (no se rompe)
 };
 
 export const LAYER_TILES = [T.DIRT, T.CLAY, T.STONE, T.GRANITE, T.BASALT, T.ABYSS];
@@ -31,6 +32,7 @@ DEF[T.ABYSS] = { name: 'Abismo', hard: 16, pal: ['#0b0712', '#180f25', '#26193a'
 DEF[T.BEDROCK] = { name: 'Roca madre', hard: 9999, pal: ['#050407', '#100e15', '#1b1822', '#28242f', '#37323f'], style: 'bedrock' };
 DEF[T.CONCRETE] = { name: 'Cemento', hard: 9999, pal: ['#5f5b56', '#8a8680', '#a29e98', '#b9b5ae', '#d2cec7'], style: 'concrete' };
 DEF[T.PAVER] = { name: 'Baldosa', hard: 9999, pal: ['#6f665b', '#a89c8a', '#cfc4b2', '#e3dacb', '#efe8dc'], style: 'paver' };
+DEF[T.GIFTFLOOR] = { name: 'Mármol', hard: 9999, pal: ['#6e3a52', '#d9a6bd', '#f3d6e2', '#fdeef4', '#e6b33c'], style: 'giftfloor' };
 DEF[T.CRYSTAL] = { name: 'Cristal', hard: 1, pal: ['#4c1236', '#9a2e66', '#d4508f', '#ff86c2', '#ffd6ec'], style: 'crystal', glow: true };
 
 export const VARIANTS = 4;
@@ -145,6 +147,15 @@ function genTex(id, v) {
         else if (q > 0.93) px(i, j, P[4]);
       }
       if (v === 0) { x.fillStyle = P[2]; x.fillRect(7, 0, 1, 8); }
+      break;
+    }
+    case 'giftfloor': {
+      // mármol rosado con vetas doradas
+      x.fillStyle = P[3]; x.fillRect(0, 0, 8, 8);
+      for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) if (r() < 0.18) px(i, j, P[2]);
+      const vy = 2 + (v % 4);
+      for (let i = 0; i < 8; i++) px(i, Math.max(0, Math.min(7, vy + Math.round(Math.sin((i + v * 3) * 0.9)))), P[4]);
+      x.fillStyle = P[1]; x.fillRect(7, 0, 1, 8);
       break;
     }
     case 'paver': {
