@@ -120,7 +120,7 @@ export const UPGRADES = [
   {
     id: 'bateria', name: 'Batería', icon: 'battery',
     desc: 'Más energía para cavar y volar sin volver a casa.',
-    levels: [[100, 0], [140, 90], [200, 380], [280, 1350], [400, 4200], [560, 11250], [800, 24000]],
+    levels: [[150, 0], [210, 90], [290, 380], [400, 1350], [550, 4200], [750, 11250], [1000, 24000]],
     label: (v) => `${v} de energía`,
   },
   {
