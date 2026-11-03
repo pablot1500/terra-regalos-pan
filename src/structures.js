@@ -456,68 +456,6 @@ function paintHedge(w, h, seed) {
   return cv;
 }
 
-// Volkswagen Gol Trend gris (2012) estacionado (solo decoración), mirando a la derecha
-function paintGol() {
-  const W = 47, H = 25;
-  const [cv, x] = makeCanvas(W, H);
-  const { R, P } = painter(x);
-  const body = '#666b72', bodyD = '#4b4f55', bodyH = '#8c9299', edge = '#2e3136';
-  const glass = '#262c35', glassH = '#56657a', black = '#1c1d21', trim = '#2a2c31'; // vidrios polarizados
-  const WHEELS = [9, 36];
-  // silueta de hatchback: techo en arco, cola corta y redonda, trompa baja
-  const top = (u) => {
-    if (u < 12) return Math.round(2 + 10 * (1 - Math.sqrt(1 - ((12 - u) / 12) ** 2))); // cola redondeada
-    if (u <= 27) return Math.round(2 + ((u - 15) / 12) ** 2 * 1.4);
-    if (u <= 35) return Math.round(3 + ((u - 27) / 8) ** 1.2 * 7);
-    if (u <= 42) return Math.round(10 + (u - 36) * 0.3);
-    return [13, 14, 16][u - 43];
-  };
-  const bottom = (u) => (u === 0 ? 15 : u === 1 ? 16 : u < 4 || u > 42 ? 17 : 19);
-  const arch = (u, y) => WHEELS.some((cx) => (u - cx) ** 2 + (y - 20) ** 2 < 31);
-  const inside = (u, y) => u >= 0 && u <= 45 && y >= top(u) && y <= bottom(u) && !arch(u, y);
-  // sombra en el piso
-  x.fillStyle = 'rgba(0,0,0,0.22)'; x.fillRect(2, H - 1, W - 4, 1); x.fillRect(5, H - 2, W - 10, 1);
-  for (let u = 0; u <= 45; u++) {
-    for (let y = top(u); y <= bottom(u); y++) {
-      if (!inside(u, y)) continue;
-      const border = !inside(u - 1, y) || !inside(u + 1, y) || !inside(u, y - 1) || !inside(u, y + 1);
-      let col = y >= 17 ? bodyD : y === 10 || y === top(u) + 1 ? bodyH : body;
-      // ventanillas: parante de atrás grueso y parante del medio
-      if (u >= 8 && u <= 33 && y >= top(u) + 2 && y <= 8 && inside(u + 1, y - 1) && u !== 19 && u !== 20) col = (u === 10 || u === 22) && y <= 5 ? glassH : glass;
-      P(u, y, border ? edge : col);
-    }
-  }
-  P(11, 6, glassH); P(23, 6, glassH);
-  R(19, 4, 2, 5, bodyD); // parante del medio
-  // puertas, manijas y espejo
-  R(7, 10, 1, 6, bodyD); R(20, 10, 1, 7, bodyD); R(32, 10, 1, 6, bodyD);
-  R(16, 12, 2, 1, trim); R(29, 12, 2, 1, trim);
-  R(33, 8, 2, 2, body); P(33, 8, edge);
-  R(2, 14, 41, 1, bodyD);
-  // faro redondeado, luces traseras verticales y la parte de abajo de los paragolpes negra
-  R(41, 11, 3, 2, '#fff3a8'); P(42, 11, '#ffffff'); P(43, 13, '#ffa13d');
-  R(1, 10, 2, 4, '#c83a3a'); P(1, 10, '#ff7a7a'); P(2, 14, '#ffa13d');
-  R(40, 17, 5, 1, trim); R(1, 17, 3, 1, trim);
-    // ruedas con tazas grises dentro de pasarruedas redondos
-  for (const cx of WHEELS) {
-    for (let j = -4; j <= 4; j++) {
-      const w = Math.round(Math.sqrt(18 - j * j));
-      R(cx - w, 20 + j, w * 2 + 1, 1, black);
-    }
-    // llantas de aleación plateadas con rayos
-    for (let j = -3; j <= 3; j++) {
-      const w = Math.round(Math.sqrt(10 - j * j));
-      R(cx - w, 20 + j, w * 2 + 1, 1, '#c3cad2');
-    }
-    P(cx, 18, '#5b636d'); P(cx - 2, 20, '#5b636d'); P(cx + 2, 20, '#5b636d'); P(cx - 1, 22, '#5b636d'); P(cx + 1, 22, '#5b636d');
-    P(cx - 1, 18, '#eef2f5'); P(cx, 20, '#3a3e44');
-  }
-  // patente
-  R(43, 15, 2, 1, '#ffffff');
-  R(43, 12, 2, 2, black); P(44, 12, '#c3cad2'); // parrilla negra con el logo
-  return cv;
-}
-
 function paintBush(w, h, seed, flowers) {
   const [cv, x] = makeCanvas(w, h);
   const { P } = painter(x);
@@ -589,7 +527,6 @@ export class Structures {
     this.tree = paintTree();
     this.hedgeL = paintHedge(16, 60, 5);
     this.fenceR = paintFence(16, 24);
-    this.gol = paintGol();
     this.bushes = [
       [27.4 * TILE, paintBush(18, 14, 3, ['#ff9ad5', '#ffffff'])],
       [37.6 * TILE, paintBush(22, 16, 7, null)],
@@ -620,9 +557,8 @@ export class Structures {
       const xx = Math.round(p1 + (p2 - p1) * u - spr.width / 2 + Math.sin(t * 1.7 + i) * 0.8);
       ctx.drawImage(spr, xx, sag(u) + 1);
     });
-    // arbustos contra la medianera y el Gol estacionado detrás de Popi
+    // arbustos contra la medianera
     for (const [bx, spr] of this.bushes) ctx.drawImage(spr, Math.round(bx) - camX, gy - spr.height);
-    ctx.drawImage(this.gol, 52 * TILE + 6 - camX, gy - this.gol.height + 1);
   }
 
   drawBuildings(ctx, camX, camY) {
