@@ -122,11 +122,14 @@ export class Input {
     if (!this.enabled) return { mx: 0, my: 0 };
     const digKey = k('KeyJ') || k('KeyK') || k('KeyX') || T.dig;
     const upKey = k('ArrowUp') || k('KeyW');
+    const downKey = k('ArrowDown') || k('KeyS');
     return {
       left: k('ArrowLeft') || k('KeyA') || T.sx < -0.35,
       right: k('ArrowRight') || k('KeyD') || T.sx > 0.35,
       up: upKey || T.sy < -0.55,
-      down: k('ArrowDown') || k('KeyS') || T.sy > 0.55,
+      down: downKey || T.sy > 0.55,
+      glide: downKey,                 // S o ↓: bajar despacio con el jetpack
+      stickDown: T.sy > 0.55,         // joystick abajo: cavar hacia abajo
       jump: k('Space') || (!digKey && upKey) || T.jump,
       jumpPressed: e('Space') || (!digKey && (e('ArrowUp') || e('KeyW'))) || e('t-jump'),
       dig: k('KeyJ') || k('KeyK') || k('KeyX'),
@@ -135,7 +138,7 @@ export class Input {
       sx: T.sx,
       sy: T.sy,
       digPressed: e('KeyJ') || e('KeyK') || e('KeyX') || e('t-dig'),
-      downPressed: e('ArrowDown') || e('KeyS') || e('t-down'),
+      downPressed: e('t-down'),
       mouseDig: this.mouse.down || !!this.mouse.latched,
       mx: this.mouse.x + camX,
       my: this.mouse.y + camY,

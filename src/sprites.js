@@ -57,56 +57,88 @@ export function drawText(ctx, s, x, y, color, outline = null) {
 }
 
 // ============================================================
-//  Personajes (12x16, mirando a la derecha)
+//  Personajes (16x20, mirando a la derecha)
 // ============================================================
-// Generado con un script de pintado (14x18, mirando a la derecha)
-const BODY_TOP = [
- "..............",
- ".....ooooooo..",
- "....ossssssso.",
- "....ossssssso.",
- "....oSsesseso.",
- "....oSsessesso",
- "....oSmssssmo.",
- ".....oSsssqso.",
- ".kk...oooooo..",
- "kjJkoccCSSCo..",
- "kJjkoCcccdco..",
- "kJrkoCcccdco..",
- "kjjkosccccCo..",
- "kkkkoPPPPyPo.."
-];
-const LEGS = {"idle": [".kk.oPppppo...", "....oPpopPo...", "....obbobbBo..", "....oooooooo.."], "walkA": [".kk.oppppppo..", "...oPPo.oppo..", "...obbo.obbBo.", "...oooo.ooooo."], "walkC": [".kk.oppppppo..", "...oppo.oPPo..", "...obbo.obbBo.", "...oooo.ooooo."], "air": [".kk.oppppppo..", "....oPppPppo..", "....obbobbbo..", "....ooo.oooo.."]};
-const HAIR = {"el": [".....HH.HH.H..", "....HhhghhghH.", "...HhhghhghhH.", "...Hhh.hH.hH..", "...Hh.........", "....H........."], "ella": [".....HHHHHHf..", "....HhhgghfFf.", "...HhhghhhhfH.", "..HhhhhhhHhH..", "..Hhgh........", ".HHhhh........", ".HHhgh..zz....", "..Hhhh........", ".HHhgH........", ".HHhhH........", "..HhgH........", "..HhhH........", "..HhhH........", "...hH........."]};
+// Pablo y Pancha: cabeza (filas 0-10) y torso (11-15) propios de cada uno;
+// las piernas (16-19) son las mismas con otra paleta.
+// Ojos en las filas 6 y 7: w = brillo, e = pupila, E = iris.
+const TOP = {
+  pablo: [
+    '...oo.ooo.oo....',
+    '..oghohghoghoo..',
+    '.ohhgHhhhgHhhgo.',
+    'ohgHhhhgHhhhgHho',
+    'ohgHhhgsHssHsgho',
+    'ohgHhhsHssssHsso',
+    'ohhgHSswesswesso',
+    'ohgHosSEesseEsso',
+    'ohhHosmmssSsmmso',
+    '.oHosxsSqqqSsxo.',
+    '..ooxxxxxxxxxo..',
+    '.kk.oCcciiicCo..',
+    'kjJkoCcclcclCo..',
+    'kJrkoCcccccdCo..',
+    'kjjkoCccccccCo..',
+    'kkkkoCCCCCCCCo..',
+  ],
+  pancha: [
+    '.....oooooo.....',
+    '...oohhhgghoo...',
+    '..ohhhhghhhhho..',
+    '.ohhhhhhhghhhho.',
+    'ohghhhhhsssshhho',
+    'ohhghhsvvssvvsho',
+    'ohghhhswesswesho',
+    'ohhghhsEesseEsho',
+    'ohhhghmmssSsmmho',
+    'ohhghhsssqqssho.',
+    'ohhhhgosssssoho.',
+    '.kk.hhcCssCcho..',
+    'kjJkhhccccccho..',
+    'kJrkhCccccdcCo..',
+    'kjjkoCcccccCCo..',
+    'kkkkoCCCCCCCCo..',
+  ],
+};
+const LEGS = {
+  idle: ['....oPpppppppo..', '....oPppoPpppo..', '...obbbuobbbbuo.', '...oooooooooooo.'],
+  walkA: ['....oPpppppppo..', '...oPpo..oPppo..', '..obbuo..obbbuo.', '..oooo...oooooo.'],
+  walkC: ['....oPpppppppo..', '....oPpo.oPppo..', '...obbuo.obbbuo.', '...ooooo.oooooo.'],
+  air: ['....oPpppppppo..', '....oPppPpppo...', '....obbuobbbuo..', '....oooo.ooooo..'],
+};
 
-export const CHAR_W = 14, CHAR_H = 18;
+export const CHAR_W = 16, CHAR_H = 20;
+const SHOULDER = { x: 10, y: 12 }; // donde nace el brazo que sostiene la pala o el taladro
 
 const BASE_PAL = {
-  o: '#2b1d2b', e: '#2b1d2b', k: '#4a5260', j: '#c3cad4', J: '#8a94a3', r: '#ff5a5a', y: '#f2c14e',
+  o: '#2b1d2b', w: '#ffffff', k: '#4a5260', j: '#c3cad4', J: '#8a94a3', r: '#ff5a5a', y: '#f2c14e',
 };
 export const CHAR_PAL = {
-  el: {
+  // pelo negro con rulos, barba de unos días y buzo gris con capucha
+  pablo: {
     ...BASE_PAL,
-    s: '#f2c7a5', S: '#d9a17f', w: '#ffffff', m: '#f0a7a0', q: '#a8574f',
-    c: '#3e9b6a', C: '#2b744e', d: '#62c08e', p: '#3d5c9c', P: '#2c4475', b: '#5a3a26', B: '#8a5a36',
-    h: '#2a2733', H: '#121018', g: '#58536e',
+    s: '#f3cdb0', S: '#dcaa8a', m: '#f4a097', q: '#a85a52', e: '#2e1c14', E: '#7a4a2a', x: '#d8aa8c',
+    h: '#2a2530', H: '#121018', g: '#4f4862',
+    c: '#8e9a94', C: '#66726c', d: '#b5c0ba', i: '#f4f1ea', l: '#cfc7b6',
+    p: '#5e7370', P: '#45565a', b: '#2f3b37', u: '#f1ede4',
   },
-  ella: {
+  // pelo largo castaño cobrizo, suéter caqui y jeans
+  pancha: {
     ...BASE_PAL,
-    s: '#fde9dd', S: '#f0c8b2', w: '#ffffff', m: '#ffaab6', q: '#d0606e', z: '#dc9a7c',
-    c: '#f07aa6', C: '#c9578a', d: '#ffa3c6', p: '#6b56a8', P: '#4d3d80', b: '#7a4a3a', B: '#a8705a',
-    h: '#d9572b', H: '#8e2c14', g: '#f6955a', f: '#ff9ccc', F: '#ffe066',
+    s: '#fde6d6', S: '#efc2aa', m: '#f7a1a6', q: '#b04a58', e: '#3e2416', E: '#8a5530',
+    h: '#b9552c', H: '#7c2f16', g: '#e07c45', v: '#8e3f22',
+    c: '#c9b27a', C: '#a08a55', d: '#e2cf9c',
+    p: '#5f86b0', P: '#456890', b: '#8a4436', u: '#efe3c8',
   },
 };
 
 function composeFrame(charId, legsKey, bob, blink, jet = 0, helmet = 0) {
   const pal = { ...CHAR_PAL[charId], ...JET_TIERS[Math.min(jet, JET_TIERS.length - 1)] };
   const [c, x] = makeCanvas(CHAR_W, CHAR_H);
-  const legs = mapSprite(LEGS[legsKey], pal);
-  x.drawImage(legs, 0, 14);
-  const top = blink ? BODY_TOP.map((r, i) => (i === 4 || i === 5 ? r.replace(/[ew]/g, i === 5 ? 'S' : 's') : r)) : BODY_TOP;
+  x.drawImage(mapSprite(LEGS[legsKey], pal), 0, 16);
+  // parpadeo: se apaga el brillo y queda la línea de las pestañas
+  const top = blink ? TOP[charId].map((r, i) => (i === 6 ? r.replace(/[weE]/g, 's') : i === 7 ? r.replace(/E/g, 'e') : r)) : TOP[charId];
   x.drawImage(mapSprite(top, pal), 0, bob);
-  x.drawImage(mapSprite(HAIR[charId], pal), 0, bob);
   const H = HELMET_TIERS[Math.min(helmet, HELMET_TIERS.length - 1)];
   if (H) x.drawImage(mapSprite(HELMET, { o: '#2b1d2b', ...H }), 0, bob);
   return c;
@@ -144,10 +176,10 @@ export const HELMET_TIERS = [
   { Y: '#c49bff', y: '#7a4fc9', w: '#efe3ff', l: '#4a2c8a', L: '#fff3a8' },
 ];
 const HELMET = [
-  '.....oooooo...',
-  '....oYwYYYYYlL',
-  '...oYYYYYYYYlL',
-  '..oyyyyyyyyyy.',
+  '....oooooooo....',
+  '...oYwYYYYYYolL.',
+  '..oYYYYYYYYYYolL',
+  '.oyyyyyyyyyyyyo.',
 ];
 const charCache = {};
 export function getCharFrames(charId, jet = 0, helmet = 0) {
@@ -171,14 +203,14 @@ export function charPortrait(charId, scale = 6) {
 }
 
 /**
- * Dibuja brazo + pala. (sx, sy) = esquina sup. izq. del sprite de 12x16.
+ * Dibuja brazo + pala. (sx, sy) = esquina sup. izq. del sprite del personaje.
  * armAng y shovelAng en radianes, mirando a la derecha (0 = derecha, PI/2 = abajo).
  */
 export function drawArmShovel(ctx, sx, sy, facing, bob, armAng, shovelAng, palaLevel, charId, len = 7) {
   const pal = CHAR_PAL[charId];
   const mx = (lx) => (facing > 0 ? sx + Math.round(lx) : sx + CHAR_W - 1 - Math.round(lx));
   const my = (ly) => sy + Math.round(ly);
-  const shX = 9, shY = 10 + bob;
+  const shX = SHOULDER.x, shY = SHOULDER.y + bob;
   const hx = shX + Math.cos(armAng) * 3, hy = shY + Math.sin(armAng) * 3;
   const ca = Math.cos(shovelAng), sa = Math.sin(shovelAng);
   const tipX = hx + ca * len, tipY = hy + sa * len;
@@ -212,7 +244,7 @@ export function drawDrill(ctx, sx, sy, facing, bob, ang, level, charId, spin) {
   const mx = (lx) => (facing > 0 ? sx + Math.round(lx) : sx + CHAR_W - 1 - Math.round(lx));
   const my = (ly) => sy + Math.round(ly);
   const px = (lx, ly, col) => { ctx.fillStyle = col; ctx.fillRect(mx(lx), my(ly), 1, 1); };
-  const shX = 9, shY = 10 + bob;
+  const shX = SHOULDER.x, shY = SHOULDER.y + bob;
   const ca = Math.cos(ang), sa = Math.sin(ang);
   const hx = shX + ca * 2.5, hy = shY + sa * 2.5;
   const nx = -sa, ny = ca; // perpendicular
@@ -257,12 +289,17 @@ const LOOT_PAL = {
   e: '#0d5e3a', M: '#2ec27e', F: '#a8f5cf',
   c: '#2a6f9e', C: '#7fd8ff', W: '#effcff',
   n: '#9a6a3a', N: '#c99a5a', v: '#5b3a8c', V: '#8f63d9',
+  // moneda de bronce ($1) y de plata
+  b: '#8a4e22', B: '#f0b07a', z: '#c97a3e', Z: '#5e3313',
+  s: '#7d8794', S: '#f4f8fb', m: '#c3ccd5', t: '#55606b',
+  // billete de $100 (violeta) y de $1000 (naranja)
+  a: '#4a2b78', A: '#9b74d4', i: '#dccbf5', k: '#a8491a', K: '#f2963a', j: '#ffd9a8',
 };
 const LOOT_MAPS = {
-  coin: ['.ddd.', 'dYyyd', 'dyyyd', 'dyyod', '.ooo.'],
-  coins: ['..ddd..', '.dYyyd.', '.ddddd.', 'dyyyyyd', 'ooooooo'],
-  bill: ['ggggggg', 'gGLgLGg', 'gGLgLGg', 'ggggggg'],
-  billstack: ['ggggggg', 'gGLrLGg', 'gggrggg', 'gGLrLGg', 'ggggggg'],
+  coin: ['.bbb.', 'bBzzb', 'bzzzb', 'bzzZb', '.ZZZ.'],
+  coins: ['.ssss.', 'sSSmms', 'sSmmms', 'smmmts', 'smmtts', '.tttt.'],
+  bill: ['aaaaaaaa', 'aAiAAAia', 'aiiiAAAa', 'aAiAAiia', 'aaaaaaaa'],
+  billstack: ['kkkkkkkk', 'kKjKKKjk', 'kjjjKKKk', 'kKjKKjjk', 'kkkkkkkk'],
   goldbar: ['.ddddd.', 'dYYyyyd', 'dyyyyyd', 'ooooooo'],
   ruby: ['.RRR.', 'RPwER', 'REEER', '.RER.', '..R..'],
   emerald: ['.eee.', 'eFMMe', 'eFMMe', 'eMMMe', '.eee.'],
@@ -338,6 +375,7 @@ export function drawGiftBox(ctx, x, y) {
 const DOG_PAL = {
   b: '#9a5428', B: '#6b3518', h: '#b8693a', l: '#d99a5a', n: '#1d1012', e: '#1d1012',
   c: '#d9344e', y: '#ffd34d', t: '#ff8fa3',
+  g: '#ece4da', G: '#cbbfb2', // pelito canoso
 };
 // legs: 'stand' | 'walkA' | 'walkB' | 'air' | 'dig'
 function paintDog(tailUp, blink, tongue, { legs = 'stand', helmet = false, jet = false } = {}) {
@@ -346,7 +384,7 @@ function paintDog(tailUp, blink, tongue, { legs = 'stand', helmet = false, jet =
   // mini jetpack (atrás, sobre el lomo)
   if (jet) { R(10, 1, 4, 3, '#c3cad4'); R(10, 1, 1, 3, '#e8eef3'); R(13, 1, 1, 3, '#8a94a3'); R(11, 0, 2, 1, '#8a94a3'); R(12, 2, 1, 1, '#ff5a5a'); }
   // cuerpo largo y bajito
-  R(5, 4, 11, 4, 'b'); R(7, 4, 7, 1, 'h'); R(6, 7, 9, 1, 'l');
+  R(5, 4, 11, 4, 'b'); R(7, 4, 7, 1, 'h'); R(6, 7, 9, 1, 'g'); R(6, 6, 2, 1, 'G'); R(10, 6, 3, 1, 'G');
   // patitas cortas
   const leg = (lx, ly = 8, lh = 2) => { R(lx, ly, 2, lh, 'B'); R(lx, ly + lh - 1, 2, 1, 'l'); };
   if (legs === 'walkA') { leg(5); leg(14); }
@@ -359,10 +397,10 @@ function paintDog(tailUp, blink, tongue, { legs = 'stand', helmet = false, jet =
   else { R(16, 4, 1, 1, 'b'); R(17, 5, 1, 1, 'b'); }
   // cabeza, hocico y nariz
   R(1, 1, 6, 5, 'b'); R(2, 1, 4, 1, 'h');
-  R(0, 3, 3, 3, 'l'); R(0, 3, 1, 1, 'n'); R(1, 5, 2, 1, 'B');
+  R(0, 3, 3, 3, 'g'); R(0, 3, 1, 1, 'n'); R(1, 5, 5, 1, 'G'); R(3, 4, 1, 1, 'G'); R(2, 2, 1, 1, 'G');
   if (tongue) R(1, 6, 1, 1, 't');
   // ojo y ceja
-  R(3, 2, 1, 1, blink ? 'b' : 'e'); R(3, 1, 1, 1, 'l');
+  R(3, 2, 1, 1, blink ? 'b' : 'e'); R(3, 1, 1, 1, 'g');
   // oreja larga caída
   R(5, 1, 2, 5, 'B');
   // collar con chapita
@@ -479,7 +517,7 @@ function initIcons() {
   const [gc, gx] = makeCanvas(13, 14);
   drawGiftBox(gx, 1, 1);
   ICON_URL.giftBig = outlined(gc, '#1d1420').toDataURL();
-  for (const k of ['el', 'ella']) ICON_URL['char_' + k] = charPortrait(k, 1).toDataURL();
+  for (const k of ['pablo', 'pancha']) ICON_URL['char_' + k] = charPortrait(k, 1).toDataURL();
 }
 
 // ============================================================

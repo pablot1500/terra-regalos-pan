@@ -69,10 +69,9 @@ function makeFar() {
   for (let y = HORIZON; y < FAR_H; y++) {
     const cx = Math.round(coastAt(y));
     R(0, y, cx, 1, '#a9cbbd');
-    R(cx - 3, y, 3, 1, (y % 4 < 2) ? '#c4ab82' : '#b09670');
-    P(cx, y, '#8f7655');
-    P(cx + 1, y, '#ffffff');
-    if (y % 3 === 0) R(cx + 2, y, 2, 1, '#c6ecf8');
+    R(cx, y, 3, 1, '#ead9a8');
+    P(cx + 3, y, '#ffffff');
+    if (y % 3 === 0) R(cx + 4, y, 2, 1, '#c6ecf8');
   }
   // lomas bajitas (las sierras quedan lejos)
   for (let u = 0; u < COAST0 + 2; u++) {
@@ -106,27 +105,6 @@ function makeFar() {
   R(bx + 5, HORIZON - 6, 1, 14, '#6b6f78');
   for (let j = 0; j < 12; j++) R(bx + 6, HORIZON - 5 + j, Math.floor(j / 2), 1, '#fff7e6');
   for (let j = 0; j < 8; j++) R(bx + 5 - Math.floor(j / 2), HORIZON - 1 + j, Math.floor(j / 2), 1, '#ff9fbf');
-  // cabo con acantilado entrando al mar
-  const CAPE0 = SEA_U + 20, CAPE1 = SEA_U + 95;
-  for (let u = CAPE0; u < CAPE1; u++) {
-    const k = (u - CAPE0) / (CAPE1 - CAPE0);
-    const top = Math.round(HORIZON - 7 + k * 3 + Math.sin(u * 0.3) * 0.8);
-    const bottom = HORIZON + 6 + Math.round(k * 10);
-    R(u, top, 1, 2, '#a7c79a');
-    for (let y = top + 2; y < bottom; y++) P(u, y, (Math.floor(y / 2) + (u % 3 === 0 ? 1 : 0)) % 3 === 0 ? '#a98d66' : '#bfa57c');
-    P(u, bottom, '#ffffff');
-  }
-  for (let y = HORIZON - 4; y < HORIZON + 17; y++) { // cara del acantilado mirando al mar
-    const face = CAPE1 + Math.round((y - HORIZON) * 0.3);
-    R(face - 2, y, 3, 1, '#8f7655');
-    P(face + 1, y, y % 2 ? '#ffffff' : '#c6ecf8');
-  }
-  // costa lejana a la derecha: barrancas
-  for (let u = SEA_U + 520; u < W; u++) {
-    const top = HORIZON - 5 - Math.round(Math.sin((u - SEA_U) / 47) * 2 + 2);
-    R(u, top, 1, 1, '#b4cfc0');
-    R(u, top + 1, 1, HORIZON - top - 1, (u % 4 < 2) ? '#c9b48f' : '#bba582');
-  }
   return c;
 }
 
@@ -203,33 +181,17 @@ function makeMid() {
     // farolas
     if (rnd() < 0.35) { R(u, base - 18, 1, 18, '#3a3f45'); R(u - 1, base - 19, 3, 1, '#3a3f45'); P(u, base - 18, '#ffe58a'); }
   }
-  // barranca: pasto que termina en un acantilado de roca sobre el mar
-  const EDGE_U = 420;
-  for (let uu = 360; uu < EDGE_U; uu++) {
-    const top = base - 9 - Math.round(Math.sin((uu - 360) / 16) * 2);
+  // loma de pasto que baja suave hasta la playa
+  for (let uu = 360; uu < 412; uu++) {
+    const k = (uu - 360) / 52;
+    const top = Math.round(base - 9 + (H - base + 10) * (1 - Math.cos(k * Math.PI)) / 2);
+    if (top >= H) continue;
     R(uu, top, 1, H - top, '#8db86a');
     P(uu, top, '#a9d07e');
     if ((uu * 5) % 7 === 0) P(uu, top + 2, '#77a35a');
-    if ((uu * 7) % 13 === 0) { R(uu, top - 2, 1, 2, '#6f9e4f'); P(uu + 1, top - 3, '#8cba55'); }
+    if ((uu * 7) % 13 === 0 && k < 0.6) { R(uu, top - 2, 1, 2, '#6f9e4f'); P(uu + 1, top - 3, '#8cba55'); }
   }
-  // cara del acantilado: roca ocre con vetas, bajando en escalones irregulares
-  const rock = ['#c2a274', '#ad8c60', '#94764f', '#7d6242'];
-  for (let uu = EDGE_U; uu < EDGE_U + 26; uu++) {
-    const k = uu - EDGE_U;
-    const top = base - 9 + Math.round(k * 1.6 + Math.sin(k * 1.3) * 2 + (k > 12 ? (k - 12) * 1.5 : 0));
-    if (top >= H) continue;
-    for (let yy = top; yy < H; yy++) {
-      const band = Math.floor((yy + Math.round(Math.sin(uu * 0.4) * 2)) / 3) % rock.length;
-      P(uu, yy, rock[band]);
-    }
-    P(uu, top, '#d9bd8c');
-    if (k < 3) P(uu, top, '#8db86a');
-  }
-  // espuma al pie
-  for (let uu = EDGE_U + 10; uu < EDGE_U + 40; uu++) if ((uu * 3) % 5) P(uu, H - 2 - ((uu * 7) % 3), '#ffffff');
-  // arbustos de la barranca
-  tree(x, 372, base - 8, rnd, false);
-  for (let k = 0; k < 3; k++) { const bx = 384 + k * 11; R(bx, base - 13, 6, 4, '#4f8f3f'); R(bx + 1, base - 14, 4, 1, '#6cad55'); }
+  tree(x, 366, base - 8, rnd, false);
   // aire de distancia
   x.globalCompositeOperation = 'source-atop';
   x.fillStyle = 'rgba(175,212,240,0.28)';

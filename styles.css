@@ -84,7 +84,7 @@ button { font-family: var(--font); cursor: pointer; }
   padding: 8px 12px 6px; color: var(--cream); font-size: 17px; display: flex; flex-direction: column; align-items: center; gap: 2px;
   min-width: 104px;
 }
-.char img { width: 72px; height: 96px; image-rendering: pixelated; }
+.char img { width: 72px; height: 88px; image-rendering: pixelated; }
 .char.sel { background: #5a2a4a; box-shadow: inset 0 0 0 3px var(--pink), 0 4px 0 var(--ink); }
 .char.sel span::before { content: '♥ '; color: var(--pink); }
 .menu { display: flex; flex-direction: column; gap: 12px; align-items: center; }
@@ -280,7 +280,7 @@ body.touch .ctl-desk { display: none; }
   .logo .l1 { font-size: 40px; } .logo .l2 { font-size: 52px; }
   .tagline { margin: 4px 0; font-size: 14px; }
   .pick { margin: 6px 0 4px; }
-  .char img { width: 48px; height: 64px; }
+  .char img { width: 54px; height: 66px; }
   .btn.big { font-size: 18px; padding: 8px 20px; min-width: 200px; }
   .menu { gap: 8px; }
   #gauge { height: 110px; }

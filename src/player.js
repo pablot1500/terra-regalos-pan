@@ -114,8 +114,8 @@ export class Player {
       const d = Math.hypot(x, y);
       return { x: x / d, y: y / d };
     }
-    if (inp.down) {
-      // abajo solo (o joystick en diagonal hacia abajo)
+    if (inp.stickDown) {
+      // joystick abajo solo (o en diagonal hacia abajo); en el teclado, S es para bajar despacio
       if (inp.sy > 0.55) { const d = Math.hypot(inp.sx, inp.sy); return { x: inp.sx / d, y: inp.sy / d }; }
       return { x: 0, y: 1 };
     }
@@ -181,26 +181,23 @@ export class Player {
     }
     this.vy = Math.min(this.vy + PHYS.gravity * dt, PHYS.maxFall);
     const wantJet = inp.jump && !this.onGround && (this.jumpT > 0.17 || this.vy > -30);
+    // descenso controlado (S solo, o Espacio + abajo): frena la caída para bajar
+    // por el pozo sin lastimarse, y no gasta energía
+    const glide = !this.onGround && ((inp.glide && this.vy > 20) || (wantJet && inp.down));
     const wasFlying = this.flying;
     this.flying = false;
-    if (wantJet && this.energy > 0) {
+    if (glide) {
       this.flying = true;
-      if (inp.down) {
-        // descenso controlado: frena la caída para bajar por el pozo sin lastimarse
-        if (this.vy > 60) this.vy = Math.max(60, this.vy - PHYS.jetAccel * dt);
-      } else {
-        this.vy -= PHYS.jetAccel * dt;
-        if (this.vy < -st.jetSpeed) this.vy = -st.jetSpeed;
-      }
-      this.energy = Math.max(0, this.energy - st.jetCost * dt * (inp.down ? 0.5 : 1));
+      if (this.vy > 60) this.vy = Math.max(60, this.vy - PHYS.jetAccel * dt);
       this.peakY = this.y;
-      this.jetFx += dt;
-      if (this.jetFx > 0.03) {
-        this.jetFx = 0;
-        const nx = this.facing > 0 ? this.x - 1 : this.x + this.w + 1;
-        g.particles.add({ x: nx, y: this.y + this.h - 1, vx: (Math.random() - 0.5) * 20, vy: 60 + Math.random() * 40, life: 0.35, max: 0.35, color: Math.random() < 0.5 ? '#ffd34d' : '#ff8a3d', size: 1, grav: -40 });
-        if (Math.random() < 0.4) g.particles.add({ x: nx, y: this.y + this.h + 2, vx: (Math.random() - 0.5) * 16, vy: 20, life: 0.6, max: 0.6, color: 'rgba(200,200,210,0.6)', size: 2, grav: -30, smoke: true });
-      }
+      this.jetFlame(dt);
+    } else if (wantJet && this.energy > 0) {
+      this.flying = true;
+      this.vy -= PHYS.jetAccel * dt;
+      if (this.vy < -st.jetSpeed) this.vy = -st.jetSpeed;
+      this.energy = Math.max(0, this.energy - st.jetCost * dt);
+      this.peakY = this.y;
+      this.jetFlame(dt);
     } else if (wantJet && this.energy <= 0 && Math.random() < 0.1) {
       g.toast('¡Sin energía para volar!', 'nojet');
     }
@@ -259,6 +256,17 @@ export class Player {
       if (this.exhaustT > 0.1 && this.exhaustT - dt <= 0.1) g.toast('¡Te quedaste sin energía!', 'noen');
       if (this.exhaustT > 2.5) g.faint(this, 'energy');
     } else this.exhaustT = 0;
+  }
+
+  /** fueguito y humo del jetpack */
+  jetFlame(dt) {
+    const g = this.game;
+    this.jetFx += dt;
+    if (this.jetFx <= 0.03) return;
+    this.jetFx = 0;
+    const nx = this.facing > 0 ? this.x - 1 : this.x + this.w + 1;
+    g.particles.add({ x: nx, y: this.y + this.h - 1, vx: (Math.random() - 0.5) * 20, vy: 60 + Math.random() * 40, life: 0.35, max: 0.35, color: Math.random() < 0.5 ? '#ffd34d' : '#ff8a3d', size: 1, grav: -40 });
+    if (Math.random() < 0.4) g.particles.add({ x: nx, y: this.y + this.h + 2, vx: (Math.random() - 0.5) * 16, vy: 20, life: 0.6, max: 0.6, color: 'rgba(200,200,210,0.6)', size: 2, grav: -30, smoke: true });
   }
 
   land() {
@@ -415,9 +423,9 @@ export class Player {
     if (this.flying) {
       const nx = this.facing > 0 ? sx + 1 : sx + CHAR_W - 3;
       const len = 3 + Math.floor(Math.random() * 3);
-      ctx.fillStyle = '#ff8a3d'; ctx.fillRect(nx, sy + 15, 2, len);
-      ctx.fillStyle = '#ffd34d'; ctx.fillRect(nx, sy + 15, 2, len - 2);
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(nx, sy + 15, 2, 1);
+      ctx.fillStyle = '#ff8a3d'; ctx.fillRect(nx, sy + 16, 2, len);
+      ctx.fillStyle = '#ffd34d'; ctx.fillRect(nx, sy + 16, 2, len - 2);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(nx, sy + 16, 2, 1);
     }
 
     ctx.drawImage(frames[frame], sx, sy);

@@ -25,8 +25,8 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 | Caminar | A / D o ← → | Joystick |
 | Correr (también volando) | Shift | Joystick a fondo |
 | Saltar · volar con el jetpack | Espacio o W (mantener) | SALTAR (mantener) |
-| Bajar volando despacio | Espacio + S | SALTAR + joystick abajo |
-| Cavar hacia abajo | S o ↓ | Joystick abajo |
+| Bajar despacio con el jetpack (no gasta energía) | S o ↓ (mantener) | SALTAR + joystick abajo |
+| Cavar hacia abajo | Click abajo o J + S | Joystick abajo |
 | Cavar en cualquier dirección | Click (apuntando con el mouse) | CAVAR + joystick (360°) |
 | Cavar con teclado | J + W/A/S/D (8 direcciones) | — |
 | Poner antorcha | T | Botón de antorcha |

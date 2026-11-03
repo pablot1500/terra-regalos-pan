@@ -12,7 +12,7 @@ import { T, DEF, LAYER_TILES, VARIANTS, TEXPX, WALLPX, PALRGB, isDiggable, hardn
 import { hash2, fbm } from './rng.js';
 import { makeCanvas } from './util.js';
 import { LOOT_SPR } from './sprites.js';
-import { placeStructures, PATIO } from './structures.js';
+import { placeStructures, PATIO, DIG_ZONE } from './structures.js';
 
 export const SUB = 2;            // px por sub-celda
 export const SPT = TILE / SUB;   // sub-celdas por bloque (4)
@@ -433,7 +433,8 @@ export class World {
         const v = this.variant[ti];
         const o = (ty * 8 + tx) * 4;
         if (sub[sy * sw + sx]) {
-          const t = this.tiles[ti];
+          let t = this.tiles[ti];
+          if ((t === T.GRAVEL || t === T.DIRT) && this.nearGravelEdge(c, r)) t = this.gravelPx(wx, wy) ? T.GRAVEL : T.DIRT;
           const tex = TEXPX[t];
           if (!tex) continue; // estructuras invisibles
           const pal = PALRGB[t];
@@ -446,7 +447,8 @@ export class World {
           if (col) { d[k] = col[0]; d[k + 1] = col[1]; d[k + 2] = col[2]; d[k + 3] = 255; }
           else { const tx_ = tex[v]; d[k] = tx_[o]; d[k + 1] = tx_[o + 1]; d[k + 2] = tx_[o + 2]; d[k + 3] = 255; }
         } else {
-          const m = this.mat[ti];
+          let m = this.mat[ti];
+          if ((m === T.GRAVEL || m === T.DIRT) && this.nearGravelEdge(c, r)) m = this.gravelPx(wx, wy) ? T.GRAVEL : T.DIRT;
           const wt = WALLPX[m || T.DIRT];
           if (!wt) continue;
           const p = wt[v];
@@ -472,6 +474,26 @@ export class World {
     }
     ch.dirty = false;
     return ch;
+  }
+
+  // La grava del cantero se dibuja con un borde irregular contra la tierra
+  // (solo es dibujo: los bloques siguen siendo los mismos para cavar).
+  nearGravelEdge(c, r) {
+    return r >= SURFACE + 2 && r <= SURFACE + 5 && c >= DIG_ZONE.c0 - 1 && c <= DIG_ZONE.c1 + 1;
+  }
+
+  gravelPx(wx, wy) {
+    const x0 = DIG_ZONE.c0 * TILE, x1 = (DIG_ZONE.c1 + 1) * TILE, y1 = (SURFACE + 4) * TILE;
+    // contornos con ondas grandes (ruido suave) y mordiscos chicos (de a 2 px)
+    const bot = y1 + (fbm(wx * 0.09, 3.7, 61) - 0.5) * 14 + (hash2(wx >> 1, 5, 62) - 0.5) * 3;
+    const left = x0 + (fbm(wy * 0.12, 8.1, 63) - 0.5) * 9 + (hash2(wy >> 1, 6, 64) - 0.5) * 3;
+    const right = x1 + (fbm(wy * 0.12, 2.9, 65) - 0.5) * 9 + (hash2(wy >> 1, 7, 66) - 0.5) * 3;
+    // esquinas de abajo redondeadas
+    const corner = Math.max(0, 5 - (wx - left), 5 - (right - wx));
+    if (wx >= left && wx < right && wy < bot - corner * corner * 0.25) return true;
+    // piedritas sueltas metidas en la tierra cerca del borde
+    const d = Math.max(wy - bot, left - wx, wx - right);
+    return d < 7 && hash2(wx >> 1, wy >> 1, 67) < 0.16 * (1 - d / 7);
   }
 
   solidStruct(sx, sy) {

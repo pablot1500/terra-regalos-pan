@@ -64,8 +64,9 @@ class Game {
     this.shakeT = 0; this.shakeA = 0;
     this.toastTimes = {};
     this.state = 'title';
-    try { this.charId = localStorage.getItem('terra-regalos-pan:char') || 'ella'; } catch { this.charId = 'ella'; }
-    if (!CHARACTERS[this.charId]) this.charId = 'ella';
+    try { this.charId = localStorage.getItem('terra-regalos-pan:char') || 'pancha'; } catch { this.charId = 'pancha'; }
+    this.charId = { el: 'pablo', ella: 'pancha' }[this.charId] || this.charId; // nombres viejos de los personajes
+    if (!CHARACTERS[this.charId]) this.charId = 'pancha';
     this.savedData = null;
     this.freshGame();
     this.cam = { x: 26 * TILE, y: (SURFACE - 22) * TILE };
@@ -537,13 +538,13 @@ class Game {
 
   updateTips(p) {
     if (p.x > 27 * TILE && p.depth < 2) {
-      this.tip('dig', this.ui.isTouch ? 'Cavá en el cantero del medio del patio: joystick abajo o CAVAR' : 'Cavá en el cantero del medio del patio: S para abajo o click hacia donde quieras');
+      this.tip('dig', this.ui.isTouch ? 'Cavá en el cantero del medio del patio: joystick abajo o CAVAR' : 'Cavá en el cantero del medio del patio: click hacia donde quieras (o J + dirección)');
     }
     if (p.depth > 14) this.tip('jet', this.ui.isTouch ? 'Para subir: mantené SALTAR y volás con el jetpack' : 'Para subir: mantené Espacio y volás con el jetpack');
     if (p.energy < this.stats.energyMax * 0.3 && p.depth > 4) this.tip('energy', 'Energía baja: volvé al departamento a descansar');
     if (this.money >= 60 && this.upgrades.pala === 0) this.tip('afford', '¡Ya te alcanza para mejorar la pala en el Taller!');
     if (p.depth > 30) this.tip('torch', this.ui.isTouch ? 'Tip: en el Taller venden antorchas para iluminar' : 'Tip: en el Taller venden antorchas (se ponen con T)');
-    if (p.depth > 40) this.tip('fall', this.ui.isTouch ? 'Ojo con las caídas: para bajar despacio mantené SALTAR + joystick abajo' : 'Ojo con las caídas: para bajar despacio mantené Espacio + S');
+    if (p.depth > 40) this.tip('fall', this.ui.isTouch ? 'Ojo con las caídas: para bajar despacio mantené SALTAR + joystick abajo' : 'Ojo con las caídas: mantené S para bajar despacio con el jetpack');
   }
 
   /** destellos de los minerales de las capas profundas (se ven aunque esté oscuro) */

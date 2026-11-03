@@ -17,8 +17,8 @@ export const DEFAULT_SEED = 14022;   // mismo mundo para los dos jugadores
 
 // ---- Personajes (los nombres se pueden cambiar acá) ----
 export const CHARACTERS = {
-  el: { name: 'Él' },
-  ella: { name: 'Ella' },
+  pablo: { name: 'Pablo' },
+  pancha: { name: 'Pancha' },
 };
 
 // ---- Física ----
@@ -52,7 +52,7 @@ export const DIG = {
 };
 
 // Radio (en px) del círculo que saca cada palazo, según el nivel de pala ancha
-export const BRUSH_R = [10, 11.5, 13.5, 16, 19, 23];
+export const BRUSH_R = [10, 11.5, 13.5, 16, 19, 23, 28];
 
 // Colores del filo de la pala según el nivel de fuerza
 export const SHOVEL_BLADES = [
@@ -79,9 +79,9 @@ export const LAYERS = [
 export const ITEMS = [
   null,
   { key: 'coin', name: 'Moneda', value: 1, sfx: 'coin' },
-  { key: 'coins', name: 'Monedas', value: 4, sfx: 'coin' },
-  { key: 'bill', name: 'Billete', value: 10, sfx: 'bill' },
-  { key: 'billstack', name: 'Fajo de billetes', value: 35, sfx: 'bill' },
+  { key: 'coins', name: 'Moneda de plata', value: 4, sfx: 'coin' },
+  { key: 'bill', name: 'Billete de $100', value: 10, sfx: 'bill' },
+  { key: 'billstack', name: 'Billete de $1000', value: 35, sfx: 'bill' },
   { key: 'goldbar', name: 'Lingote de oro', value: 120, sfx: 'gold' },
   { key: 'ruby', name: 'Rubí', value: 300, sfx: 'gem', glow: [255, 80, 110] },
   { key: 'emerald', name: 'Esmeralda', value: 650, sfx: 'gem', glow: [60, 220, 150] },
@@ -114,8 +114,8 @@ export const UPGRADES = [
   {
     id: 'ancho', name: 'Pala ancha', icon: 'wide',
     desc: 'Cava más área de un solo palazo y llega un poco más lejos.',
-    levels: [[0, 0], [1, 220], [2, 1200], [3, 4500], [4, 13500], [5, 32000]],
-    label: (v) => ['Ancha', 'Muy ancha', 'Enorme', 'Gigante', 'Colosal', 'Titánica'][v],
+    levels: [[0, 0], [1, 150], [2, 800], [3, 3000], [4, 9000], [5, 21000], [6, 45000]],
+    label: (v) => ['Ancha', 'Muy ancha', 'Enorme', 'Gigante', 'Colosal', 'Titánica', 'Descomunal'][v],
   },
   {
     id: 'bateria', name: 'Batería', icon: 'battery',
