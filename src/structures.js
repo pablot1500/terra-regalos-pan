@@ -13,7 +13,7 @@ export const SHOP_ZONE = { x0: 65 * TILE, x1: 76 * TILE, y0: (S - 6) * TILE, y1:
 export const SPAWN = { x: 14 * TILE + 1, y: (S - 6) * TILE - 15 };
 export const PATIO = { c0: 27, c1: 64 };
 export const DIG_ZONE = { c0: 41, c1: 50 }; // cantero del medio: lo único que se puede cavar desde arriba
-export const CAT_POS = { x: 64 * TILE + 50, y: (S - 9) * TILE + 56 - 10 };
+export const DOG_POS = { x: 64 * TILE + 40, y: (S - 9) * TILE + 56 - 11 };
 
 export function placeStructures(world) {
   const set = (c, r, t) => world.setRaw(c, r, t);

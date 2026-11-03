@@ -39,7 +39,7 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 
 - Arrancan en el departamento **1B**. Bajan por la escalera al patio y cavan en el **cantero del medio** (las baldosas no se rompen).
 - La tierra esconde monedas, billetes, lingotes y gemas. Todo va a una billetera compartida.
-- En el **Taller** (a la derecha del patio, con el gato) se compran mejoras, compartidas para los dos:
+- En el **Taller** (a la derecha del patio, con el perro salchicha) se compran mejoras, compartidas para los dos:
   - **Pala → Taladro**: más fuerza (desde el nivel 3 pasa a ser un taladro; el último es el Taladro cósmico). Cada capa (tierra, arcilla, piedra, granito, basalto, abismo) necesita una pala más fuerte.
   - **Pala ancha**: cava más bloques por palazo.
   - **Batería**: más energía.
@@ -77,7 +77,7 @@ src/
   world.js        generación del mundo, cavado libre (terreno de 2 px), render por chunks
   tiles.js        tipos de bloque y texturas pixel art
   structures.js   edificio, departamento, escalera, taller, patio
-  sprites.js      personajes, tesoros, cofre, gato, íconos, fuente pixel
+  sprites.js      personajes, tesoros, cofre, perro, íconos, fuente pixel
   player.js       física, cavado, jetpack, energía, caídas, animación
   background.js   cielo, nubes, barrio, costa y mar
   lighting.js     oscuridad del subsuelo y luces

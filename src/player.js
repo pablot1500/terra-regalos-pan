@@ -7,6 +7,17 @@ import { clamp } from './util.js';
 
 const STRIKE_AT = 0.62; // momento del golpe dentro del ciclo de animación
 
+// efectos al romper cada material: nubecitas de polvo y chispas/brillitos
+const MAT_FX = {
+  1: { dust: ['rgba(176,132,88,0.75)', 'rgba(206,168,124,0.7)'], maxPuffs: 9 },                         // tierra
+  2: { dust: ['rgba(198,118,76,0.72)', 'rgba(222,160,112,0.66)'], maxPuffs: 9 },                         // arcilla
+  3: { dust: ['rgba(150,150,165,0.45)', 'rgba(185,185,200,0.4)'], maxPuffs: 5, spark: ['#ffffff', '#ffe58a'] }, // piedra
+  4: { dust: ['rgba(170,140,155,0.45)', 'rgba(205,180,192,0.4)'], maxPuffs: 5, spark: ['#ffd6e6', '#ffffff'] }, // granito
+  5: { dust: ['rgba(70,76,100,0.5)'], maxPuffs: 4, spark: ['#9fc3ff', '#d9e8ff', '#ffffff'] },          // basalto
+  6: { dust: ['rgba(80,55,120,0.5)'], maxPuffs: 4, spark: ['#c9a6ff', '#ff9ccc', '#8fe9ff', '#ffffff'] }, // abismo
+  11: { dust: ['rgba(230,120,180,0.4)'], maxPuffs: 3, spark: ['#ffd6ec', '#ff86c2', '#ffffff'] },      // cristal
+};
+
 export class Player {
   constructor(game, charId) {
     this.game = game;
@@ -319,6 +330,7 @@ export class Player {
     const ph = this.digAnim % 1;
     if (prevPhase < STRIKE_AT && ph >= STRIKE_AT) {
       this.debris(target.hit.x, target.hit.y, target.hit.t, 3);
+      this.materialFx(target.hit.x, target.hit.y, target.hit.t, 0, 6);
       g.audio.play(g.upgrades.pala >= 3 ? 'drill' : 'dig');
     }
     this.digProg += dt / time;
@@ -328,7 +340,10 @@ export class Player {
       if (res.n > 0) {
         this.energy = Math.max(0, this.energy - eCost);
         g.counters.tiles += res.n / 16;
-        for (const [t, n] of Object.entries(res.mats)) this.debris(target.cx, target.cy, +t, Math.min(10, 2 + (n >> 3)), target.R);
+        for (const [t, n] of Object.entries(res.mats)) {
+          this.debris(target.cx, target.cy, +t, Math.min(10, 2 + (n >> 3)), target.R);
+          this.materialFx(target.cx, target.cy, +t, n, target.R);
+        }
         for (const l of res.loot) g.pickups.spawn(l.x, l.y, l.item);
         g.audio.play('break');
       }
@@ -346,6 +361,31 @@ export class Player {
         vx: (Math.random() - 0.5) * 70, vy: -20 - Math.random() * 70,
         life: 0.5 + Math.random() * 0.4, max: 0.9, color: pal[1 + Math.floor(Math.random() * 3)], size: Math.random() < 0.3 ? 2 : 1, grav: 380, collide: true,
       });
+    }
+  }
+
+  /** polvo, chispas o brillitos según el material que se rompe */
+  materialFx(x, y, t, n, R) {
+    const g = this.game;
+    const fx = MAT_FX[t];
+    if (!fx) return;
+    const puffs = Math.min(fx.maxPuffs, 2 + Math.floor(n / 14));
+    for (let i = 0; i < puffs; i++) {
+      g.particles.add({
+        x: x + (Math.random() - 0.5) * R, y: y + (Math.random() - 0.5) * R * 0.8,
+        vx: (Math.random() - 0.5) * 18, vy: -6 - Math.random() * 16,
+        life: 0.9 + Math.random() * 0.9, max: 1.8, color: fx.dust[i % fx.dust.length], size: 3 + (Math.random() < 0.5 ? 1 : 0), grav: -4, smoke: true,
+      });
+    }
+    if (fx.spark) {
+      const k = Math.min(8, 1 + Math.floor(n / 25));
+      for (let i = 0; i < k; i++) {
+        g.particles.add({
+          x: x + (Math.random() - 0.5) * R, y: y + (Math.random() - 0.5) * R,
+          vx: (Math.random() - 0.5) * 50, vy: -20 - Math.random() * 40,
+          life: 0.4 + Math.random() * 0.5, max: 0.9, color: fx.spark[i % fx.spark.length], star: Math.random() < 0.5, size: 1, grav: 70,
+        });
+      }
     }
   }
 

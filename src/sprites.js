@@ -274,7 +274,7 @@ const LOOT_MAPS = {
 export const LOOT_SPR = {};
 export function initSprites() {
   for (const [k, m] of Object.entries(LOOT_MAPS)) LOOT_SPR[k] = mapSprite(m, LOOT_PAL);
-  initCat();
+  initDog();
   initCracks();
   initIcons();
 }
@@ -333,41 +333,41 @@ export function drawGiftBox(ctx, x, y) {
 }
 
 // ============================================================
-//  Gato del taller
+//  Perro salchicha del taller (mirando a la izquierda)
 // ============================================================
-const CAT_PAL = {
-  o: '#3b2418', a: '#f2a24e', A: '#c9782c', w: '#fff1dc', G: '#5bd16a', n: '#ff9db5',
-  R: '#d9344e', y: '#ffd34d', '-': '#c9b8a8',
+const DOG_PAL = {
+  b: '#9a5428', B: '#6b3518', h: '#b8693a', l: '#d99a5a', n: '#1d1012', e: '#1d1012',
+  c: '#d9344e', y: '#ffd34d', t: '#ff8fa3',
 };
-const CAT_A = [
-  '..o...o......',
-  '.ono.ono.....',
-  '.oaAaAao....o',
-  '.oGaaGao...oa',
-  '-oawnwao...oA',
-  '..oRyRoooaAo.',
-  '...oawAaAaao.',
-  '...oawaAaAao.',
-  '...oawaaaaAo.',
-  '...owwoowwoo.',
-];
-const CAT_B = [
-  '..o...o......',
-  '.ono.ono.....',
-  '.oaAaAao...o.',
-  '.oGaaGao..oa.',
-  '-oawnwao..oA.',
-  '..oRyRoooaAo.',
-  '...oawAaAaao.',
-  '...oawaAaAao.',
-  '...oawaaaaAo.',
-  '...owwoowwoo.',
-];
-export const CAT = {};
-function initCat() {
-  CAT.a = mapSprite(CAT_A, CAT_PAL);
-  CAT.b = mapSprite(CAT_B, CAT_PAL);
-  CAT.blink = mapSprite(CAT_A.map((r) => r.replace(/G/g, 'o')), CAT_PAL);
+function paintDog(tailUp, blink, tongue) {
+  const [cv, x] = makeCanvas(18, 10);
+  const R = (a, b, w, h, k) => { x.fillStyle = DOG_PAL[k]; x.fillRect(a, b, w, h); };
+  // cuerpo largo y bajito
+  R(5, 4, 11, 4, 'b'); R(7, 4, 7, 1, 'h'); R(6, 7, 9, 1, 'l');
+  // patitas cortas
+  R(6, 8, 2, 2, 'B'); R(13, 8, 2, 2, 'B'); R(6, 9, 2, 1, 'l'); R(13, 9, 2, 1, 'l');
+  // cola
+  if (tailUp) { R(16, 4, 1, 1, 'b'); R(16, 3, 1, 1, 'b'); R(17, 2, 1, 1, 'b'); }
+  else { R(16, 4, 1, 1, 'b'); R(17, 5, 1, 1, 'b'); }
+  // cabeza, hocico y nariz
+  R(1, 1, 6, 5, 'b'); R(2, 1, 4, 1, 'h');
+  R(0, 3, 3, 3, 'l'); R(0, 3, 1, 1, 'n'); R(1, 5, 2, 1, 'B');
+  if (tongue) R(1, 6, 1, 1, 't');
+  // ojo y ceja
+  R(3, 2, 1, 1, blink ? 'b' : 'e'); R(3, 1, 1, 1, 'l');
+  // oreja larga caída
+  R(5, 1, 2, 5, 'B');
+  // collar con chapita
+  R(7, 4, 1, 3, 'c'); R(7, 7, 1, 1, 'y');
+  return outlined(cv, '#2b1a12');
+}
+export const DOG = {};
+function initDog() {
+  DOG.a = paintDog(true, false, false);
+  DOG.b = paintDog(false, false, false);
+  DOG.blink = paintDog(true, true, false);
+  DOG.happyA = paintDog(true, false, true);
+  DOG.happyB = paintDog(false, false, true);
 }
 
 // ============================================================

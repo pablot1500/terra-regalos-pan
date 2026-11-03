@@ -95,6 +95,7 @@ export class Audio {
         this.tone(60, 0.9, { type: 'triangle', vol: 0.4, slide: 25 });
         break;
       case 'torch': this.noise(0.25, { vol: 0.25, freq: 1500, type: 'bandpass' }); this.tone(330, 0.12, { type: 'triangle', vol: 0.08, slide: 660 }); break;
+      case 'bark': this.tone(560, 0.07, { vol: 0.12, slide: 380 }); this.tone(520, 0.09, { vol: 0.12, slide: 340, delay: 0.13 }); break;
       case 'rest': this.tone(880, 0.2, { type: 'sine', vol: 0.06 }); break;
     }
   }

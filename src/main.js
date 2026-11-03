@@ -3,10 +3,11 @@ import {
   TILE, SURFACE, WORLD_W, WORLD_H, DEFAULT_SEED, UPGRADES, ITEMS, GIFTS, HP_MAX,
   DEATH_MONEY_PENALTY, ENDING_TEXT, CHARACTERS, BRUSH_R, SUPPLIES, TORCH, DIG,
 } from './config.js';
-import { initTiles } from './tiles.js';
-import { initSprites, drawChest, drawGiftBox, drawTorch, CAT } from './sprites.js';
+import { initTiles, T } from './tiles.js';
+import { hash2 } from './rng.js';
+import { initSprites, drawChest, drawGiftBox, drawTorch, DOG } from './sprites.js';
 import { World } from './world.js';
-import { Structures, CAT_POS, PATIO } from './structures.js';
+import { Structures, DOG_POS, PATIO } from './structures.js';
 import { Background } from './background.js';
 import { Lighting } from './lighting.js';
 import { Particles, Pickups, FloatTexts } from './entities.js';
@@ -18,6 +19,14 @@ import { store } from './save.js';
 import { fmtMoney, clamp } from './util.js';
 
 const STEP = 1 / 120;
+
+// qué materiales destellan y con qué probabilidad por bloque
+const GLINT = {
+  [T.GRANITE]: { p: 0.1, col: '#ffd6e6' },
+  [T.BASALT]: { p: 0.14, col: '#9fc3ff' },
+  [T.ABYSS]: { p: 0.24, col: '#c9a6ff' },
+  [T.CRYSTAL]: { p: 0.35, col: '#ff9ccc' },
+};
 
 function computeStats(u) {
   const v = (id) => UPGRADES.find((x) => x.id === id).levels[u[id]][0];
@@ -432,6 +441,11 @@ class Game {
       if (inp.autoPressed) this.ui.toggleAuto();
       this.counters.playTime += dt;
       for (const pl of this.players) pl.update(dt, inp);
+      if (p.inShop && !this.wasInShop) {
+        this.audio.play('bark');
+        this.addText(DOG_POS.x + 9, DOG_POS.y - 4, '¡GUAU!', '#fff4e0');
+      }
+      this.wasInShop = p.inShop;
       if (p.inShop) {
         this.ui.setPrompt(this.ui.isTouch ? null : 'Presioná E para entrar al Taller');
         this.ui.setActButton('TALLER');
@@ -478,6 +492,11 @@ class Game {
       if (tx < cx0 || tx > cx1 || ty < cy0 || ty > cy1) continue;
       this.lights.push([tx, ty, TORCH.radius, 0.95 + Math.sin(this.time * 9 + tq.seed) * 0.04]);
     }
+    // polvillo flotando en la luz de la linterna bajo tierra
+    if (this.state === 'play' && p && p.depth > 8 && Math.random() < dt * 6) {
+      const a = Math.random() * Math.PI * 2, d = 10 + Math.random() * 60;
+      this.particles.add({ x: p.cx + Math.cos(a) * d, y: p.cy + Math.sin(a) * d * 0.7, vx: (Math.random() - 0.5) * 5, vy: (Math.random() - 0.5) * 4, life: 2.5 + Math.random() * 2, max: 4, color: 'rgba(255,238,205,0.55)', size: 1, grav: 1 });
+    }
     this.particles.update(dt, this.world);
     this.texts.update(dt);
     this.updateCamera(dt);
@@ -494,6 +513,40 @@ class Game {
     if (this.money >= 60 && this.upgrades.pala === 0) this.tip('afford', '¡Ya te alcanza para mejorar la pala en el Taller!');
     if (p.depth > 30) this.tip('torch', this.ui.isTouch ? 'Tip: en el Taller venden antorchas para iluminar' : 'Tip: en el Taller venden antorchas (se ponen con T)');
     if (p.depth > 40) this.tip('fall', this.ui.isTouch ? 'Ojo con las caídas: para bajar despacio mantené SALTAR + joystick abajo' : 'Ojo con las caídas: para bajar despacio mantené Espacio + S');
+  }
+
+  /** destellos de los minerales de las capas profundas (se ven aunque esté oscuro) */
+  drawGlints(ctx, camX, camY, vw, vh, t) {
+    const W = this.world;
+    const c0 = Math.max(0, Math.floor(camX / TILE)), c1 = Math.min(W.w - 1, Math.ceil((camX + vw) / TILE));
+    const r0 = Math.max(SURFACE, Math.floor(camY / TILE)), r1 = Math.min(W.h - 1, Math.ceil((camY + vh) / TILE));
+    if (r0 > r1) return;
+    for (let r = r0; r <= r1; r++) {
+      for (let c = c0; c <= c1; c++) {
+        const i = r * W.w + c;
+        const tt = W.tiles[i];
+        const li = W.loot[i];
+        const gem = li && ITEMS[li].glow;
+        const g = GLINT[tt];
+        if (!g && !gem) continue;
+        const h = hash2(c, r, 99);
+        if (!gem && h > g.p) continue;
+        // destello corto cada tanto, con fase propia por bloque
+        const s = Math.max(0, Math.sin(t * (gem ? 2.2 : 1.3) + h * 40)) ** (gem ? 6 : 14);
+        if (s < 0.08) continue;
+        const px = c * TILE + 1 + Math.floor(hash2(c, r, 7) * 6), py = r * TILE + 1 + Math.floor(hash2(c, r, 8) * 6);
+        if (!W.solidPx(px, py)) continue;
+        const col = gem ? `rgb(${ITEMS[li].glow.join(',')})` : g.col;
+        const x = px - camX, y = py - camY;
+        ctx.globalAlpha = Math.min(1, s * 1.2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x, y, 1, 1);
+        ctx.fillStyle = col;
+        if (s > 0.45) { ctx.fillRect(x - 1, y, 1, 1); ctx.fillRect(x + 1, y, 1, 1); ctx.fillRect(x, y - 1, 1, 1); ctx.fillRect(x, y + 1, 1, 1); }
+        if (s > 0.85) { ctx.globalAlpha = 0.5; ctx.fillRect(x - 2, y, 1, 1); ctx.fillRect(x + 2, y, 1, 1); ctx.fillRect(x, y - 2, 1, 1); ctx.fillRect(x, y + 2, 1, 1); }
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   updateCamera(dt) {
@@ -567,13 +620,15 @@ class Game {
       }
     }
 
-    // gato del taller
+    // perro salchicha del taller: mueve la cola más rápido si estás cerca
     const p0 = this.players[0];
-    const blink = (t % 4) > 3.85;
-    const catSpr = blink ? CAT.blink : Math.floor(t / 0.7) % 2 ? CAT.b : CAT.a;
-    ctx.drawImage(catSpr, CAT_POS.x - camX, CAT_POS.y - camY);
-    if (this.state === 'play' && p0 && p0.inShop && Math.random() < 0.02) {
-      this.particles.add({ x: CAT_POS.x + 3, y: CAT_POS.y - 2, vx: 0, vy: -12, life: 1, max: 1, heart: true, grav: 0 });
+    const near = this.state === 'play' && p0 && p0.inShop;
+    const blink = (t % 4.3) > 4.15;
+    const wag = Math.floor(t / (near ? 0.11 : 0.55)) % 2;
+    const dogSpr = blink ? DOG.blink : near ? (wag ? DOG.happyB : DOG.happyA) : (wag ? DOG.b : DOG.a);
+    ctx.drawImage(dogSpr, DOG_POS.x - camX, DOG_POS.y - camY);
+    if (near && Math.random() < 0.02) {
+      this.particles.add({ x: DOG_POS.x + 5, y: DOG_POS.y - 2, vx: 0, vy: -12, life: 1, max: 1, heart: true, grav: 0 });
     }
 
     for (const tq of this.torches) {
@@ -585,6 +640,7 @@ class Game {
     if (this.state !== 'title') for (const p of this.players) p.draw(ctx, camX, camY);
     this.particles.draw(ctx, camX, camY);
     this.lighting.draw(ctx, this, camX, camY, vw, vh, t);
+    this.drawGlints(ctx, camX, camY, vw, vh, t);
     this.texts.draw(ctx, camX, camY);
 
     if (this.state !== 'title') this.ui.updateHUD();
