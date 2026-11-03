@@ -371,20 +371,27 @@ function paintShed() {
 }
 
 function paintBrickWall(w, h) {
+  // medianera de ladrillos pintados de blanco
   const [cv, x] = makeCanvas(w, h);
   const { R, P } = painter(x);
   const rnd = mulberry32(77);
   const top = 8;
-  R(0, top, w, h - top, '#d8b19c');
+  R(0, top, w, h - top, '#cfc8bd');
   for (let row = 0; top + 3 + row * 4 < h; row++) {
     const yy = top + 3 + row * 4;
     for (let xx = (row % 2) * -4; xx < w; xx += 8) {
-      const cols = ['#b4634a', '#a65a42', '#bf6d52', '#ad5f47'];
+      const cols = ['#f4f1ea', '#efebe3', '#f8f6f1', '#ebe6dc'];
       R(xx, yy, 7, 3, cols[Math.floor(rnd() * cols.length)]);
-      P(xx, yy, '#c97a5e');
+      P(xx, yy, '#ffffff');
+      if (rnd() < 0.08) P(xx + 2 + Math.floor(rnd() * 4), yy + 1 + Math.floor(rnd() * 2), '#d8d0c4');
     }
   }
-  R(0, top, w, 3, '#cfc6b6'); R(0, top, w, 1, '#ece6da'); R(0, top + 3, w, 1, '#8f877b');
+  // pintura gastada: algún ladrillo pelado
+  for (let k = 0; k < 7; k++) {
+    const xx = Math.floor(rnd() * (w - 8)), yy = top + 7 + Math.floor(rnd() * 6) * 4;
+    R(xx, yy, 5, 2, '#c98d78'); P(xx + 5, yy, '#e8d8cf');
+  }
+  R(0, top, w, 3, '#e2ddd3'); R(0, top, w, 1, '#ffffff'); R(0, top + 3, w, 1, '#a9a197');
   // enredadera
   for (let k = 0; k < 9; k++) {
     const cx = Math.floor(rnd() * w), len = 6 + Math.floor(rnd() * 16);
@@ -395,8 +402,10 @@ function paintBrickWall(w, h) {
     }
     for (let j = 0; j < 8; j++) P(cx - 4 + Math.floor(rnd() * 9), top - 2 + Math.floor(rnd() * 4), rnd() < 0.5 ? '#3f8f3a' : '#5cb24f');
   }
-  x.fillStyle = 'rgba(70,80,130,0.13)';
+  x.globalCompositeOperation = 'source-atop';
+  x.fillStyle = 'rgba(90,100,140,0.08)';
   x.fillRect(0, 0, w, h);
+  x.globalCompositeOperation = 'source-over';
   return cv;
 }
 

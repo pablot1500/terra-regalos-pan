@@ -116,11 +116,16 @@ export class Player {
     const ox = this.cx, oy = this.cy - 1;
     // distancia del centro al borde del personaje en esa dirección
     const edge = Math.min(Math.abs(aim.x) > 0.01 ? (this.w / 2) / Math.abs(aim.x) : 99, Math.abs(aim.y) > 0.01 ? (this.h / 2 + (aim.y > 0 ? 1 : -1)) / Math.abs(aim.y) : 99);
-    const hit = W.probe(ox, oy, aim.x, aim.y, edge + DIG.reach + 8 * Math.abs(aim.x * aim.y));
-    if (!hit) return null;
+    const maxD = edge + DIG.reach + 8 * Math.abs(aim.x * aim.y);
     const R = BRUSH_R[this.game.stats.brush];
     const push = R * 0.5;
-    return { hit, cx: hit.x + aim.x * push, cy: hit.y + aim.y * push, R };
+    const hit = W.probe(ox, oy, aim.x, aim.y, maxD);
+    if (hit) return { hit, cx: hit.x + aim.x * push, cy: hit.y + aim.y * push, R };
+    // nada justo en esa línea: cavar igual lo más cerca posible, hacia ese lado
+    const px = ox + aim.x * maxD, py = oy + aim.y * maxD;
+    const near = W.nearestSolid(px, py, R * 1.4);
+    if (!near) return null;
+    return { hit: near, cx: near.x + aim.x * push, cy: near.y + aim.y * push, R };
   }
 
   update(dt, inp) {

@@ -43,29 +43,54 @@ function makeFar() {
   const [c, x] = makeCanvas(W, FAR_H);
   const { R, P } = painter(x);
   const rnd = mulberry32(7);
-  // lomas
-  for (let u = 0; u < SEA_U + 70; u++) {
-    const t = u / 140;
-    let top = 18 + Math.sin(t * 2.1) * 8 + Math.sin(t * 5.3 + 1) * 3;
-    if (u > SEA_U - 40) top += ((u - (SEA_U - 40)) / 110) ** 2 * 60; // la loma baja hacia el mar
-    top = Math.round(top);
-    R(u, top, 1, FAR_H - top, '#a7cfd6');
-    P(u, top, '#c3e0e4');
-    if (u % 7 === 0 && top < 60) P(u, top + 3 + (u % 3), '#93c0c8');
-  }
-  // mar
+  // mar (de punta a punta; la tierra lo tapa a la izquierda)
   const seaBands = ['#93d3ec', '#7cc6e6', '#69b9df', '#5aaed8', '#4ca2d1', '#4198ca'];
   for (let i = 0; i < seaBands.length; i++) {
     const y0 = HORIZON + i * 5;
-    R(SEA_U, y0, W - SEA_U, i === seaBands.length - 1 ? FAR_H - y0 : 5, seaBands[i]);
+    R(0, y0, W, i === seaBands.length - 1 ? FAR_H - y0 : 5, seaBands[i]);
   }
-  R(SEA_U, HORIZON, W - SEA_U, 1, '#c6ecf8');
-  // olitas
-  for (let k = 0; k < 260; k++) {
-    const u = SEA_U + 4 + Math.floor(rnd() * (W - SEA_U - 8));
+  R(0, HORIZON, W, 1, '#c6ecf8');
+  for (let k = 0; k < 300; k++) {
+    const u = Math.floor(rnd() * W);
     const y = HORIZON + 3 + Math.floor(rnd() * 40);
-    const len = 2 + Math.floor(rnd() * 4);
-    R(u, y, len, 1, y < HORIZON + 15 ? '#b6e4f5' : '#8fd1ec');
+    R(u, y, 2 + Math.floor(rnd() * 4), 1, y < HORIZON + 15 ? '#b6e4f5' : '#8fd1ec');
+  }
+  // playa cercana
+  for (let u = SEA_U; u < W; u++) {
+    const y = 74 - Math.round(Math.min(1, (u - SEA_U) / 80) * 6);
+    R(u, y, 1, FAR_H - y, '#f1dca3');
+    R(u, y, 1, 2, '#d9c084');
+    if ((u + Math.floor(u / 9)) % 5) P(u, y - 1, '#ffffff');
+    if (rnd() < 0.08) P(u, y + 4 + Math.floor(rnd() * 15), '#e2c98a');
+  }
+  // tierra con la costa en diagonal (la playa se curva hacia nosotros)
+  const COAST0 = SEA_U - 40;
+  const coastAt = (y) => COAST0 + (y - HORIZON) * 2.4 + Math.sin(y * 0.7) * 1.5;
+  for (let y = HORIZON; y < FAR_H; y++) {
+    const cx = Math.round(coastAt(y));
+    R(0, y, cx, 1, '#a9cbbd');
+    R(cx, y, 3, 1, '#ead9a8');
+    P(cx + 3, y, '#ffffff');
+    if (y % 3 === 0) R(cx + 4, y, 2, 1, '#c6ecf8');
+  }
+  // lomas bajitas (las sierras quedan lejos)
+  for (let u = 0; u < COAST0 + 2; u++) {
+    const t = u / 90;
+    let hgt = 7 + Math.sin(t * 1.7) * 3 + Math.sin(t * 4.1 + 1) * 1.5;
+    const fade = Math.min(1, (COAST0 - u) / 70);
+    hgt *= fade * fade * (3 - 2 * fade);
+    const top = Math.round(HORIZON - hgt);
+    if (top >= HORIZON) continue;
+    R(u, top, 1, HORIZON - top, '#b2d2cc');
+    P(u, top, '#c9e3df');
+  }
+  // la ciudad lejana sobre la costa
+  for (let u = 40; u < COAST0 - 10;) {
+    const bw = 3 + Math.floor(rnd() * 5);
+    const bh = 3 + Math.floor(rnd() * (u > COAST0 - 90 ? 13 : 7));
+    R(u, HORIZON - bh, bw, bh, '#bcd3dc');
+    R(u, HORIZON - bh, 1, bh, '#cfe0e7');
+    u += bw + 1 + Math.floor(rnd() * 6);
   }
   // islita con faro
   const fx = SEA_U + 230;
@@ -84,14 +109,6 @@ function makeFar() {
   for (let u = SEA_U + 520; u < W; u++) {
     const top = HORIZON - 4 - Math.round(Math.sin((u - SEA_U) / 60) * 3 + 3);
     R(u, top, 1, HORIZON - top, '#9cc3cf');
-  }
-  // playa (arena + espuma)
-  for (let u = SEA_U + 20; u < W; u++) {
-    const y = 74 - Math.round(Math.min(1, (u - SEA_U - 20) / 80) * 6);
-    R(u, y, 1, FAR_H - y, '#f1dca3');
-    R(u, y, 1, 2, '#d9c084');
-    if ((u + Math.floor(u / 9)) % 5) P(u, y - 1, '#ffffff');
-    if (rnd() < 0.08) P(u, y + 4 + Math.floor(rnd() * 15), '#e2c98a');
   }
   return c;
 }
@@ -200,8 +217,10 @@ function makeMid() {
   R(486, base - 22, 1, 16, '#ffffff');
   for (let j = 0; j < 4; j++) R(479 + j, base - 24 + j, 15 - j * 2, 1, j % 2 ? '#ff7eb6' : '#ffffff');
   // aire de distancia
+  x.globalCompositeOperation = 'source-atop';
   x.fillStyle = 'rgba(175,212,240,0.28)';
   x.fillRect(0, 0, W, H);
+  x.globalCompositeOperation = 'source-over';
   return { c, base };
 }
 

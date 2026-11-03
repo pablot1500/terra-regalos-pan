@@ -230,6 +230,22 @@ export class World {
     return null;
   }
 
+  /** Píxel sólido más cercano a (x, y) dentro de un radio R */
+  nearestSolid(x, y, R) {
+    let best = null, bd = R * R + 1;
+    const sx0 = Math.floor((x - R) / SUB), sx1 = Math.floor((x + R) / SUB);
+    const sy0 = Math.floor((y - R) / SUB), sy1 = Math.floor((y + R) / SUB);
+    for (let sy = sy0; sy <= sy1; sy++) for (let sx = sx0; sx <= sx1; sx++) {
+      if (!this.subAt(sx, sy)) continue;
+      const px = sx * SUB + 1, py = sy * SUB + 1;
+      const d = (px - x) ** 2 + (py - y) ** 2;
+      if (d < bd) { bd = d; best = { x: px, y: py }; }
+    }
+    if (!best) return null;
+    const c = Math.floor(best.x / TILE), r = Math.floor(best.y / TILE);
+    return { x: best.x, y: best.y, c, r, t: this.get(c, r) };
+  }
+
   /** Material más duro (que se pueda romper con `power`) dentro de un círculo */
   circleInfo(cx, cy, R, power) {
     let hard = 0, any = false;
