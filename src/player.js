@@ -16,6 +16,7 @@ const MAT_FX = {
   5: { dust: ['rgba(70,76,100,0.5)'], maxPuffs: 4, spark: ['#9fc3ff', '#d9e8ff', '#ffffff'] },          // basalto
   6: { dust: ['rgba(80,55,120,0.5)'], maxPuffs: 4, spark: ['#c9a6ff', '#ff9ccc', '#8fe9ff', '#ffffff'] }, // abismo
   11: { dust: ['rgba(230,120,180,0.4)'], maxPuffs: 3, spark: ['#ffd6ec', '#ff86c2', '#ffffff'] },      // cristal
+  14: { dust: ['rgba(160,152,138,0.7)', 'rgba(196,188,172,0.6)'], maxPuffs: 8 },                       // grava
 };
 
 export class Player {

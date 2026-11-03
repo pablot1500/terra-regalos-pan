@@ -22,6 +22,8 @@ export function placeStructures(world) {
     for (let c = 2; c <= 26; c++) set(c, r, T.CONCRETE);
     for (let c = 65; c <= 76; c++) set(c, r, T.CONCRETE);
   }
+  // cantero: los primeros bloques son grava (solo estético, se cava igual que la tierra)
+  for (let c = DIG_ZONE.c0; c <= DIG_ZONE.c1; c++) for (let r = S; r <= S + 3; r++) set(c, r, T.GRAVEL);
   // patio: baldosas en todo menos el cantero del medio
   for (let c = PATIO.c0; c <= PATIO.c1; c++) {
     if (c >= DIG_ZONE.c0 && c <= DIG_ZONE.c1) continue;
@@ -454,6 +456,78 @@ function paintHedge(w, h, seed) {
   return cv;
 }
 
+// Volkswagen Gol estacionado (solo decoración), mirando a la derecha
+function paintGol() {
+  const W = 54, H = 25;
+  const [cv, x] = makeCanvas(W, H);
+  const { R, P } = painter(x);
+  const body = '#c8352b', bodyD = '#9e271f', bodyH = '#e8685c', glass = '#9fd3f0', glassH = '#d8f0fb', black = '#26262b', trim = '#3a3a40';
+  // sombra en el piso
+  x.fillStyle = 'rgba(0,0,0,0.22)'; x.fillRect(3, H - 1, W - 6, 1); x.fillRect(6, H - 2, W - 12, 1);
+  // cabina (techo, luneta inclinada atrás, parabrisas inclinado adelante)
+  for (let y = 2; y <= 10; y++) {
+    const k = (y - 2) / 8;
+    const l = Math.round(13 - k * 9), r = Math.round(35 + k * 6);
+    R(l, y, r - l + 1, 1, body);
+    P(l, y, '#7a1d17'); P(r, y, '#7a1d17');
+  }
+  R(14, 1, 21, 1, '#7a1d17'); R(15, 2, 19, 1, bodyH);
+  // ventanillas con parante del medio
+  for (let y = 4; y <= 9; y++) {
+    const k = (y - 2) / 8;
+    const l = Math.round(13 - k * 9) + 2, r = Math.round(35 + k * 6) - 2;
+    R(l, y, r - l + 1, 1, glass);
+  }
+  R(23, 4, 2, 6, body); R(23, 4, 1, 6, bodyD);
+  P(17, 5, glassH); P(18, 5, glassH); P(17, 6, glassH); P(31, 5, glassH); P(32, 5, glassH); P(32, 6, glassH);
+  // carrocería baja (capó corto adelante, cola cuadrada atrás)
+  R(1, 10, 51, 9, body);
+  R(1, 10, 51, 1, bodyH);
+  R(41, 10, 11, 2, body); R(42, 10, 10, 1, bodyH); // capó
+  R(1, 17, 51, 2, bodyD);
+  R(0, 11, 1, 7, '#7a1d17'); R(52, 11, 1, 7, '#7a1d17');
+  // puerta, manija y moldura lateral negra
+  R(24, 11, 1, 7, bodyD); R(40, 11, 1, 6, bodyD); P(27, 12, black); P(28, 12, black);
+  R(2, 14, 49, 1, trim);
+  // paragolpes negros, faro y luz trasera
+  R(48, 15, 6, 3, black); R(-1, 15, 5, 3, black);
+  R(50, 11, 2, 2, '#fff3a8'); R(48, 11, 2, 2, '#e8eef3'); P(51, 13, '#ffa13d');
+  R(1, 11, 2, 3, '#ff4d4d'); P(1, 14, '#ffa13d');
+  P(46, 12, '#e8eef3'); // logo
+  // ruedas con tazas grises
+  for (const cx of [12, 41]) {
+    R(cx - 6, 15, 12, 4, '#5e1a15'); // pasarruedas
+    for (let j = -4; j <= 4; j++) {
+      const w = Math.round(Math.sqrt(16.5 - j * j));
+      R(cx - w, 20 + j, w * 2 + 1, 1, black);
+    }
+    R(cx - 2, 18, 5, 5, '#8a8f98'); R(cx - 1, 19, 3, 3, '#c3cad2'); P(cx, 20, '#5b636d');
+  }
+  // patente
+  R(50, 16, 3, 1, '#ffffff');
+  return cv;
+}
+
+function paintBush(w, h, seed, flowers) {
+  const [cv, x] = makeCanvas(w, h);
+  const { P } = painter(x);
+  const rnd = mulberry32(seed);
+  const blobs = [];
+  for (let i = 0; i < 4; i++) blobs.push([3 + rnd() * (w - 6), h * 0.45 + rnd() * h * 0.3, h * 0.38 + rnd() * h * 0.2]);
+  for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) {
+    let inside = false;
+    for (const [bx, by, r] of blobs) if ((xx - bx) ** 2 + (yy - by) ** 2 <= r * r) inside = true;
+    if (!inside) continue;
+    const shade = yy > h * 0.72 ? '#2a6b2c' : rnd() < 0.2 ? '#6cc05a' : rnd() < 0.5 ? '#3f9a3f' : '#4fae47';
+    P(xx, yy, shade);
+  }
+  if (flowers) for (let k = 0; k < Math.floor(w / 4); k++) {
+    const fx = 1 + Math.floor(rnd() * (w - 2)), fy = 1 + Math.floor(rnd() * h * 0.7);
+    if (x.getImageData(fx, fy, 1, 1).data[3]) P(fx, fy, flowers[k % flowers.length]);
+  }
+  return cv;
+}
+
 function paintFence(w, h) {
   const [cv, x] = makeCanvas(w, h);
   const { R, P } = painter(x);
@@ -481,6 +555,13 @@ export class Structures {
     this.tree = paintTree();
     this.hedgeL = paintHedge(16, 60, 5);
     this.fenceR = paintFence(16, 24);
+    this.gol = paintGol();
+    this.bushes = [
+      [27.4 * TILE, paintBush(18, 14, 3, ['#ff9ad5', '#ffffff'])],
+      [37.6 * TILE, paintBush(22, 16, 7, null)],
+      [59.2 * TILE, paintBush(20, 15, 11, ['#ffd34d', '#ffffff'])],
+      [62.6 * TILE, paintBush(14, 11, 13, ['#ff5d6c'])],
+    ];
     this.clothes = Object.fromEntries(Object.entries(CLOTHES).map(([k, [m, p]]) => [k, mapSprite(m, p)]));
   }
 
@@ -505,6 +586,9 @@ export class Structures {
       const xx = Math.round(p1 + (p2 - p1) * u - spr.width / 2 + Math.sin(t * 1.7 + i) * 0.8);
       ctx.drawImage(spr, xx, sag(u) + 1);
     });
+    // arbustos contra la medianera y el Gol estacionado detrás de Popi
+    for (const [bx, spr] of this.bushes) ctx.drawImage(spr, Math.round(bx) - camX, gy - spr.height);
+    ctx.drawImage(this.gol, 52 * TILE + 3 - camX, gy - this.gol.height + 1);
   }
 
   drawBuildings(ctx, camX, camY) {

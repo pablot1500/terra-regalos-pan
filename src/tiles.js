@@ -17,6 +17,7 @@ export const T = {
   CRYSTAL: 11, // cristales rosados que rodean las cámaras de regalos
   PAVER: 12,   // baldosas del patio (no se rompen)
   GIFTFLOOR: 13, // piso de mármol de las cámaras de regalo (no se rompe)
+  GRAVEL: 14,  // grava del cantero (estética: misma dureza que la tierra)
 };
 
 export const LAYER_TILES = [T.DIRT, T.CLAY, T.STONE, T.GRANITE, T.BASALT, T.ABYSS];
@@ -33,6 +34,7 @@ DEF[T.BEDROCK] = { name: 'Roca madre', hard: 9999, pal: ['#050407', '#100e15', '
 DEF[T.CONCRETE] = { name: 'Cemento', hard: 9999, pal: ['#5f5b56', '#8a8680', '#a29e98', '#b9b5ae', '#d2cec7'], style: 'concrete' };
 DEF[T.PAVER] = { name: 'Baldosa', hard: 9999, pal: ['#6f665b', '#a89c8a', '#cfc4b2', '#e3dacb', '#efe8dc'], style: 'paver' };
 DEF[T.GIFTFLOOR] = { name: 'Mármol', hard: 9999, pal: ['#6e3a52', '#d9a6bd', '#f3d6e2', '#fdeef4', '#e6b33c'], style: 'giftfloor' };
+DEF[T.GRAVEL] = { name: 'Grava', hard: 1, pal: ['#3f3a33', '#6c665c', '#8b8478', '#aaa396', '#cfc8b9'], style: 'gravel' };
 DEF[T.CRYSTAL] = { name: 'Cristal', hard: 1, pal: ['#4c1236', '#9a2e66', '#d4508f', '#ff86c2', '#ffd6ec'], style: 'crystal', glow: true };
 
 export const VARIANTS = 4;
@@ -147,6 +149,18 @@ function genTex(id, v) {
         else if (q > 0.93) px(i, j, P[4]);
       }
       if (v === 0) { x.fillStyle = P[2]; x.fillRect(7, 0, 1, 8); }
+      break;
+    }
+    case 'gravel': {
+      // piedritas redondeadas de varios tonos
+      x.fillStyle = P[1]; x.fillRect(0, 0, 8, 8);
+      for (let k = 0; k < 7; k++) {
+        const i = ri(7), j = ri(7);
+        const col = [P[2], P[3], P[4], '#a89a82', '#7d7568'][ri(5)];
+        px(i, j, col); px(i + 1, j, col); px(i, j + 1, col);
+        if (r() < 0.6) px(i + 1, j + 1, P[0]);
+        if (r() < 0.5) px(i, j, P[4]);
+      }
       break;
     }
     case 'giftfloor': {
