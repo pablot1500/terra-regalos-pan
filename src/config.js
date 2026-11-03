@@ -48,7 +48,7 @@ export const DIG = {
   energyCost: [0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35], // energía por palazo según el nivel de pala
   reach: 6,          // px de alcance más allá del borde del personaje
   reachMult: 1.3,    // multiplicador del alcance total (+30%)
-  reachPerUpgrade: 0.07, // +7% de alcance por cada mejora de fuerza o de pala ancha
+  reachPerUpgrade: 0.10, // +10% de alcance por cada mejora de fuerza o de pala ancha
 };
 
 // cáscara de cristal de las cámaras de regalo: se pica de a poquito, sin importar la pala
@@ -87,8 +87,8 @@ export const ITEMS = [
   null,
   { key: 'coin', name: 'Moneda', value: 1, sfx: 'coin' },
   { key: 'coins', name: 'Moneda de plata', value: 4, sfx: 'coin' },
-  { key: 'bill', name: 'Billete de $100', value: 10, sfx: 'bill' },
-  { key: 'billstack', name: 'Billete de $1000', value: 35, sfx: 'bill' },
+  { key: 'bill', name: 'Billete de $1000', value: 10, sfx: 'bill' },
+  { key: 'billstack', name: 'Dólar', value: 35, sfx: 'bill' },
   { key: 'goldbar', name: 'Lingote de oro', value: 120, sfx: 'gold' },
   { key: 'ruby', name: 'Rubí', value: 300, sfx: 'gem', glow: [255, 80, 110] },
   { key: 'emerald', name: 'Esmeralda', value: 650, sfx: 'gem', glow: [60, 220, 150] },

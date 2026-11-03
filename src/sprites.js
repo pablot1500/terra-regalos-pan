@@ -292,14 +292,15 @@ const LOOT_PAL = {
   // moneda de bronce ($1) y de plata
   b: '#8a4e22', B: '#f0b07a', z: '#c97a3e', Z: '#5e3313',
   s: '#7d8794', S: '#f4f8fb', m: '#c3ccd5', t: '#55606b',
-  // billete de $100 (violeta) y de $1000 (naranja)
-  a: '#4a2b78', A: '#9b74d4', i: '#dccbf5', k: '#a8491a', K: '#f2963a', j: '#ffd9a8',
+  // billete de $1000 (naranja) y dólar (verde, con el retrato en el medio)
+  k: '#a8491a', K: '#f2963a', j: '#ffd9a8',
+  u: '#3d6b3a', U: '#a9c99a', x: '#e4f0d6', X: '#24452a',
 };
 const LOOT_MAPS = {
   coin: ['.bbb.', 'bBzzb', 'bzzzb', 'bzzZb', '.ZZZ.'],
   coins: ['.ssss.', 'sSSmms', 'sSmmms', 'smmmts', 'smmtts', '.tttt.'],
-  bill: ['aaaaaaaa', 'aAiAAAia', 'aiiiAAAa', 'aAiAAiia', 'aaaaaaaa'],
-  billstack: ['kkkkkkkk', 'kKjKKKjk', 'kjjjKKKk', 'kKjKKjjk', 'kkkkkkkk'],
+  bill: ['kkkkkkkk', 'kKjKKKjk', 'kjjjKKKk', 'kKjKKjjk', 'kkkkkkkk'],
+  billstack: ['uuuuuuuu', 'uxUXXUxu', 'uUXxxXUu', 'uxUXXUxu', 'uuuuuuuu'],
   goldbar: ['.ddddd.', 'dYYyyyd', 'dyyyyyd', 'ooooooo'],
   ruby: ['.RRR.', 'RPwER', 'REEER', '.RER.', '..R..'],
   emerald: ['.eee.', 'eFMMe', 'eFMMe', 'eMMMe', '.eee.'],
