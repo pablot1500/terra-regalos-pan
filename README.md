@@ -1,4 +1,6 @@
-# Terrari Pancha
+# Cumple Panchita: Salven los regalos 2
+
+(El repo se sigue llamando Terrari Pancha.)
 
 Un jueguito pixel art para el navegador: dos personajes cavan un pozo en el patio de su edificio, juntan monedas y billetes, mejoran su equipo en el taller y buscan tres regalos: a **300 m**, a **800 m** y el último en el **núcleo de la Tierra**, pasando los **1500 m**.
 
@@ -37,6 +39,17 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 | Cavado automático (un click empieza, otro frena) | B o botón AUTO | Botón AUTO + toque en CAVAR |
 | Música / sonidos | M / N o los botones de arriba | Botones de arriba |
 | Pausa | Esc | Botón ❚❚ |
+
+## Intro y pantalla de inicio
+
+- Al abrir el juego hay que tocar la pantalla una vez (el navegador no deja sonar audio sin un toque) y arranca la **intro**:
+  - Pablo y Panchi llegan al patio charlando sobre el cumple y lo que pasó el año pasado con los regalos, y Popi los saluda.
+  - Suben al departamento y Pablo busca los regalos debajo de la cama. En su lugar encuentra una nota anónima (y una pluma sospechosa): los regalos están "muy, muy abajo".
+  - La cámara baja hasta el primer cofre y vuelve a subir al cielo.
+- La intro tiene barras de cine, zoom de cámara, diálogos con retrato que se escriben letra por letra (click, Espacio o Enter para avanzar) y un botón para saltarla.
+- El guión está en [`src/intro.js`](src/intro.js), en la función `script()`. El texto de la nota es `NOTE_TEXT`.
+- La pantalla de inicio, **Cumple Panchita: Salven los regalos 2**, tiene de fondo el cielo del juego. Ahí se elige personaje y hay botones para Empezar (o Continuar), Configuración (sonido y volúmenes), Controles y para ver la intro otra vez.
+- Al empezar, la cámara baja del cielo hasta el departamento y arranca la partida.
 
 ## Cómo se juega
 
@@ -80,6 +93,7 @@ styles.css        estilos de la interfaz
 server.js         servidor local sin dependencias
 src/
   main.js         loop del juego, estados, eventos (taller, cofres, desmayos)
+  intro.js        cinemática de inicio: guión, personajes, cámara y la nota
   config.js       todos los números y textos ajustables
   world.js        generación del mundo, cavado libre (terreno de 2 px), render por chunks
   tiles.js        tipos de bloque y texturas pixel art

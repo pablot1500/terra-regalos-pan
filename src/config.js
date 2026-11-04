@@ -20,7 +20,7 @@ export const DEFAULT_SEED = 14022;   // mismo mundo para los dos jugadores
 // ---- Personajes (los nombres se pueden cambiar acá) ----
 export const CHARACTERS = {
   pablo: { name: 'Pablo' },
-  pancha: { name: 'Pancha' },
+  pancha: { name: 'Panchi' },
 };
 
 // ---- Física ----

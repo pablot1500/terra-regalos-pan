@@ -110,6 +110,9 @@ export class Audio {
         break;
       case 'torch': this.noise(0.25, { vol: 0.25, freq: 1500, type: 'bandpass' }); this.tone(330, 0.12, { type: 'triangle', vol: 0.08, slide: 660 }); break;
       case 'bark': this.tone(560, 0.07, { vol: 0.12, slide: 380 }); this.tone(520, 0.09, { vol: 0.12, slide: 340, delay: 0.13 }); break;
+      case 'talk': this.tone(520 + Math.random() * 160, 0.035, { type: 'square', vol: 0.03 }); break;
+      case 'surprise': this.tone(523, 0.08, { vol: 0.12 }); this.tone(1047, 0.16, { vol: 0.12, delay: 0.07 }); break;
+      case 'paper': this.noise(0.18, { vol: 0.16, freq: 2600, type: 'bandpass' }); break;
       case 'rest': this.tone(880, 0.2, { type: 'sine', vol: 0.06 }); break;
     }
   }

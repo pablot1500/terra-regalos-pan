@@ -36,6 +36,26 @@ export class UI {
     });
     this.selectChar(game.charId);
 
+    $('btn-splash').addEventListener('click', () => game.startIntro());
+    $('intro-skip').addEventListener('click', () => game.intro && game.intro.skip());
+    $('intro').addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; if (game.intro) game.intro.advance(); });
+    $('intro-note-ok').addEventListener('click', () => { const cb = this.noteCb; this.introNote(null); if (cb) cb(); });
+    $('btn-intro').addEventListener('click', () => { game.audio.play('ui'); game.startIntro(); });
+    // configuración y controles: se abren desde el título o desde la pausa
+    const sub = (id, open) => {
+      game.audio.play('ui');
+      this.show(id, open);
+      if (game.state === 'paused') this.show('screen-pause', !open);
+    };
+    for (const [btn, id] of [['btn-settings', 'screen-settings'], ['p-settings', 'screen-settings'], ['btn-controls', 'screen-controls'], ['p-controls', 'screen-controls']]) {
+      $(btn).addEventListener('click', () => { game.audio.unlock(); sub(id, true); });
+    }
+    $('settings-ok').addEventListener('click', () => sub('screen-settings', false));
+    $('controls-ok').addEventListener('click', () => sub('screen-controls', false));
+    this.closeSub = () => {
+      for (const id of ['screen-settings', 'screen-controls']) if (!$(id).classList.contains('hidden')) { sub(id, false); return true; }
+      return false;
+    };
     $('btn-new').addEventListener('click', () => { game.audio.unlock(); game.requestNewGame(); });
     $('btn-continue').addEventListener('click', () => { game.audio.unlock(); game.continueGame(); });
     $('btn-pause').addEventListener('click', () => game.pause());
@@ -112,6 +132,7 @@ export class UI {
   updateTitle() {
     const has = !!this.g.savedData;
     $('btn-continue').classList.toggle('hidden', !has);
+    $('btn-new').textContent = has ? 'Nueva partida' : 'Empezar';
     const hint = $('title-hint');
     if (has) {
       const s = this.g.savedData;
@@ -128,6 +149,36 @@ export class UI {
     this.show('hud', on);
     this.show('touch', on && this.isTouch);
     this.show('screen-title', !on);
+    if (on) this.show('screen-splash', false);
+  }
+
+  // ---------- Intro ----------
+  setIntro(on) {
+    this.show('intro', on);
+    $('intro').classList.toggle('on', on);
+  }
+
+  introCaption(text) {
+    const el = $('intro-caption');
+    if (text) el.textContent = text;
+    el.classList.toggle('hidden', !text);
+  }
+
+  /** abre la caja de diálogo con quien habla (o la cierra con null) */
+  introSay(name, face, text = '') {
+    if (!name) { this.show('intro-box', false); return; }
+    $('intro-name').textContent = name;
+    $('intro-face').src = face;
+    $('intro-text').textContent = text;
+    this.show('intro-box', true);
+  }
+
+  introText(text) { $('intro-text').textContent = text; }
+
+  introNote(text, onClose) {
+    this.noteCb = text ? onClose : null;
+    if (text) $('intro-note-text').textContent = text;
+    this.show('intro-note', !!text);
   }
 
   // ---------- HUD ----------

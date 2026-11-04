@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#2b1f33">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Terrari Pancha</title>
+  <title>Cumple Panchita · Salven los regalos 2</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&text=0123456789&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -55,11 +55,30 @@
       <button id="t-jump" class="tbtn jump">SALTAR<small>mantené para volar</small></button>
     </div>
 
+    <!-- Arranque: hace falta un toque para que el navegador deje sonar el audio -->
+    <div id="screen-splash" class="screen">
+      <button id="btn-splash" class="splash-btn">♥ Tocá para empezar ♥</button>
+    </div>
+
+    <!-- Intro -->
+    <div id="intro" class="hidden">
+      <div class="bars"><div class="bar-top"></div><div class="bar-bot"></div></div>
+      <p id="intro-caption" class="intro-caption hidden"></p>
+      <button id="intro-skip" class="intro-skip">Saltar intro ▸▸</button>
+      <div id="intro-box" class="intro-box hidden">
+        <img id="intro-face" alt="">
+        <div><b id="intro-name"></b><p id="intro-text"></p></div>
+        <span class="intro-next">▼</span>
+      </div>
+      <div id="intro-note" class="intro-note hidden">
+        <div class="paper"><p id="intro-note-text"></p><button id="intro-note-ok" class="btn small">Seguir ▸</button></div>
+      </div>
+    </div>
+
     <!-- Pantalla de título -->
-    <div id="screen-title" class="screen">
+    <div id="screen-title" class="screen hidden">
       <div class="title-wrap">
-        <h1 class="logo"><span class="l1">Terrari</span><span class="l2">Pancha</span></h1>
-        <p class="tagline">Un patio, una pala y tres sorpresas escondidas bajo tierra.</p>
+        <h1 class="logo"><span class="l1">Cumple Panchita</span><span class="l2">Salven los regalos <em>2</em></span></h1>
         <p class="pick">¿Con quién jugás?</p>
         <div class="chars">
           <button class="char" data-char="pablo"><img alt=""><span></span></button>
@@ -67,7 +86,12 @@
         </div>
         <div class="menu">
           <button id="btn-continue" class="btn big hidden">Continuar</button>
-          <button id="btn-new" class="btn big alt">Nueva partida</button>
+          <button id="btn-new" class="btn big alt">Empezar</button>
+          <div class="row">
+            <button id="btn-settings" class="btn small alt">Configuración</button>
+            <button id="btn-controls" class="btn small alt">Controles</button>
+          </div>
+          <button id="btn-intro" class="link-btn">Ver la intro otra vez</button>
         </div>
         <p class="hint" id="title-hint"></p>
       </div>
@@ -104,6 +128,21 @@
         <h2>Pausa</h2>
         <button class="btn" id="btn-resume">Seguir jugando</button>
         <div class="row">
+          <button class="btn small alt" id="p-settings">Configuración</button>
+          <button class="btn small alt" id="p-controls">Controles</button>
+        </div>
+        <div class="row">
+          <button class="btn small alt" id="btn-title">Ir al inicio</button>
+          <button class="btn small danger" id="btn-reset">Borrar partida</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configuración -->
+    <div id="screen-settings" class="screen modal hidden">
+      <div class="panel pause">
+        <h2>Configuración</h2>
+        <div class="row">
           <button class="btn small alt" id="btn-sfx">Sonidos</button>
           <button class="btn small alt" id="btn-music">Música</button>
         </div>
@@ -112,8 +151,15 @@
           <label><span>Sonidos</span><input type="range" id="vol-sfx" min="0" max="100" step="5"><output></output></label>
           <label><span>Jetpack</span><input type="range" id="vol-jet" min="0" max="100" step="5"><output></output></label>
         </div>
+        <button class="btn" id="settings-ok">Listo</button>
+      </div>
+    </div>
+
+    <!-- Controles -->
+    <div id="screen-controls" class="screen modal hidden">
+      <div class="panel pause">
+        <h2>Controles</h2>
         <div class="controls">
-          <h3>Controles</h3>
           <div class="ctl-desk">
             <p><b>A / D</b> o <b>← →</b> caminar</p>
             <p><b>Espacio</b> o <b>W</b> saltar · mantené para <b>volar</b> con el jetpack</p>
@@ -133,10 +179,7 @@
           </div>
           <p class="tips">Volvé al departamento para recargar energía y vida. Cuidado con las caídas largas.</p>
         </div>
-        <div class="row">
-          <button class="btn small alt" id="btn-title">Ir al inicio</button>
-          <button class="btn small danger" id="btn-reset">Borrar partida</button>
-        </div>
+        <button class="btn" id="controls-ok">Listo</button>
       </div>
     </div>
 

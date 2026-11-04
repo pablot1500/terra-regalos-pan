@@ -15,6 +15,7 @@ import { Lighting } from './lighting.js';
 import { Particles, Pickups, FloatTexts } from './entities.js';
 import { Player } from './player.js';
 import { Popi } from './popi.js';
+import { Intro } from './intro.js';
 import { Input } from './input.js';
 import { Audio } from './audio.js';
 import { UI } from './ui.js';
@@ -71,15 +72,17 @@ class Game {
     this.time = 0;
     this.shakeT = 0; this.shakeA = 0;
     this.toastTimes = {};
-    this.state = 'title';
+    this.zoom = 1;
+    this.state = 'splash'; // splash → intro → title → descend (la cámara baja del cielo) → play
+    this.intro = null;
     try { this.charId = localStorage.getItem('terra-regalos-pan:char') || 'pancha'; } catch { this.charId = 'pancha'; }
     this.charId = { el: 'pablo', ella: 'pancha' }[this.charId] || this.charId; // nombres viejos de los personajes
     if (!CHARACTERS[this.charId]) this.charId = 'pancha';
     this.savedData = null;
     this.freshGame();
-    this.cam = { x: 26 * TILE, y: (SURFACE - 22) * TILE };
     this.ui = new UI(this);
     this.resize();
+    this.cam = this.titleCam();
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 200));
     document.addEventListener('visibilitychange', () => { if (document.hidden) { this.save(); if (this.state === 'play') this.pause(); } });
@@ -88,7 +91,7 @@ class Game {
       this.savedData = d && (d.v === 1 || d.v === 2) ? d : null;
       this.ui.updateTitle();
       // al recibir una versión nueva en vivo, retomar la partida donde estaba
-      if (boot.resume && this.savedData) this.continueGame();
+      if (boot.resume && this.savedData) { this.ui.show('screen-splash', false); this.continueGame(); }
     });
     this.acc = 0;
     this.lastTs = performance.now();
@@ -128,7 +131,7 @@ class Game {
     this.freshGame();
     this.startPlaying();
     this.save();
-    setTimeout(() => this.tip('start', '¡Bajen por la escalera al patio y empiecen a cavar!'), 600);
+    this.pendingTip = ['start', '¡Bajen por la escalera al patio y empiecen a cavar!'];
   }
 
   continueGame() {
@@ -167,14 +170,51 @@ class Game {
   }
 
   startPlaying() {
-    this.state = 'play';
+    const fromTitle = this.state === 'title';
     this.popi = this.popiWith ? new Popi(this) : null;
     this.popiWith = false;
-    this.ui.setPlaying(true);
-    const p = this.players[0];
-    this.cam.x = p.cx - this.vw / 2;
-    this.cam.y = p.cy - this.vh / 2;
     this.saveTimer = 0;
+    const p = this.players[0];
+    const tx = p.cx - this.vw / 2, ty = p.cy - this.vh / 2;
+    if (fromTitle) {
+      // desde el título la cámara baja del cielo hasta donde está el personaje
+      this.state = 'descend';
+      this.ui.show('screen-title', false);
+      const dist = Math.hypot(tx - this.cam.x, ty - this.cam.y);
+      this.descend = { t: 0, dur: clamp(1.6 + dist / 900, 2.2, 4.5), x0: this.cam.x, y0: this.cam.y, x1: tx, y1: ty };
+      return;
+    }
+    this.state = 'play';
+    this.ui.setPlaying(true);
+    this.cam.x = tx;
+    this.cam.y = ty;
+    if (this.pendingTip) { this.tip(...this.pendingTip); this.pendingTip = null; }
+  }
+
+  // ------------------------------------------------------------
+  //  Intro y título
+  // ------------------------------------------------------------
+  /** posición de la cámara para la pantalla de título: arriba, en el cielo */
+  titleCam() {
+    const vw = this.vw || 400, vh = this.vh || 240;
+    return { x: 26 * TILE - vw / 2, y: (SURFACE - 17) * TILE - vh };
+  }
+
+  startIntro() {
+    this.audio.unlock();
+    this.ui.show('screen-splash', false);
+    this.ui.show('screen-title', false);
+    this.ui.setIntro(true);
+    this.state = 'intro';
+    this.intro = new Intro(this);
+  }
+
+  endIntro() {
+    this.intro = null;
+    this.ui.setIntro(false);
+    this.state = 'title';
+    this.ui.setPlaying(false);
+    this.ui.updateTitle();
   }
 
   serialize() {
@@ -510,13 +550,21 @@ class Game {
       this.updateTips(p);
       this.saveTimer += dt;
       if (this.saveTimer > 12) { this.saveTimer = 0; this.save(); }
-    } else if (this.state === 'title') {
+    } else if (this.state === 'title' || this.state === 'splash') {
       this.audio.setDepth(0);
+      if (inp.pause) this.ui.closeSub();
+    } else if (this.state === 'intro') {
+      this.audio.setDepth(0);
+      this.intro.update(dt);
+    } else if (this.state === 'descend') {
+      const d = this.descend;
+      d.t += dt;
+      if (d.t >= d.dur) { this.descend = null; this.state = 'title-done'; this.startPlaying(); }
     } else if (this.state === 'shop') {
       this.input.releaseLatch();
       if (inp.pause || inp.interact) this.closeShop();
     } else if (this.state === 'paused') {
-      if (inp.pause && !document.getElementById('screen-pause').classList.contains('hidden')) this.resume();
+      if (inp.pause && !this.ui.closeSub() && !document.getElementById('screen-pause').classList.contains('hidden')) this.resume();
     } else if (this.state === 'cinematic') {
       this.updateCinematic(dt);
     }
@@ -607,27 +655,41 @@ class Game {
   updateCamera(dt) {
     const vw = this.vw, vh = this.vh;
     let tx, ty;
-    if (this.state === 'title') {
-      tx = 22 * TILE - vw / 2 + Math.sin(this.time * 0.15) * 90;
-      ty = (SURFACE - 6) * TILE - vh * 0.62;
+    const sky = ['splash', 'title', 'intro', 'descend'].includes(this.state);
+    if (this.state === 'intro' && this.intro) {
+      this.intro.updateCam(dt);
+      tx = this.cam.x; ty = this.cam.y;
+    } else if (this.state === 'descend') {
+      const d = this.descend, u = clamp(d.t / d.dur, 0, 1);
+      const e = u < 0.5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2;
+      tx = this.cam.x = d.x0 + (d.x1 - d.x0) * e;
+      ty = this.cam.y = d.y0 + (d.y1 - d.y0) * e;
+    } else if (this.state === 'title' || this.state === 'splash') {
+      const tc = this.titleCam();
+      tx = tc.x + Math.sin(this.time * 0.12) * 60;
+      ty = tc.y;
     } else {
       const p = this.players[0];
       tx = p.cx - vw / 2;
       ty = p.cy - vh / 2;
     }
-    const k = Math.min(1, dt * (this.state === 'title' ? 2 : 9));
+    const k = Math.min(1, dt * (sky ? 1.5 : 9));
     this.cam.x += (tx - this.cam.x) * k;
     this.cam.y += (ty - this.cam.y) * k;
-    const maxX = WORLD_W * TILE - vw;
+    const z = this.zoom || 1;
+    const maxX = WORLD_W * TILE - vw / z;
     this.cam.x = maxX < 0 ? maxX / 2 : clamp(this.cam.x, 0, maxX);
-    this.cam.y = clamp(this.cam.y, 0, WORLD_H * TILE - vh);
+    // en el título la cámara puede subir más allá del borde del mundo: arriba solo hay cielo
+    this.cam.y = clamp(this.cam.y, sky ? -2000 : 0, WORLD_H * TILE - vh / z);
   }
 
   render() {
-    const ctx = this.ctx, vw = this.vw, vh = this.vh;
+    // zoom de cámara (solo lo usa la intro): achica la vista y agranda los pixeles
+    const z = this.zoom || 1;
+    const ctx = this.ctx, vw = this.vw / z, vh = this.vh / z;
     let sx = 0, sy = 0;
     if (this.shakeT > 0) { sx = (Math.random() - 0.5) * this.shakeA * 2; sy = (Math.random() - 0.5) * this.shakeA * 2; }
-    const S = this.scale;
+    const S = this.scale * z;
     ctx.setTransform(S, 0, 0, S, 0, 0);
     ctx.imageSmoothingEnabled = false;
     const camX = Math.round((this.cam.x + sx) * S) / S, camY = Math.round((this.cam.y + sy) * S) / S;
@@ -694,14 +756,16 @@ class Game {
       drawTorch(ctx, x, y, t, tq.seed);
     }
     this.pickups.draw(ctx, camX, camY, t);
-    if (this.popi && this.state !== 'title') this.popi.draw(ctx, camX, camY);
-    if (this.state !== 'title') for (const p of this.players) p.draw(ctx, camX, camY);
+    const inGame = !['splash', 'title', 'intro'].includes(this.state);
+    if (this.intro) this.intro.draw(ctx, camX, camY);
+    if (this.popi && inGame) this.popi.draw(ctx, camX, camY);
+    if (inGame) for (const p of this.players) p.draw(ctx, camX, camY);
     this.particles.draw(ctx, camX, camY);
     this.lighting.draw(ctx, this, camX, camY, vw, vh, t);
     this.drawGlints(ctx, camX, camY, vw, vh, t);
     this.texts.draw(ctx, camX, camY);
 
-    if (this.state !== 'title') this.ui.updateHUD();
+    if (inGame) this.ui.updateHUD();
   }
 }
 
@@ -712,7 +776,7 @@ function start(data) {
     hot.snapshot(() => {
       const g = window.game;
       g.save();
-      return { resume: g.state !== 'title' };
+      return { resume: ['play', 'shop', 'paused', 'gift', 'cinematic', 'faint'].includes(g.state) };
     });
   }
 }
