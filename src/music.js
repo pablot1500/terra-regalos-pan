@@ -7,7 +7,7 @@
 //   pad:  un acorde por compás ("A3,C4,E4") o "-".
 //   arp:  arpegia el acorde del pad en corcheas.
 //
-// Zonas: 0 = superficie hasta 300 m, 1 = 300 a 800 m, 2 = 800 a 1500 m.
+// Zonas: 0 = superficie hasta 300 m, 1 = 300 a 800 m, 2 = 800 a 1500 m, 3 = el núcleo (combate final).
 
 const SONGS = [
   [
@@ -56,6 +56,15 @@ const SONGS = [
       pad: `B2,D3,F#3 | G2,B2,D3 | D3,F#3,A3 | A2,C#3,E3 | B2,D3,F#3 | G2,B2,D3 | D3,F#3,A3 | A2,C#3,E3`,
     },
   ],
+  [
+    {
+      name: 'Combate final', bpm: 152, loops: 4, lead: 'epic', leadVol: 0.07, bassVol: 0.3, padVol: 0.03, arp: 0.035, drums: 0.9, epic: true, echo: true,
+      mel: `D5 - A5 - F5 G5 A5 - | A#5 - A5 G5 F5 - D5 - | C5 - G5 - E5 F5 G5 - | A5:3 - - C#6:2 - E6:3 - -
+            D6:2 - C6 A#5 A5:2 - F5 A5 | G5 A5 A#5 - D6:2 - A#5 G5 | G5:2 - A#5 D6 G6:2 - F6 E6 | E6:2 - C#6:2 - A5:4 - - -`,
+      bass: `D2 D3 D2 D3 | A#1 A#2 A#1 A#2 | C2 C3 C2 C3 | A1 A2 A1 A2 | D2 D3 D2 D3 | A#1 A#2 A#1 A#2 | G1 G2 G1 G2 | A1 A2 C#2 E2`,
+      pad: `D3,F3,A3 | A#2,D3,F3 | C3,E3,G3 | A2,C#3,E3 | D3,F3,A3 | A#2,D3,F3 | G2,A#2,D3 | A2,C#3,E3`,
+    },
+  ],
 ];
 
 const NOTE_IDX = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -86,7 +95,7 @@ function compile(song) {
 const COMPILED = SONGS.map((zone) => zone.map(compile));
 
 // umbrales con histéresis: para bajar de zona hay que pasar el límite; para volver a subir, 10 m arriba
-const DOWN = [300, 800], UP = [290, 790];
+const DOWN = [300, 800, 1500], UP = [290, 790, 1490];
 const SETTLE = 1.2;    // segundos en la zona nueva antes de cambiar de canción
 const FADE_OUT = 1.6, FADE_IN = 2.0;
 
@@ -96,7 +105,7 @@ export class MusicDirector {
     this.c = audio.ctx;
     this.zone = 0;          // zona en la que está el jugador
     this.away = 0;          // tiempo que lleva el jugador fuera de la zona de la canción
-    this.songIdx = [0, 0, 0];
+    this.songIdx = [0, 0, 0, 0];
     this.track = null;
     this.lastT = this.c.currentTime;
     this.start(0);
@@ -105,7 +114,7 @@ export class MusicDirector {
 
   setDepth(depth) {
     let z = this.zone;
-    while (z < 2 && depth >= DOWN[z]) z++;
+    while (z < DOWN.length && depth >= DOWN[z]) z++;
     while (z > 0 && depth < UP[z - 1]) z--;
     this.zone = z;
   }
@@ -218,14 +227,25 @@ export class MusicDirector {
       const f = (k === 3 ? chord[0] * 2 : chord[k]) * 2;
       this.osc('triangle', f, step * 0.9, s.arp, when, out, 0.005);
     }
-    if (s.drums) {
+    if (s.drums && s.epic) {
+      // batería de pelea: bombo galopante, redoblante en 2 y 4, platillo al empezar cada vuelta
+      if (pos === 0 || pos === 3 || pos === 4 || pos === 7) this.kick(when, s.drums, out);
+      if (pos === 2 || pos === 6) this.snare(when, s.drums, out);
+      if (bar === 7 && pos >= 4) this.snare(when + step / 2, s.drums * 0.6, out); // redoble antes de volver
+      this.hat(when, s.drums * (pos % 2 ? 0.7 : 1), out);
+      if (pos === 0 && bar % 4 === 0) this.crash(when, s.drums, out);
+    } else if (s.drums) {
       if (pos === 0 || pos === 4) this.kick(when, s.drums, out);
       if (pos % 2 === 1) this.hat(when, s.drums, out);
     }
   }
 
   lead(type, f, dur, vol, when, out) {
-    if (type === 'bell') {
+    if (type === 'epic') {
+      // cuadrada al frente con una sierra una octava abajo que le da cuerpo
+      this.osc('square', f, dur, vol, when, out, 0.006);
+      this.osc('sawtooth', f / 2, dur, vol * 0.45, when, out, 0.006);
+    } else if (type === 'bell') {
       const d = Math.max(dur, 1.4);
       this.osc('sine', f, d, vol, when, out, 0.005);
       this.osc('sine', f * 2.01, d * 0.5, vol * 0.25, when, out, 0.005);
@@ -272,6 +292,29 @@ export class MusicDirector {
     g.gain.exponentialRampToValueAtTime(0.001, when + 0.16);
     o.connect(g); g.connect(out);
     o.start(when); o.stop(when + 0.2);
+  }
+
+  snare(when, vol, out) {
+    const c = this.c;
+    const s = c.createBufferSource(); s.buffer = this.a.noiseBuf;
+    const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1900; f.Q.value = 0.7;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.32 * vol, when);
+    g.gain.exponentialRampToValueAtTime(0.001, when + 0.14);
+    s.connect(f); f.connect(g); g.connect(out);
+    s.start(when, Math.random() * 0.5); s.stop(when + 0.16);
+    this.osc('triangle', 190, 0.06, 0.18 * vol, when, out, 0.002);
+  }
+
+  crash(when, vol, out) {
+    const c = this.c;
+    const s = c.createBufferSource(); s.buffer = this.a.noiseBuf; s.loop = true; // el ruido dura 1 s
+    const f = c.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 4200;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.16 * vol, when);
+    g.gain.exponentialRampToValueAtTime(0.001, when + 1.1);
+    s.connect(f); f.connect(g); g.connect(out);
+    s.start(when, Math.random() * 0.3); s.stop(when + 1.15);
   }
 
   hat(when, vol, out) {

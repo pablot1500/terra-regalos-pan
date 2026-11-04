@@ -271,7 +271,7 @@ class Game {
     const cols = it.glow ? ['#ffffff', `rgb(${it.glow.join(',')})`] : ['#fff0a0', '#ffd34d'];
     for (let i = 0; i < 4; i++) this.particles.add({ x: player.cx, y: player.cy, vx: (Math.random() - 0.5) * 60, vy: -30 - Math.random() * 40, life: 0.5, max: 0.5, color: cols[i % 2], star: true, grav: 60 });
     if (it.value >= 300) this.toast(`¡${it.name}! +${fmtMoney(it.value)}`, null, 'good');
-    this.tip('money', '¡Plata! Gastala en el Taller, a la derecha del patio');
+    this.tip('money', '¡Plata! Gastala en el Taller, la casa rodante a la derecha del patio');
   }
 
   buy(id) {
@@ -493,10 +493,10 @@ class Game {
         if (inp.interact) this.togglePopi();
         this.tip('popi', '¡Es Popi! Te puede acompañar y ayudar a cavar');
       } else if (p.inShop) {
-        this.ui.setPrompt(this.ui.isTouch ? null : 'Presioná E para entrar al Taller');
+        this.ui.setPrompt(this.ui.isTouch ? null : 'Presioná E para comprar en la ventanita');
         this.ui.setActButton('TALLER');
         if (inp.interact) this.openShop();
-        this.tip('shop', 'Este es el Taller: acá se compran las mejoras');
+        this.tip('shop', 'Este es el Taller rodante: por la ventanita se compran las mejoras');
       } else {
         // modo vuelo del jetpack (últimos niveles): E lo prende y lo apaga
         this.ui.setActButton(this.stats.hover ? (p.hovering ? 'ATERRIZAR' : 'VOLAR') : null);

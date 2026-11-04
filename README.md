@@ -16,6 +16,8 @@ Después abrí <http://localhost:5173>.
 
 Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http://IP-DE-TU-COMPU:5173`.
 
+> El sandbox de personajes está en `http://localhost:5173/sandbox.html`: muestra cada personaje en grande, animado y cuadro por cuadro, con jetpack, casco, herramienta y fondo a elección.
+
 > Tiene que abrirse a través del servidor: si abrís `index.html` con doble click, el navegador bloquea los módulos.
 
 ## Controles
@@ -30,7 +32,7 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 | Cavar en cualquier dirección | Click (apuntando con el mouse) | CAVAR + joystick (360°) |
 | Cavar con teclado | J + W/A/S/D (8 direcciones) | — |
 | Poner antorcha | T | Botón de antorcha |
-| Abrir el taller | E | Botón TALLER |
+| Comprar en el taller (parado frente a la ventanita) | E | Botón TALLER |
 | Prender/apagar el modo vuelo (últimos niveles del jetpack) | E | Botón VOLAR |
 | Cavado automático (un click empieza, otro frena) | B o botón AUTO | Botón AUTO + toque en CAVAR |
 | Música / sonidos | M / N o los botones de arriba | Botones de arriba |
@@ -40,7 +42,7 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 
 - Arrancan en el departamento **1B**. Bajan por la escalera al patio y cavan en el **cantero del medio** (las baldosas no se rompen).
 - La tierra esconde monedas, billetes, lingotes y gemas. Todo va a una billetera compartida.
-- En el **Taller** (a la derecha del patio, con el perro salchicha) se compran mejoras, compartidas para los dos:
+- En el **Taller**, una casa rodante vintage estacionada a la derecha del patio, se compra por la ventanita-mostrador (hay que pararse frente a ella). Se venden mejoras, compartidas para los dos:
   - **Pala → Taladro**: más fuerza (desde el nivel 3 pasa a ser un taladro; el último es el Taladro cósmico). Cada capa (tierra, arcilla, piedra, granito, basalto, abismo, obsidiana) necesita una pala más fuerte.
   - **Pala ancha**: cava más bloques por palazo.
   - **Batería**: más energía (el último nivel es infinita).
@@ -55,7 +57,7 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 - De los **1000 m** para abajo aparece la **obsidiana** (negrísima, se mezcla con el abismo), con cuevas grandes para volar, cada vez menos tesoros y **parches de lava**: brilla, quema, y si cavás por debajo se derrama como un líquido.
 - A los **1500 m** la roca termina en una línea ondulada: abajo está el **núcleo**, una caverna enorme de magma. Al romper el piso caés unos 190 m (el fondo se mueve con parallax: magma lejos y, hacia abajo, un mundo abierto de cuevas de lava con mesetas, cascadas y un lago) hasta una plataforma sobre un mar de lava. La lava que se derrama desde arriba se va evaporando mientras cae. El último cofre está en la punta de abajo a la derecha de la plataforma (por ahora no se abre).
 - El medidor de la derecha marca la profundidad y dónde están los regalos.
-- La música cambia con la profundidad: dos canciones para la superficie (hasta 300 m), dos para la zona media (300 a 800 m) y dos para lo profundo (800 a 1500 m), con fundidos entre una y otra. Están escritas en texto en [`src/music.js`](src/music.js).
+- La música cambia con la profundidad: dos canciones para la superficie (hasta 300 m), dos para la zona media (300 a 800 m) y dos para lo profundo (800 a 1500 m) y una épica de combate final al entrar al núcleo, con fundidos entre una y otra. Están escritas en texto en [`src/music.js`](src/music.js).
 - El progreso se guarda solo en el navegador (localStorage).
 
 ## Dónde cambiar cosas
@@ -73,6 +75,7 @@ Todo lo ajustable está en [`src/config.js`](src/config.js):
 
 ```
 index.html        HUD, menús y controles táctiles
+sandbox.html      sandbox para ver los personajes (Pablo, Panchi, Carlos y Aguilus) y la casa rodante
 styles.css        estilos de la interfaz
 server.js         servidor local sin dependencias
 src/
@@ -80,7 +83,7 @@ src/
   config.js       todos los números y textos ajustables
   world.js        generación del mundo, cavado libre (terreno de 2 px), render por chunks
   tiles.js        tipos de bloque y texturas pixel art
-  structures.js   edificio, departamento, escalera, taller, patio
+  structures.js   edificio, departamento, escalera, casa rodante del taller, patio
   sprites.js      personajes, tesoros, cofre, perro, íconos, fuente pixel
   player.js       física, cavado, jetpack, energía, caídas, animación
   background.js   cielo, nubes, barrio, costa y mar

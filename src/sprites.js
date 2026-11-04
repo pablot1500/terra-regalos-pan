@@ -99,6 +99,44 @@ const TOP = {
     'kjjkoCcccccCCo..',
     'kkkkoCCCCCCCCo..',
   ],
+  // pelado, cara amigable y flaquito
+  carlos: [
+    '.....oooooo.....',
+    '...oonnssssoo...',
+    '..onnsssssssso..',
+    '.onsssssssssso..',
+    '.ohSssssssssso..',
+    '.ohhSsssvvssvvo.',
+    '.ohhoSsswesswes.',
+    '.ohhoSssEessEeso',
+    '.ohhsssmsssSsmo.',
+    '..ohsssqwwwwqo..',
+    '...oossqqqqoo...',
+    '.kk.oclllco.....',
+    'kjJkoccdcco.....',
+    'kJrkoCcdcCo.....',
+    'kjjkoCcdcCo.....',
+    'kkkkoCCCCCo.....',
+  ],
+  // águila mago: cresta castaña, antifaz rojizo, pico ganchudo y túnica violeta
+  aguilus: [
+    '..o.o.oo........',
+    '.oHohohhoo......',
+    'ohHhhhhhhhoo....',
+    'oHhhhhghhhhho...',
+    '.oHhhhhhhhhhho..',
+    '.oHhhhhvvhhhho..',
+    'ohhhhhhrvvyYYo..',
+    'oHhhhhrwerryYYo.',
+    'oCchhfrrrryyyYYo',
+    '.oCfffffffoyoYYo',
+    '.oCfFfFfFfo..oo.',
+    '.kk.oCdfffdCo...',
+    'kjJkoCcdfdcczo..',
+    'kJrkoCcldllcCo..',
+    'kjjkoCccldcCCo..',
+    'kkkkoCCcdcCCCo..',
+  ],
 };
 const LEGS = {
   idle: ['....oPpppppppo..', '....oPppoPpppo..', '...obbbuobbbbuo.', '...oooooooooooo.'],
@@ -106,6 +144,14 @@ const LEGS = {
   walkC: ['....oPpppppppo..', '....oPpo.oPppo..', '...obbuo.obbbuo.', '...ooooo.oooooo.'],
   air: ['....oPpppppppo..', '....oPppPpppo...', '....obbuobbbuo..', '....oooo.ooooo..'],
 };
+// piernas finitas para Carlos
+const LEGS_THIN = {
+  idle: ['....oPppppo.....', '....oPpoPpo.....', '...obbuobbuo....', '...ooooooooo....'],
+  walkA: ['....oPppppo.....', '...oPpo.oPpo....', '..obbuo.obbuo...', '..ooooo.ooooo...'],
+  walkC: ['....oPppppo.....', '....oPo.oPpo....', '...obuo.obbuo...', '...oooo.ooooo...'],
+  air: ['....oPppppo.....', '....oPpPppo.....', '....obuobbuo....', '....oooooooo....'],
+};
+const CHAR_LEGS = { carlos: LEGS_THIN };
 
 export const CHAR_W = 16, CHAR_H = 20;
 const SHOULDER = { x: 10, y: 12 }; // donde nace el brazo que sostiene la pala o el taladro
@@ -130,12 +176,33 @@ export const CHAR_PAL = {
     c: '#c9b27a', C: '#a08a55', d: '#e2cf9c',
     p: '#5f86b0', P: '#456890', b: '#8a4436', u: '#efe3c8',
   },
+  // pelado con un poquito de pelo a los costados, camisa celeste y pantalón caqui
+  carlos: {
+    ...BASE_PAL,
+    s: '#f1c9a5', S: '#d9a47f', n: '#fff1e2', m: '#f29a8e', q: '#9c4a3e', e: '#2e1c14', E: '#5a7a4a',
+    h: '#6b5a4e', v: '#6b5a4e',
+    c: '#7db8d8', C: '#5590b3', d: '#eaf4f8', l: '#f4f1ea',
+    p: '#9c8a68', P: '#7a6a4e', b: '#4e3020', u: '#c9b79c',
+  },
+  // plumas castañas, cara crema, pico amarillo con punta gris y túnica violeta con ribetes
+  aguilus: {
+    ...BASE_PAL,
+    h: '#8a5530', H: '#5a3218', g: '#b07a4a', f: '#f2e3c4', F: '#d9c49c', r: '#d9603a',
+    y: '#f2c14e', Y: '#9fb0a0', v: '#3a2014', e: '#1d1012', E: '#3a2a1a',
+    s: '#e8b48a', c: '#4a3070', C: '#2e1c4a', d: '#a374dc', z: '#c9c0b0', l: '#c9a26b',
+    p: '#3e2860', P: '#2e1c4a', b: '#6b4429', u: '#8a5a36',
+  },
 };
+// báculo de Aguilus (por ahora solo en el sandbox)
+export const STAFF = mapSprite(
+  ['.ooo.', 'oVWvo', 'oVvvo', 'ovvvo', '.ooo.', '.nNn.', '..Nn.', '.nN..', '..nN.', '.Nn..', '..nN.', '.nN..', '..Nn.', '.nN..', '..nN.', '.Nn..', '..nN.', '.nN..', '..Nn.', '..n..'],
+  { o: '#2b1d2b', V: '#c98cff', v: '#8a3fd0', W: '#ffffff', n: '#5a3218', N: '#a8703f' },
+);
 
 function composeFrame(charId, legsKey, bob, blink, jet = 0, helmet = 0) {
   const pal = { ...CHAR_PAL[charId], ...JET_TIERS[Math.min(jet, JET_TIERS.length - 1)] };
   const [c, x] = makeCanvas(CHAR_W, CHAR_H);
-  x.drawImage(mapSprite(LEGS[legsKey], pal), 0, 16);
+  x.drawImage(mapSprite((CHAR_LEGS[charId] || LEGS)[legsKey], pal), 0, 16);
   // parpadeo: se apaga el brillo y queda la línea de las pestañas
   const top = blink ? TOP[charId].map((r, i) => (i === 6 ? r.replace(/[weE]/g, 's') : i === 7 ? r.replace(/E/g, 'e') : r)) : TOP[charId];
   x.drawImage(mapSprite(top, pal), 0, bob);
