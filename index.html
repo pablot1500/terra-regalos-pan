@@ -93,7 +93,7 @@
           </div>
           <div class="row">
             <button id="btn-intro" class="link-btn">Ver la intro otra vez</button>
-            <a class="link-btn" href="sandbox.html">Sandbox de personajes</a>
+            <a class="link-btn" href="./?sandbox">Sandbox de personajes</a>
           </div>
         </div>
         <p class="hint" id="title-hint"></p>
@@ -198,6 +198,10 @@
     <div id="fade"></div>
     <div id="rotate-hint" class="hidden">Girá el celu para jugar más cómodo ↻</div>
   </div>
-  <script type="module" src="src/main.js"></script>
+  <script type="module">
+    // ?sandbox abre el sandbox de personajes en vez del juego
+    if (new URLSearchParams(location.search).has('sandbox')) import('./src/sandbox.js');
+    else import('./src/main.js');
+  </script>
 </body>
 </html>

@@ -18,7 +18,7 @@ Después abrí <http://localhost:5173>.
 
 Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http://IP-DE-TU-COMPU:5173`.
 
-> El sandbox de personajes está en `http://localhost:5173/sandbox.html`: muestra cada personaje en grande, animado y cuadro por cuadro, con jetpack, casco, herramienta y fondo a elección.
+> El sandbox de personajes está en `http://localhost:5173/?sandbox` (también hay un link en la pantalla de inicio): muestra cada personaje en grande, animado y cuadro por cuadro, con jetpack, casco, herramienta y fondo a elección.
 
 > Tiene que abrirse a través del servidor: si abrís `index.html` con doble click, el navegador bloquea los módulos.
 
@@ -88,12 +88,13 @@ Todo lo ajustable está en [`src/config.js`](src/config.js):
 
 ```
 index.html        HUD, menús y controles táctiles
-sandbox.html      sandbox para ver los personajes (Pablo, Panchi, Carlos y Aguilus) y la casa rodante
+sandbox.html      redirige al sandbox (`?sandbox`)
 styles.css        estilos de la interfaz
 server.js         servidor local sin dependencias
 src/
   main.js         loop del juego, estados, eventos (taller, cofres, desmayos)
   intro.js        cinemática de inicio: guión, personajes, cámara y la nota
+  sandbox.js      sandbox para ver los personajes (Pablo, Panchi, Carlos y Aguilus) y la casa rodante
   config.js       todos los números y textos ajustables
   world.js        generación del mundo, cavado libre (terreno de 2 px), render por chunks
   tiles.js        tipos de bloque y texturas pixel art
