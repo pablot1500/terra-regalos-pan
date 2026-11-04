@@ -65,6 +65,7 @@ export class UI {
     $('btn-resume').addEventListener('click', () => game.resume());
     $('btn-title').addEventListener('click', () => game.toTitle());
     $('btn-reset').addEventListener('click', () => game.confirmReset());
+    $('btn-rematch').addEventListener('click', () => { game.audio.play('ui'); game.rematchBoss(); });
     $('btn-sfx').addEventListener('click', () => { game.audio.setSfx(!game.audio.sfxOn); this.refreshAudioBtns(); });
     $('btn-music').addEventListener('click', () => { game.audio.setMusic(!game.audio.musicOn); this.refreshAudioBtns(); });
     $('shop-close').addEventListener('click', () => game.closeShop());
@@ -364,6 +365,9 @@ export class UI {
   }
 
   // ---------- Mensajes ----------
+  /** botón de la pausa para volver a pelear con Aguilus (solo si ya le ganaste) */
+  showRematch(on) { $('btn-rematch').classList.toggle('hidden', !on); }
+
   showMsg(title, text, buttons) {
     $('msg-title').textContent = title;
     $('msg-text').textContent = text;

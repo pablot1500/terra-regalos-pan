@@ -306,12 +306,25 @@ class Game {
     this.state = 'paused';
     this.audio.jet(false);
     this.ui.show('screen-pause', true);
+    this.ui.showRematch(!!this.boss && this.boss.state === 'done');
     this.save();
   }
 
   resume() {
     this.ui.show('screen-pause', false);
     this.state = 'play';
+  }
+
+  /** desde la pausa: Aguilus vuelve a esperar junto al último cofre y el jugador aparece en la plataforma del núcleo */
+  rematchBoss() {
+    const p = this.players[0];
+    this.resume();
+    this.boss = new Boss(this, false);
+    p.x = this.boss.homeX - 80 - p.w / 2; p.y = this.boss.floorY - p.h;
+    p.vx = 0; p.vy = 0; p.peakY = p.y; p.hp = HP_MAX; p.dead = false;
+    p.heldRock = null; p.hovering = false; p.digging = false;
+    this.cam.x = p.cx - this.vw / 2; this.cam.y = p.cy - this.vh / 2;
+    this.save();
   }
 
   // ------------------------------------------------------------
