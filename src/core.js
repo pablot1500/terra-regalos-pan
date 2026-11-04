@@ -37,16 +37,22 @@ export class CoreBackdrop {
     });
   }
 
-  draw(ctx, camX, camY, vw, vh, t) {
+  /**
+   * Las capas se arman una sola vez para la vista sin zoom (bw x bh). Con zoom se dibuja
+   * el recorte central de esa misma vista: así el fondo no se regenera ni "ondula" al acercarse.
+   */
+  draw(ctx, camX, camY, vw, vh, t, bw = vw, bh = vh) {
     if (camY + vh < CORE_ROW * TILE - 32) return;
-    const key = vw + 'x' + vh;
-    if (key !== this.key) { this.key = key; this.build(vw, vh); }
+    const key = bw + 'x' + bh;
+    if (key !== this.key) { this.key = key; this.build(bw, bh); }
     ctx.fillStyle = '#1e0605';
     ctx.fillRect(0, 0, vw, vh);
-    const cx = clamp(camX, 0, this.spanX);
+    // cámara equivalente sin zoom (mismo centro)
+    const ox = (bw - vw) / 2, oy = (bh - vh) / 2;
+    const cx = clamp(camX - ox, 0, this.spanX), cy = camY - oy;
     for (const L of this.layers) {
-      const sx = -Math.round(cx * L.f);
-      const sy = Math.round(vh - L.H + (this.bottom - camY) * L.f);
+      const sx = -Math.round(cx * L.f) - ox;
+      const sy = Math.round(bh - L.H + (this.bottom - cy) * L.f) - oy;
       if (sy > vh || sy + L.H < 0) continue;
       ctx.drawImage(L.cv, sx, sy);
       if (L.falls) for (const fl of L.falls) drawFall(ctx, sx + fl.x, sy + fl.y0, fl.w, fl.y1 - fl.y0, t, fl.seed, vh);

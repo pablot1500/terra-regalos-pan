@@ -116,6 +116,8 @@ export class Audio {
       case 'charge': this.tone(220, 0.6, { type: 'triangle', vol: 0.1, slide: 660 }); break;
       case 'magma': this.noise(0.35, { vol: 0.3, freq: 500 }); this.tone(140, 0.3, { type: 'triangle', vol: 0.18, slide: 60 }); break;
       case 'throw': this.noise(0.15, { vol: 0.2, freq: 1800, type: 'bandpass' }); this.tone(300, 0.12, { vol: 0.08, slide: 700 }); break;
+      case 'swoosh': this.noise(0.4, { vol: 0.3, freq: 900, type: 'bandpass' }); this.tone(700, 0.35, { type: 'triangle', vol: 0.08, slide: 180 }); break;
+      case 'flame': this.noise(0.5, { vol: 0.35, freq: 600 }); this.tone(90, 0.4, { type: 'sawtooth', vol: 0.06, slide: 160 }); break;
       case 'bossHit': [660, 440, 330].forEach((f, i) => this.tone(f, 0.1, { type: 'square', vol: 0.09, delay: i * 0.06 })); break;
       case 'rest': this.tone(880, 0.2, { type: 'sine', vol: 0.06 }); break;
     }

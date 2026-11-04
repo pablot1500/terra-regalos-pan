@@ -748,7 +748,7 @@ class Game {
     const t = this.time;
 
     this.bg.draw(ctx, camX, camY, vw, vh, t);
-    this.coreBg.draw(ctx, camX, camY, vw, vh, t);
+    this.coreBg.draw(ctx, camX, camY, vw, vh, t, this.vw, this.vh);
     this.structs.drawBackdrop(ctx, camX, camY, t);
     this.structs.drawBuildings(ctx, camX, camY, t);
     this.world.draw(ctx, camX, camY, vw, vh);

@@ -208,6 +208,10 @@ export const ENDING_TEXT = '¡Le ganaron a Aguilus, rescataron los regalos y has
 export const BOSS = {
   hp: 10,            // rocas que hay que pegarle
   rockDmg: 14,       // daño de cada roca de magma
+  featherDmg: 10,    // plumas-dardo (no se atajan)
+  pillarDmg: 16,     // columnas de fuego que salen del piso
+  diveDmg: 18,       // picada: chocarlo cuando se tira contra el piso
+  waveDmg: 12,       // onda de choque de la picada (se salta)
   catchR: 10,        // qué tan cerca de la punta del taladro tiene que pasar la roca para atajarla
   throwSpeed: 300,
   jetTime: 0.6,      // en la pelea el jetpack dura poquito (se recarga al pisar)...

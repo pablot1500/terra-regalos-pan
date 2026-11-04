@@ -74,12 +74,13 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 ## Aguilus (el jefe)
 
 - Al pisar la plataforma del núcleo arranca una charla con **Aguilus**, el águila mago que escondió los regalos. Es más alto y estilizado que Pablo y Panchi, con túnica larga y báculo. La pareja cae detrás y da los consejos para la pelea.
-- **Pelea:** Aguilus vuela de un lado al otro y, cada tanto, levanta el báculo y hace llover rocas de magma (en el piso aparece un aviso de dónde caen).
-  - Manteniendo el taladro apuntado a una roca, se queda pegada en la punta; con **E** (o el botón LANZAR) se la devolvés. Apunta al mouse o al taladro, y si va más o menos hacia Aguilus, se corrige sola.
+- **Pelea:** Aguilus vuela de un lado al otro cambiando de ritmo (lento, ráfagas rápidas, pausas) y alterna hechizos:
+  - **Rocas de magma** (piedras marrones irregulares con grietas encendidas; en el piso aparece un aviso de dónde caen). Manteniendo el taladro apuntado a una roca, se queda pegada en la punta; con **E** (o el botón LANZAR) se la devolvés. Va adonde apuntás (mouse o taladro), sin corrección: si Aguilus se mueve hay que adelantarse. Una línea de puntitos muestra el tiro.
+  - **Plumas-dardo** en abanico, **columnas de fuego** que salen del piso (titilan antes) y **picadas** contra el piso con ondas de choque que hay que saltar. Estos no se atajan: se esquivan.
   - Tiene **10 de vida** (barra abajo en el centro). A la mitad se enoja y va más rápido.
   - En la pelea el jetpack dura muy poquito y tiene poca fuerza, y hay un techo invisible: no se puede escapar volando.
   - Si te noquean, te levantás en la plataforma y Aguilus conserva la vida que le sacaste.
-- **Final:** Aguilus queda tirado, se rinde y les ruega que no lo dejen ahí abajo. Se abrazan los tres y suben volando hasta el patio, donde Aguilus jadea, se recompone y se va volando. Termina con un chiste con Carlos y el cartel de fin.
+- **Final:** Aguilus queda tirado, se rinde y les ruega que no lo dejen ahí abajo. Se abrazan los tres, salen volando por el pozo del cantero y aterrizan sobre las baldosas al lado del arbolito, donde Aguilus jadea, se recompone y se va volando. Termina con un chiste con Carlos y el cartel de fin.
 - Los guiones están en [`src/boss.js`](src/boss.js) (`encounterScript` y `victoryScript`); el sprite de Aguilus, en [`src/aguilus.js`](src/aguilus.js).
 - El medidor de la derecha marca la profundidad y dónde están los regalos.
 - La música cambia con la profundidad: dos canciones para la superficie (hasta 300 m), dos para la zona media (300 a 800 m) y dos para lo profundo (800 a 1500 m) y una épica de combate final al entrar al núcleo, con fundidos entre una y otra. Están escritas en texto en [`src/music.js`](src/music.js).

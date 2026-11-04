@@ -50,7 +50,7 @@ export class Scene {
   // ------------------------------------------------------------
   /** agrega un actor con los pies en (x, y) */
   actor(id, x, y, opts = {}) {
-    const a = { id, x, y, facing: -1, target: null, ty: null, fallTo: null, vy: 0, speed: 30, vspeed: 60, pose: 'idle', flying: false, walkT: 0, emote: null, emoteT: 0, phase: Math.random() * 3, hidden: false, ...opts };
+    const a = { id, x, y, facing: -1, target: null, ty: null, fallTo: null, vy: 0, speed: 30, vspeed: 60, pose: 'idle', flying: false, walkT: 0, emote: null, emoteT: 0, phase: Math.random() * 3, hidden: false, lockFacing: false, ...opts };
     this.actors[id] = a;
     return a;
   }
@@ -155,7 +155,7 @@ export class Scene {
     for (const a of Object.values(this.actors)) {
       if (a.target !== null) {
         const d = a.target - a.x, dir = Math.sign(d);
-        if (!a.flying || Math.abs(d) > 1) a.facing = dir || a.facing;
+        if (!a.lockFacing && (!a.flying || Math.abs(d) > 1)) a.facing = dir || a.facing;
         a.x += dir * Math.min(Math.abs(d), a.speed * dt);
         a.walkT += dt;
         if (Math.abs(a.target - a.x) < 0.01) { a.x = a.target; a.target = null; }
