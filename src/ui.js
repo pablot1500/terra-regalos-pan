@@ -68,6 +68,7 @@ export class UI {
     $('btn-rematch').addEventListener('click', () => { game.audio.play('ui'); game.rematchBoss(); });
     $('btn-sfx').addEventListener('click', () => { game.audio.setSfx(!game.audio.sfxOn); this.refreshAudioBtns(); });
     $('btn-music').addEventListener('click', () => { game.audio.setMusic(!game.audio.musicOn); this.refreshAudioBtns(); });
+    $('btn-duo').addEventListener('click', () => { game.audio.play('ui'); game.setDuo(!game.duo); this.refreshAudioBtns(); });
     $('shop-close').addEventListener('click', () => game.closeShop());
     $('screen-shop').addEventListener('click', (e) => { if (e.target.id === 'screen-shop') game.closeShop(); });
     $('gift-ok').addEventListener('click', () => game.closeGift());
@@ -92,11 +93,14 @@ export class UI {
     this.g.charId = id;
     try { localStorage.setItem('terra-regalos-pan:char', id); } catch { /* nada */ }
     document.querySelectorAll('.char').forEach((b) => b.classList.toggle('sel', b.dataset.char === id));
+    if ($('btn-duo')) this.refreshAudioBtns();
   }
 
   refreshAudioBtns() {
     $('btn-sfx').textContent = 'Sonidos: ' + (this.g.audio.sfxOn ? 'Sí' : 'No');
     $('btn-music').textContent = 'Música: ' + (this.g.audio.musicOn ? 'Sí' : 'No');
+    const other = this.g.charId === 'pablo' ? 'Panchi' : 'Pablo';
+    $('btn-duo').textContent = `Compañero (${other}): ` + (this.g.duo ? 'Sí' : 'No');
     $('q-sfx').classList.toggle('off', !this.g.audio.sfxOn);
     $('q-music').classList.toggle('off', !this.g.audio.musicOn);
     $('q-sfx').setAttribute('aria-pressed', String(this.g.audio.sfxOn));

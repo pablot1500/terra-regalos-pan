@@ -21,9 +21,10 @@ const MAT_FX = {
 };
 
 export class Player {
-  constructor(game, charId) {
+  constructor(game, charId, ai = null) {
     this.game = game;
     this.char = charId;
+    this.ai = ai;             // null: lo maneja una persona; si no, la IA del compañero (buddy.js)
     this.w = 6;
     this.h = 15;
     this.hp = HP_MAX;
@@ -71,6 +72,11 @@ export class Player {
     g.audio.play('ui');
     if (this.hovering) { this.vy = Math.min(this.vy, 0); this.peakY = this.y; }
   }
+
+  get bot() { return !!this.ai; }
+
+  /** avisos en pantalla: solo para quien juega (el compañero bot no los muestra) */
+  note(msg, key, kind) { if (!this.bot) this.game.toast(msg, key, kind); }
 
   get cx() { return this.x + this.w / 2; }
   get cy() { return this.y + this.h / 2; }
@@ -176,7 +182,7 @@ export class Player {
       target = this.findTarget(aim);
       if (!target) aim = null;
       else if (!isDiggable(target.hit.t)) {
-        if (inp.digPressed || inp.downPressed) g.toast('Acá no se puede cavar', 'nodig');
+        if (inp.digPressed || inp.downPressed) this.note('Acá no se puede cavar', 'nodig');
         aim = null; target = null;
       }
     }
@@ -206,7 +212,7 @@ export class Player {
         this.flying = true;
         this.jetFlame(dt);
         if (!st.infEnergy) this.energy = Math.max(0, this.energy - st.jetCost * (iy || walkIx ? 1 : 0.4) * dt);
-        if (this.energy <= 0) { this.hovering = false; g.toast('¡Sin energía para volar!', 'nojet'); }
+        if (this.energy <= 0) { this.hovering = false; this.note('¡Sin energía para volar!', 'nojet'); }
       }
       this.peakY = this.y;
     } else {
@@ -236,10 +242,10 @@ export class Player {
         this.peakY = this.y;
         this.jetFlame(dt);
       } else if (wantJet && this.energy <= 0 && Math.random() < 0.1) {
-        g.toast('¡Sin energía para volar!', 'nojet');
+        this.note('¡Sin energía para volar!', 'nojet');
       }
     }
-    if (this.flying !== wasFlying) g.audio.jet(this.flying);
+    if (this.flying !== wasFlying && !this.bot) g.audio.jet(this.flying);
 
     // ---- mover y colisionar ----
     const wasGround = this.onGround;
@@ -289,7 +295,7 @@ export class Player {
     // ---- lava ----
     if (inLava) this.burn(dt);
     else this.burnAcc = 0;
-    if (st.infEnergy) this.energy = st.energyMax;
+    if (st.infEnergy || this.bot) this.energy = st.energyMax;
 
     // ---- cofres ----
     for (const ch of g.world.chests) {
@@ -301,7 +307,7 @@ export class Player {
     // ---- agotamiento ----
     if (this.energy <= 0 && this.depth > 6 && !this.resting) {
       this.exhaustT += dt;
-      if (this.exhaustT > 0.1 && this.exhaustT - dt <= 0.1) g.toast('¡Te quedaste sin energía!', 'noen');
+      if (this.exhaustT > 0.1 && this.exhaustT - dt <= 0.1) this.note('¡Te quedaste sin energía!', 'noen');
       if (this.exhaustT > 2.5) g.faint(this, 'energy');
     } else this.exhaustT = 0;
   }
@@ -347,6 +353,7 @@ export class Player {
 
   hurt(dmg, reason = 'fall') {
     const g = this.game;
+    if (this.bot) return; // el compañero bot no se lastima
     this.hp -= dmg;
     this.hurtT = 0.8;
     g.audio.play('hurt');
@@ -366,7 +373,7 @@ export class Player {
     if (this.energy < eCost) {
       this.digging = false;
       this.digPoint = null;
-      g.toast('Sin energía: volvé a casa a descansar', 'noen2');
+      this.note('Sin energía: volvé a casa a descansar', 'noen2');
       return;
     }
     this.digging = true;
@@ -387,7 +394,7 @@ export class Player {
       if (prevPhase < STRIKE_AT && ph >= STRIKE_AT) {
         g.audio.play('clink');
         this.sparks(target.hit.x, target.hit.y, ['#ffffff', '#ffe58a']);
-        g.toast(`¡Muy duro! Necesitás una pala con fuerza ${hitHard}`, 'hard');
+        this.note(`¡Muy duro! Necesitás una pala con fuerza ${hitHard}`, 'hard');
       }
       return;
     }

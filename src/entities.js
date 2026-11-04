@@ -64,7 +64,7 @@ export class Pickups {
       // imán hacia el jugador más cercano
       let best = null, bd = 1e9;
       for (const pl of g.players) {
-        if (pl.dead) continue;
+        if (pl.dead || (pl.ai && !pl.ai.active)) continue;
         const d = Math.hypot(pl.cx - p.x, pl.cy - p.y);
         if (d < bd) { bd = d; best = pl; }
       }

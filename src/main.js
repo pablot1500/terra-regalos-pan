@@ -18,6 +18,8 @@ import { Popi } from './popi.js';
 import { Scene } from './scene.js';
 import { introScript } from './intro.js';
 import { Boss } from './boss.js';
+import { BuddyAI } from './buddy.js';
+import { Chatter } from './chatter.js';
 import { Input } from './input.js';
 import { Audio } from './audio.js';
 import { UI } from './ui.js';
@@ -80,6 +82,9 @@ class Game {
     try { this.charId = localStorage.getItem('terra-regalos-pan:char') || 'pancha'; } catch { this.charId = 'pancha'; }
     this.charId = { el: 'pablo', ella: 'pancha' }[this.charId] || this.charId; // nombres viejos de los personajes
     if (!CHARACTERS[this.charId]) this.charId = 'pancha';
+    // modo de a dos: el otro personaje acompaña manejado por la IA (buddy.js)
+    try { this.duo = localStorage.getItem('terra-regalos-pan:duo') !== '0'; } catch { this.duo = true; }
+    this.chatter = new Chatter(this);
     this.savedData = null;
     this.freshGame();
     this.ui = new UI(this);
@@ -112,6 +117,7 @@ class Game {
     this.openedGifts = [];
     this.counters = { tiles: 0, deaths: 0, playTime: 0, best: 0, earned: 0 };
     this.tips = {};
+    this.chatter.idx = 0;
     this.inv = { torch: 0 };
     this.torches = [];
     this.popi = null;
@@ -154,6 +160,7 @@ class Game {
     for (const ch of this.world.chests) if (this.openedGifts.includes(ch.id)) { ch.opened = true; ch.open = 1; }
     Object.assign(this.counters, d.counters || {});
     this.tips = d.tips || {};
+    this.chatter.idx = d.chatIdx || 0;
     this.inv = { torch: (d.inv && Number.isFinite(d.inv.torch)) ? d.inv.torch : 0 };
     this.popiWith = !!d.popi;
     this.boss = new Boss(this, !!d.bossDone, d.bossLosses || 0);
@@ -174,11 +181,38 @@ class Game {
     this.startPlaying();
   }
 
+  /** agrega o saca al compañero según el modo de a dos */
+  syncBuddy() {
+    const p = this.players[0];
+    this.players = [p];
+    if (this.duo) {
+      const ai = new BuddyAI(this);
+      const b = new Player(this, p.char === 'pablo' ? 'pancha' : 'pablo', ai);
+      ai.p = b;
+      ai.place(p);
+      ai.active = true;
+      this.players.push(b);
+    }
+    this.chatter.reset(p);
+  }
+
+  setDuo(on) {
+    this.duo = on;
+    try { localStorage.setItem('terra-regalos-pan:duo', on ? '1' : '0'); } catch { /* nada */ }
+    if (!['splash', 'title', 'intro', 'descend'].includes(this.state)) {
+      const had = this.players[1];
+      this.syncBuddy();
+      if (had) had.ai.poof();
+      else if (this.players[1]) this.players[1].ai.poof();
+    }
+  }
+
   startPlaying() {
     const fromTitle = this.state === 'title';
     this.popi = this.popiWith ? new Popi(this) : null;
     this.popiWith = false;
     this.saveTimer = 0;
+    this.syncBuddy();
     const p = this.players[0];
     const tx = p.cx - this.vw / 2, ty = p.cy - this.vh / 2;
     if (fromTitle) {
@@ -259,6 +293,7 @@ class Game {
       lava: this.world.exportLava(),
       counters: this.counters,
       tips: this.tips,
+      chatIdx: this.chatter.idx,
       inv: this.inv,
       torches: this.torches.map((t) => ({ x: t.x, y: t.y, seed: t.seed })),
       popi: !!this.popi,
@@ -565,7 +600,16 @@ class Game {
         this.particles.add({ x, y, vx: (Math.random() - 0.5) * 14, vy: -14 - Math.random() * 16, life: 0.9, max: 0.9, color: 'rgba(120,100,100,0.55)', size: 2, grav: -20, smoke: true });
         if (Math.random() < 0.3) this.particles.add({ x, y, vx: (Math.random() - 0.5) * 30, vy: -30, life: 0.4, max: 0.4, color: '#ffd34d', size: 1, grav: 60 });
       }
-      for (const pl of this.players) pl.update(dt, inp);
+      // el compañero bot se esconde durante las escenas y la pelea con Aguilus (ahí lo maneja la escena)
+      const busy = !!(this.boss && (this.boss.state === 'scene' || this.boss.fighting));
+      for (const pl of this.players) {
+        if (!pl.ai) { pl.update(dt, inp); continue; }
+        const on = !busy && !p.dead;
+        if (on && !pl.ai.active) pl.ai.place(p, true);
+        pl.ai.active = on;
+        if (on) pl.update(dt, pl.ai.input(dt, p));
+      }
+      this.chatter.update(dt);
       if (this.popi) this.popi.update(dt);
       // Popi espera en el patio: al acercarte te ladra y te lo podés llevar
       const nearDog = !this.popi && Math.abs(p.cx - (DOG_POS.x + 10)) < 22 && Math.abs(p.y + p.h - (DOG_POS.y + 14)) < 12;
@@ -827,11 +871,13 @@ class Game {
     if (this.boss && inGame) this.boss.draw(ctx, camX, camY);
     if (this.scene) this.scene.draw(ctx, camX, camY);
     if (this.popi && inGame) this.popi.draw(ctx, camX, camY);
-    if (inGame) for (const p of this.players) p.draw(ctx, camX, camY);
+    // el compañero se dibuja primero: el personaje que manejás siempre queda adelante
+    if (inGame) for (const p of [...this.players].reverse()) if (!p.ai || (p.ai.active && !this.players[0].dead)) p.draw(ctx, camX, camY);
     this.particles.draw(ctx, camX, camY);
     this.lighting.draw(ctx, this, camX, camY, vw, vh, t);
     this.drawGlints(ctx, camX, camY, vw, vh, t);
     this.texts.draw(ctx, camX, camY);
+    if (inGame) this.chatter.draw(ctx, camX, camY, vw);
 
     if (inGame) this.ui.updateHUD();
   }

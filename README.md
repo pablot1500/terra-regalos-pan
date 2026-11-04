@@ -64,6 +64,7 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
   - **Casco de minero**: la lámpara ilumina más lejos bajo tierra.
   - Cada mejora de la pala/taladro y de la pala ancha también suma un poco de alcance para cavar.
 - En el patio te espera **Popi**, el perro salchicha (acercate y apretá E para llevarlo, o desde el taller): con casquito y mini jetpack te sigue solo (camina, salta y vuela), te ayuda a cavar los bloques de al lado al 25% de tu ritmo, y no gasta energía ni se lastima.
+- **Compañero:** si jugás con Pablo, Panchi te acompaña manejada por la compu (y al revés). Te sigue más o menos libre, vuela con vos, junta lo que encuentre y cava al costado de donde estás cavando; no se lastima ni gasta energía. Cada 120 m charlan con burbujitas de diálogo (sin frenar el juego). Se prende o apaga en Configuración. Está armado para que más adelante el compañero lo pueda manejar otra persona.
 - En el taller también se compran **antorchas** ($25): iluminan una zona grande y no se rompen al cavar.
 - Cavar y volar gastan energía. En el departamento se recargan la energía y la vida.
 - Si te quedás sin energía bajo tierra o te caés muy fuerte, te desmayás: volvés a casa y perdés el 10% de la plata.
@@ -121,6 +122,8 @@ src/
   background.js   cielo, nubes, barrio, costa y mar
   lighting.js     oscuridad del subsuelo y luces
   popi.js         Popi, el perro compañero (seguir, volar, ayudar a cavar)
+  buddy.js        IA del compañero (sigue, vuela y ayuda a cavar)
+  chatter.js      charlas entre Pablo y Panchi cada 120 m (burbujas de diálogo)
   entities.js     partículas, tesoros que saltan, textos flotantes
   input.js        teclado, mouse y táctil
   audio.js        efectos de sonido (WebAudio, sin archivos)
