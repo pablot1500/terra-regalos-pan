@@ -8,7 +8,7 @@ import { initTiles, T } from './tiles.js';
 import { hash2 } from './rng.js';
 import { initSprites, drawChest, drawGiftBox, drawTorch, DOG } from './sprites.js';
 import { World } from './world.js';
-import { Structures, DOG_POS, PATIO } from './structures.js';
+import { Structures, DOG_POS, PATIO, TRAILER_X, TRAILER_H } from './structures.js';
 import { Background } from './background.js';
 import { CoreBackdrop } from './core.js';
 import { Lighting } from './lighting.js';
@@ -131,7 +131,7 @@ class Game {
     this.freshGame();
     this.startPlaying();
     this.save();
-    this.pendingTip = ['start', '¡Bajen por la escalera al patio y empiecen a cavar!'];
+    this.pendingTip = ['start', '¡Salgan al patio y empiecen a cavar en el cantero!'];
   }
 
   continueGame() {
@@ -527,12 +527,16 @@ class Game {
         this.addText(DOG_POS.x + 10, DOG_POS.y - 2, '¡GUAU!', '#fff4e0');
       }
       this.wasNearDog = nearDog;
+      const enteredShop = p.inShop && !nearDog && !this.wasInShop;
+      this.wasInShop = p.inShop && !nearDog;
       if (nearDog) {
         this.ui.setPrompt(this.ui.isTouch ? null : 'Presioná E para llevar a Popi');
         this.ui.setActButton('POPI');
         if (inp.interact) this.togglePopi();
         this.tip('popi', '¡Es Popi! Te puede acompañar y ayudar a cavar');
       } else if (p.inShop) {
+        // Carlos saluda desde la ventanita
+        if (enteredShop) this.addText(TRAILER_X + 31, SURFACE * TILE - TRAILER_H + 20, '¡HOLA!', '#fff4e0');
         this.ui.setPrompt(this.ui.isTouch ? null : 'Presioná E para comprar en la ventanita');
         this.ui.setActButton('TALLER');
         if (inp.interact) this.openShop();
@@ -698,8 +702,9 @@ class Game {
     this.bg.draw(ctx, camX, camY, vw, vh, t);
     this.coreBg.draw(ctx, camX, camY, vw, vh, t);
     this.structs.drawBackdrop(ctx, camX, camY, t);
-    this.structs.drawBuildings(ctx, camX, camY);
+    this.structs.drawBuildings(ctx, camX, camY, t);
     this.world.draw(ctx, camX, camY, vw, vh);
+    this.structs.drawFloor(ctx, camX, camY);
     this.world.drawLava(ctx, camX, camY, vw, vh, t);
 
     // círculo de cavado: puntitos que se van cerrando a medida que avanza el palazo

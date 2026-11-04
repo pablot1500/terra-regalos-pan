@@ -53,7 +53,7 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 
 ## Cómo se juega
 
-- Arrancan en el departamento **1B**. Bajan por la escalera al patio y cavan en el **cantero del medio** (las baldosas no se rompen).
+- Arrancan en su departamento de **planta baja**, que da directo al patio, y cavan en el **cantero del medio** (las baldosas no se rompen).
 - La tierra esconde monedas, billetes, lingotes y gemas. Todo va a una billetera compartida.
 - En el **Taller**, una casa rodante vintage estacionada a la derecha del patio, se compra por la ventanita-mostrador (hay que pararse frente a ella). Se venden mejoras, compartidas para los dos:
   - **Pala → Taladro**: más fuerza (desde el nivel 3 pasa a ser un taladro; el último es el Taladro cósmico). Cada capa (tierra, arcilla, piedra, granito, basalto, abismo, obsidiana) necesita una pala más fuerte.
@@ -97,7 +97,7 @@ src/
   config.js       todos los números y textos ajustables
   world.js        generación del mundo, cavado libre (terreno de 2 px), render por chunks
   tiles.js        tipos de bloque y texturas pixel art
-  structures.js   edificio, departamento, escalera, casa rodante del taller, patio
+  structures.js   edificio, departamento, casa rodante del taller (con Carlos), paredón, portón y patio
   sprites.js      personajes, tesoros, cofre, perro, íconos, fuente pixel
   player.js       física, cavado, jetpack, energía, caídas, animación
   background.js   cielo, nubes, barrio, costa y mar

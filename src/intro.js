@@ -2,14 +2,12 @@
 // buscan los regalos debajo de la cama y encuentran una nota misteriosa.
 // El guión está en `script()`: cada `yield` espera a que termine lo anterior.
 import { TILE, SURFACE } from './config.js';
-import { T } from './tiles.js';
 import { getCharFrames, CHAR_PAL, CHAR_W, CHAR_H, drawText, DOG, ICON_URL } from './sprites.js';
 import { DOG_POS } from './structures.js';
 import { clamp, pixelLine } from './util.js';
 
 const S = SURFACE;
-const FLOOR = (S - 6) * TILE;         // piso del departamento 1B
-const APT_CX = 15 * TILE;             // centro del departamento
+const FLOOR = S * TILE;               // piso del patio y del departamento de planta baja
 
 export const NOTE_TEXT = `Querida cumpleañera:
 
@@ -36,8 +34,8 @@ export class Intro {
     this.g = game;
     this.ui = game.ui;
     this.t = 0;
-    const actor = (id, x, phase) => ({ id, x, y: S * TILE, facing: -1, target: null, speed: 30, pose: 'idle', walkT: 0, emote: null, emoteT: 0, phase });
-    this.actors = { pancha: actor('pancha', 600, 0), pablo: actor('pablo', 618, 1.3) };
+    const actor = (id, x, phase) => ({ id, x, y: FLOOR, facing: -1, target: null, speed: 30, pose: 'idle', walkT: 0, emote: null, emoteT: 0, phase });
+    this.actors = { pancha: actor('pancha', 640, 0), pablo: actor('pablo', 660, 1.3) }; // entran por el portón
     this.follow = ['pancha', 'pablo'];
     this.setZoom(1.5);
     game.zoom = this.zoomT;
@@ -80,14 +78,14 @@ export class Intro {
     yield this.say('pancha', '¡Popi! ¿Cuidaste la casa mientras no estábamos?');
     yield this.say('popi', 'Guau. (Traducción: más o menos.)');
 
-    this.walk('pancha', 214); this.walk('pablo', 236);
+    this.walk('pancha', 178); this.walk('pablo', 198);
     yield this.say('pancha', '¿Te acordás de lo que pasó el año pasado con los regalos?');
     yield this.say('pablo', 'Ni me lo nombres. Todavía tengo pesadillas.');
     yield this.say('pablo', 'Pero tranqui: este año los escondí yo. Lugar ultra secreto. Imposible que falle.');
     yield this.say('pancha', 'Mmm... eso mismo dijiste el año pasado.');
     yield this.arrive('pancha', 'pablo');
     this.walk('pancha', 150); this.walk('pablo', 166);
-    yield this.arrive('pancha', 'pablo');
+    yield this.wait(0.8);
 
     // ---- corte: adentro del departamento ----
     this.ui.fade(true);
@@ -247,9 +245,6 @@ export class Intro {
         a.walkT += dt;
         if (Math.abs(a.target - a.x) < 0.01) { a.x = a.target; a.target = null; }
       }
-      // altura del piso: sube y baja los escalones de a poco
-      const gy = this.groundY(a.x);
-      a.y += (gy - a.y) * Math.min(1, dt * 16);
       if (a.emote) { a.emoteT += dt; if (a.emoteT > 2.2) a.emote = null; }
     }
     for (const f of this.feathers) {
@@ -277,13 +272,6 @@ export class Intro {
       if (tw.t >= tw.dur) this.tween = null;
     }
     if (this.waitFn && this.waitFn()) { this.waitFn = null; this.step(); }
-  }
-
-  groundY(x) {
-    const W = this.g.world;
-    const c = clamp(Math.floor(x / TILE), 3, 76);
-    for (let r = S - 8; r <= S + 1; r++) if (W.get(c, r) !== T.AIR) return r * TILE;
-    return S * TILE;
   }
 
   snapCam() {
@@ -343,9 +331,9 @@ export class Intro {
       if (a.pose === 'search') {
         // agachado revolviendo debajo de la cama
         sx += Math.round(Math.sin(this.t * 30));
-        ctx.drawImage(frames.idle, 0, 0, CHAR_W, 16, sx, sy + 4, CHAR_W, 16);
-        ctx.drawImage(frames.idle, 0, 17, CHAR_W, 3, sx, sy + 17, CHAR_W, 3);
-        drawArm(ctx, sx, sy + 4, a.facing, 0, a.id, 0.4 + Math.sin(this.t * 18) * 0.5);
+        ctx.drawImage(frames.idle, 0, 0, CHAR_W, 16, sx, sy + 5, CHAR_W, 16);
+        ctx.drawImage(frames.idle, 0, CHAR_H - 3, CHAR_W, 3, sx, sy + CHAR_H - 3, CHAR_W, 3);
+        drawArm(ctx, sx, sy + 5, a.facing, 0, a.id, 0.4 + Math.sin(this.t * 18) * 0.5);
       } else {
         ctx.drawImage(frames[frame], sx, sy);
         drawArm(ctx, sx, sy, a.facing, bob, a.id, a.target !== null ? 1.1 + Math.sin(a.walkT * 9 * Math.PI / 2) * 0.35 : 1.25);
@@ -364,8 +352,8 @@ export class Intro {
 function drawArm(ctx, sx, sy, facing, bob, id, ang) {
   const pal = CHAR_PAL[id];
   const mx = (lx) => (facing > 0 ? sx + Math.round(lx) : sx + CHAR_W - 1 - Math.round(lx));
-  const hx = 10 + Math.cos(ang) * 3, hy = 12 + bob + Math.sin(ang) * 3;
-  pixelLine(ctx, mx(10), sy + 12 + bob, mx(hx), sy + Math.round(hy), pal.C);
+  const hx = 10 + Math.cos(ang) * 3, hy = 11 + bob + Math.sin(ang) * 3;
+  pixelLine(ctx, mx(10), sy + 11 + bob, mx(hx), sy + Math.round(hy), pal.C);
   ctx.fillStyle = pal.s;
   ctx.fillRect(mx(hx), sy + Math.round(hy), 1, 1);
 }

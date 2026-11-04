@@ -64,39 +64,39 @@ export function drawText(ctx, s, x, y, color, outline = null) {
 // Ojos en las filas 6 y 7: w = brillo, e = pupila, E = iris.
 const TOP = {
   pablo: [
-    '...oo.ooo.oo....',
-    '..oghohghoghoo..',
-    '.ohhgHhhhgHhhgo.',
-    'ohgHhhhgHhhhgHho',
-    'ohgHhhgsHssHsgho',
-    'ohgHhhsHssssHsso',
-    'ohhgHSswesswesso',
-    'ohgHosSEesseEsso',
-    'ohhHosmmssSsmmso',
-    '.oHosxsSqqqSsxo.',
-    '..ooxxxxxxxxxo..',
-    '.kk.oCcciiicCo..',
-    'kjJkoCcclcclCo..',
-    'kJrkoCcccccdCo..',
+    '....oooooooo....',
+    '...ohhghhhghho..',
+    '..ohhhghhhghhho.',
+    '..ohghhhghhhgho.',
+    '..ohhhsHsssssso.',
+    '..ohhhSswessweo.',
+    '..ohhoSsEessEeo.',
+    '..ohhosmmsSsmmo.',
+    '...ohxxssqqqxo..',
+    '....ooxxxxxxo...',
+    '.kk.oCcsSsccCo..',
+    'kjJkoCccccccCo..',
+    'kJrkoCccccccCo..',
+    'kjjkoCccdcccCo..',
     'kjjkoCccccccCo..',
     'kkkkoCCCCCCCCo..',
   ],
   pancha: [
     '.....oooooo.....',
-    '...oohhhgghoo...',
-    '..ohhhhghhhhho..',
-    '.ohhhhhhhghhhho.',
-    'ohghhhhhsssshhho',
-    'ohhghhsvvssvvsho',
-    'ohghhhswesswesho',
-    'ohhghhsEesseEsho',
-    'ohhhghmmssSsmmho',
-    'ohhghhsssqqssho.',
-    'ohhhhgosssssoho.',
-    '.kk.hhcCssCcho..',
-    'kjJkhhccccccho..',
-    'kJrkhCccccdcCo..',
-    'kjjkoCcccccCCo..',
+    '....ohhhgghoo...',
+    '...ohhhhghhhho..',
+    '..ohhhhhhhghhho.',
+    '..ohghhhhssssho.',
+    '..ohhghsvvssvvo.',
+    '..ohghhswessweo.',
+    '..ohhghsEessEeo.',
+    '..ohhhgmmsSsmmo.',
+    '..ohhghsssqqso..',
+    '.kk.ohhCsssCco..',
+    'kjJkohhcccccCo..',
+    'kJrkohccccccCo..',
+    'kjjkoCccdcccCo..',
+    'kjjkoCccccccCo..',
     'kkkkoCCCCCCCCo..',
   ],
   // pelado, cara amigable y flaquito
@@ -138,43 +138,44 @@ const TOP = {
     'kkkkoCCcdcCCCo..',
   ],
 };
+// piernas (filas 16-21): pantalón, zapatillas con cordones (L) y suela (z)
 const LEGS = {
-  idle: ['....oPpppppppo..', '....oPppoPpppo..', '...obbbuobbbbuo.', '...oooooooooooo.'],
-  walkA: ['....oPpppppppo..', '...oPpo..oPppo..', '..obbuo..obbbuo.', '..oooo...oooooo.'],
-  walkC: ['....oPpppppppo..', '....oPpo.oPppo..', '...obbuo.obbbuo.', '...ooooo.oooooo.'],
-  air: ['....oPpppppppo..', '....oPppPpppo...', '....obbuobbbuo..', '....oooo.ooooo..'],
+  idle: ['....oPpppppppo..', '....oPppoPpppo..', '....oPppoPpppo..', '...oblbuoblbbuo.', '...ozzzzozzzzzo.', '...oooooooooooo.'],
+  walkA: ['....oPpppppppo..', '...oPppo.oPppo..', '...oPpo...oPppo.', '..oblbuo..oblbuo', '..ozzzzo..ozzzzo', '..oooooo..oooooo'],
+  walkC: ['....oPpppppppo..', '....oPppooPppo..', '....oPpo.oPppo..', '...oblbuoblbbuo.', '...ozzzzozzzzzo.', '...oooooooooooo.'],
+  air: ['....oPpppppppo..', '....oPppPpppo...', '....oPpooPppo...', '....obluoblbuo..', '....ozzzozzzzo..', '....oooo.ooooo..'],
 };
 // piernas finitas para Carlos
 const LEGS_THIN = {
-  idle: ['....oPppppo.....', '....oPpoPpo.....', '...obbuobbuo....', '...ooooooooo....'],
-  walkA: ['....oPppppo.....', '...oPpo.oPpo....', '..obbuo.obbuo...', '..ooooo.ooooo...'],
-  walkC: ['....oPppppo.....', '....oPo.oPpo....', '...obuo.obbuo...', '...oooo.ooooo...'],
-  air: ['....oPppppo.....', '....oPpPppo.....', '....obuobbuo....', '....oooooooo....'],
+  idle: ['....oPppppo.....', '....oPpoPpo.....', '....oPpoPpo.....', '...obbuobbuo....', '...ozzzozzzo....', '...ooooooooo....'],
+  walkA: ['....oPppppo.....', '...oPpo.oPpo....', '...oPo...oPpo...', '..obbuo..obbuo..', '..ozzzo..ozzzo..', '..ooooo..ooooo..'],
+  walkC: ['....oPppppo.....', '....oPpooPpo....', '....oPo.oPpo....', '...obuo.obbuo...', '...ozzo.ozzzo...', '...oooo.ooooo...'],
+  air: ['....oPppppo.....', '....oPpPppo.....', '....oPoPpo......', '....obuobbuo....', '....ozzozzzo....', '....oooooooo....'],
 };
 const CHAR_LEGS = { carlos: LEGS_THIN };
 
-export const CHAR_W = 16, CHAR_H = 20;
-const SHOULDER = { x: 10, y: 12 }; // donde nace el brazo que sostiene la pala o el taladro
+export const CHAR_W = 16, CHAR_H = 22;
+const SHOULDER = { x: 10, y: 11 }; // donde nace el brazo que sostiene la pala o el taladro
 
 const BASE_PAL = {
   o: '#2b1d2b', w: '#ffffff', k: '#4a5260', j: '#c3cad4', J: '#8a94a3', r: '#ff5a5a', y: '#f2c14e',
 };
 export const CHAR_PAL = {
-  // pelo negro con rulos, barba de unos días y buzo gris con capucha
+  // pelo negro ondulado con volumen, barba de unos días, remera violeta, pantalón negro y zapatillas blancas
   pablo: {
     ...BASE_PAL,
     s: '#f3cdb0', S: '#dcaa8a', m: '#f4a097', q: '#a85a52', e: '#2e1c14', E: '#7a4a2a', x: '#d8aa8c',
     h: '#2a2530', H: '#121018', g: '#4f4862',
-    c: '#8e9a94', C: '#66726c', d: '#b5c0ba', i: '#f4f1ea', l: '#cfc7b6',
-    p: '#5e7370', P: '#45565a', b: '#2f3b37', u: '#f1ede4',
+    c: '#8a5cc9', C: '#6a3fa6', d: '#c9a6ff',
+    p: '#2e2e36', P: '#1c1c22', b: '#f4f1ea', u: '#ffffff', L: '#b9c1c9', z: '#cfc8bd',
   },
-  // pelo largo castaño cobrizo, suéter caqui y jeans
+  // pelo largo castaño cobrizo, remera blanca, jean azul y zapatillas negras con cordones celestes
   pancha: {
     ...BASE_PAL,
     s: '#fde6d6', S: '#efc2aa', m: '#f7a1a6', q: '#b04a58', e: '#3e2416', E: '#8a5530',
     h: '#b9552c', H: '#7c2f16', g: '#e07c45', v: '#8e3f22',
-    c: '#c9b27a', C: '#a08a55', d: '#e2cf9c',
-    p: '#5f86b0', P: '#456890', b: '#8a4436', u: '#efe3c8',
+    c: '#f6f3ee', C: '#cfc6b8', d: '#ff9ab5',
+    p: '#4f7fb8', P: '#38608f', b: '#26262c', u: '#4a4a54', L: '#8fd8ff', z: '#e9e3d6',
   },
   // pelado con un poquito de pelo a los costados, camisa celeste y pantalón caqui
   carlos: {
@@ -182,7 +183,7 @@ export const CHAR_PAL = {
     s: '#f1c9a5', S: '#d9a47f', n: '#fff1e2', m: '#f29a8e', q: '#9c4a3e', e: '#2e1c14', E: '#5a7a4a',
     h: '#6b5a4e', v: '#6b5a4e',
     c: '#7db8d8', C: '#5590b3', d: '#eaf4f8', l: '#f4f1ea',
-    p: '#9c8a68', P: '#7a6a4e', b: '#4e3020', u: '#c9b79c',
+    p: '#9c8a68', P: '#7a6a4e', b: '#4e3020', u: '#c9b79c', z: '#2e1c12',
   },
   // plumas castañas, cara crema, pico amarillo con punta gris y túnica violeta con ribetes
   aguilus: {

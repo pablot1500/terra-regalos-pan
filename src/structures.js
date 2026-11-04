@@ -3,15 +3,16 @@ import { SURFACE, TILE } from './config.js';
 import { T } from './tiles.js';
 import { makeCanvas, mapSprite, pixelLine } from './util.js';
 import { mulberry32 } from './rng.js';
-import { drawText } from './sprites.js';
+import { drawText, getCharFrames } from './sprites.js';
 
 const S = SURFACE;
 
 // Zonas en píxeles de mundo
-export const HOME_ZONE = { x0: 11 * TILE, x1: 19 * TILE, y0: (S - 11) * TILE, y1: (S - 6) * TILE };
-export const TRAILER_X = 64 * TILE + 4; // casa rodante del taller (se compra por la ventanita)
+export const HOME_ZONE = { x0: 11 * TILE, x1: 19 * TILE, y0: (S - 5) * TILE, y1: S * TILE }; // departamento de planta baja
+export const TRAILER_X = 62 * TILE + 4; // casa rodante del taller (se compra por la ventanita)
 export const SHOP_ZONE = { x0: TRAILER_X + 8, x1: TRAILER_X + 56, y0: (S - 4) * TILE, y1: S * TILE };
-export const SPAWN = { x: 14 * TILE + 1, y: (S - 6) * TILE - 15 };
+export const SPAWN = { x: 14 * TILE + 1, y: S * TILE - 15 };
+export const GATE_X = 75 * TILE + 4;   // portón a la calle, al fondo del patio
 export const PATIO = { c0: 27, c1: 64 };
 export const DIG_ZONE = { c0: 41, c1: 50 }; // cantero del medio: lo único que se puede cavar desde arriba
 export const DOG_POS = { x: 54 * TILE, y: S * TILE - 14 }; // Popi espera en el patio, a la derecha del cantero
@@ -33,12 +34,10 @@ export function placeStructures(world) {
   }
   // edificio sólido
   for (let c = 2; c <= 19; c++) for (let r = S - 12; r <= S - 1; r++) set(c, r, T.STRUCT);
-  // departamento (interior) y puerta
-  for (let c = 11; c <= 18; c++) for (let r = S - 11; r <= S - 7; r++) set(c, r, T.AIR);
-  for (let r = S - 9; r <= S - 7; r++) set(19, r, T.AIR);
-  // escalera: descanso + 5 escalones bajando hacia el patio
-  for (let r = S - 6; r <= S - 1; r++) { set(20, r, T.STAIR); set(21, r, T.STAIR); }
-  for (let i = 0; i < 5; i++) for (let r = S - 5 + i; r <= S - 1; r++) set(22 + i, r, T.STAIR);
+  // departamento de planta baja (interior) y su puerta al patio;
+  // la escalera al primer piso es solo decorado: se pasa por delante
+  for (let c = 11; c <= 18; c++) for (let r = S - 5; r <= S - 1; r++) set(c, r, T.AIR);
+  for (let r = S - 3; r <= S - 1; r++) set(19, r, T.AIR);
   // pared invisible junto a la cerca del fondo (la casa rodante no es sólida)
   for (let r = S - 14; r <= S - 1; r++) set(77, r, T.STRUCT);
 }
@@ -150,8 +149,16 @@ function paintComplex() {
   // pilar que enmarca el departamento
   R(64, 39, 8, 41, WALL); R(70, 39, 2, 41, WALL_SH); R(71, 39, 1, 41, '#cfc6b6');
 
-  // ---------- Departamento (interior visible) ----------
-  paintApartment(x, rnd);
+  // ---------- Primer piso, vecinos del 1B ----------
+  windowAt(x, 80, 46, 16, 16, { curtain: '#c9b2e8' });
+  flowers(x, 79, 64, 18, rnd, ['#ff9ad5', '#ffffff']);
+  R(78, 65, 22, 3, '#a0522d'); R(78, 65, 22, 1, '#c0703f');
+  windowAt(x, 108, 46, 18, 16, { persiana: 0.35 });
+  R(126, 66, 9, 7, '#9aa3ad'); R(127, 67, 7, 5, '#d9dde1'); for (let i = 128; i < 134; i += 2) R(i, 68, 1, 3, '#b3bac1');
+  // puerta del 1B, que da al descanso de la escalera
+  R(135, 54, 9, 26, LINE); R(136, 55, 8, 25, '#8b5a36'); R(137, 57, 6, 9, '#a06a41'); R(137, 68, 6, 9, '#a06a41'); P(142, 67, '#e2b33c');
+  R(136, 46, 7, 7, '#ffffff'); R(136, 46, 7, 1, LINE); R(136, 52, 7, 1, LINE);
+  drawText(x, '1B', 135, 47, '#3d5c9c');
 
   // ---------- Planta baja ----------
   // puerta de entrada
@@ -162,16 +169,15 @@ function paintComplex() {
   R(14, 110, 4, 8, '#a06a41'); R(20, 110, 4, 8, '#a06a41');
   R(14, 99, 4, 1, '#b97f52'); R(20, 99, 4, 1, '#b97f52');
   P(24, 108, '#e2b33c'); P(24, 109, '#9c6a12');
-  // placa "PB"
-  R(30, 99, 11, 9, '#ffffff'); R(30, 99, 11, 1, LINE); R(30, 107, 11, 1, LINE); R(30, 99, 1, 9, LINE); R(40, 99, 1, 9, LINE);
-  drawText(x, 'PB', 32, 101, '#3d5c9c');
+  // buzones
+  R(31, 100, 9, 8, '#5d6b78'); R(32, 101, 3, 3, '#8796a5'); R(36, 101, 3, 3, '#8796a5'); R(32, 105, 3, 2, '#8796a5'); R(36, 105, 3, 2, '#8796a5');
   windowAt(x, 47, 96, 16, 15, { curtain: '#ffd59e' });
-  windowAt(x, 76, 96, 16, 15, {});
-  windowAt(x, 104, 96, 16, 15, { persiana: 0.6 });
-  // aire acondicionado
-  R(126, 93, 13, 9, '#9aa3ad'); R(127, 94, 11, 7, '#d9dde1');
-  for (let i = 128; i < 137; i += 2) R(i, 95, 1, 5, '#b3bac1');
-  R(137, 102, 1, 6, '#9aa3ad');
+  // pilar que enmarca el departamento de planta baja
+  R(64, 88, 8, 32, WALL); R(70, 88, 2, 32, WALL_SH); R(71, 88, 1, 32, '#cfc6b6');
+  // ---------- Departamento de planta baja (interior visible) ----------
+  x.save(); x.translate(0, 49);
+  paintApartment(x, rnd);
+  x.restore();
   // planta grande en la entrada
   R(2, 112, 7, 8, '#c0663a'); R(2, 112, 7, 1, '#e08a5a');
   for (let i = 0; i < 24; i++) P(1 + Math.floor(rnd() * 9), 98 + Math.floor(rnd() * 14), rnd() < 0.5 ? '#3f8f3a' : '#2f6e2c');
@@ -249,9 +255,9 @@ function paintApartment(x, rnd) {
   R(136, 39, 8, 16, WALL); R(143, 39, 1, 16, LINE);
   R(136, 55, 8, 1, LINE);
   R(136, 56, 8, 24, '#e9cdbd');
-  // placa "1B"
+  // placa "PB"
   R(136, 46, 7, 7, '#ffffff'); R(136, 46, 7, 1, LINE); R(136, 52, 7, 1, LINE);
-  drawText(x, '1B', 135, 47, '#c9578a');
+  drawText(x, 'PB', 135, 47, '#c9578a');
 }
 
 function paintStairs(x) {
@@ -294,7 +300,7 @@ function paintStairs(x) {
 // Casa rodante vintage estacionada al fondo del patio: no se entra, se compra por la ventanita.
 // Lienzo de 100x64; el piso es la fila 64.
 export const TRAILER_W = 100, TRAILER_H = 64;
-const TR_WIN = { x0: 16, x1: 48, y0: 19, y1: 40 }; // ventanita-mostrador
+export const TR_WIN = { x0: 16, x1: 48, y0: 19, y1: 40 }; // ventanita-mostrador
 const TR_WHEEL = { x: 60, y: 56, r: 8 };
 function paintTrailer() {
   const [cv, x] = makeCanvas(TRAILER_W, TRAILER_H);
@@ -386,12 +392,19 @@ function paintTrailer() {
   R(x0 + 6, y0, 1, 2, '#3a3f45'); R(x0 + 5, y0 + 2, 3, 2, '#ffe08a');
   x.fillStyle = 'rgba(255,224,140,0.25)';
   x.beginPath(); x.arc(x0 + 6.5, y0 + 3, 6, 0, Math.PI * 2); x.fill();
-  // mercadería sobre el mostrador
-  R(x0 + 2, y1 - 4, 4, 4, '#b98b54'); R(x0 + 2, y1 - 4, 4, 1, '#d6a96c'); R(x0 + 4, y1 - 4, 1, 4, '#8a6440');
-  R(x0 + 10, y1 - 3, 2, 3, '#3a3f45'); R(x0 + 10, y1 - 5, 2, 2, '#ff9a3d'); P(x0 + 10, y1 - 6, '#fff3a8'); // antorcha
-  R(x0 + 13, y1 - 3, 2, 3, '#3a3f45'); R(x0 + 13, y1 - 5, 2, 2, '#ff9a3d');
-  R(x1 - 9, y1 - 4, 5, 4, '#7a4a26'); R(x1 - 9, y1 - 4, 5, 1, '#c9b79c'); pixelLine(x, x1 - 5, y1 - 7, x1 - 6, y1 - 4, '#d8dde3'); // mate
-  R(x1 - 3, y1 - 8, 2, 8, '#3e7d5a'); R(x1 - 3, y1 - 8, 2, 1, '#2b2b2b');        // termo
+  // mercadería sobre el mostrador (va en una capa aparte, por delante de Carlos)
+  const goods = (gx) => {
+    const G = painter(gx).R, GP = painter(gx).P;
+    G(x0 + 1, y1 - 4, 4, 4, '#b98b54'); G(x0 + 1, y1 - 4, 4, 1, '#d6a96c'); G(x0 + 3, y1 - 4, 1, 4, '#8a6440');
+    G(x0 + 6, y1 - 3, 2, 3, '#3a3f45'); G(x0 + 6, y1 - 5, 2, 2, '#ff9a3d'); GP(x0 + 6, y1 - 6, '#fff3a8'); // antorchas
+    G(x0 + 9, y1 - 3, 2, 3, '#3a3f45'); G(x0 + 9, y1 - 5, 2, 2, '#ff9a3d');
+    G(x1 - 9, y1 - 4, 5, 4, '#7a4a26'); G(x1 - 9, y1 - 4, 5, 1, '#c9b79c'); pixelLine(gx, x1 - 5, y1 - 7, x1 - 6, y1 - 4, '#d8dde3'); // mate
+    G(x1 - 3, y1 - 8, 2, 8, '#3e7d5a'); G(x1 - 3, y1 - 8, 2, 1, '#2b2b2b');        // termo
+  };
+  goods(x);
+  const [front, fx] = makeCanvas(TRAILER_W, TRAILER_H);
+  goods(fx);
+  cv.front = front;
   // mostrador de madera que sobresale
   R(x0 - 3, y1 + 1, x1 - x0 + 7, 2, '#a8743f'); R(x0 - 3, y1 + 1, x1 - x0 + 7, 1, '#c99260'); R(x0 - 3, y1 + 3, x1 - x0 + 7, 1, '#6b4429');
   R(x0, y1 + 4, 1, 3, '#6b4429'); R(x1, y1 + 4, 1, 3, '#6b4429');
@@ -553,17 +566,6 @@ function paintBush(w, h, seed, flowers) {
   return cv;
 }
 
-function paintFence(w, h) {
-  const [cv, x] = makeCanvas(w, h);
-  const { R, P } = painter(x);
-  R(0, 8, w, 2, '#e9e3d6'); R(0, 16, w, 2, '#e9e3d6');
-  for (let xx = 0; xx < w; xx += 4) {
-    R(xx, 2, 3, h - 2, '#ffffff'); P(xx + 1, 1, '#ffffff'); R(xx + 2, 3, 1, h - 3, '#d6cfc2');
-  }
-  for (let xx = 0; xx < w; xx += 3) { P(xx, h - 1, '#5cb24f'); P(xx + 1, h - 2, '#7cd65a'); }
-  return cv;
-}
-
 const CLOTHES = {
   shirt: [['gg.gg', 'ggggg', '.ggg.', '.ggg.'], { g: '#3e9b6a' }],
   dress: [['.pp.', 'pppp', '.pp.', 'pppp', 'pppppp'.slice(0, 4)], { p: '#f07aa6' }],
@@ -574,19 +576,59 @@ const CLOTHES = {
 
 export { paintTrailer };
 
+let trailerCache = null;
+/** Casa rodante con Carlos atendiendo detrás del mostrador. (x, y) = esquina sup. izq. */
+export function drawTrailer(ctx, x, y, t) {
+  const tr = trailerCache || (trailerCache = paintTrailer());
+  ctx.drawImage(tr, x, y);
+  // Carlos asoma por la ventanita mirando al patio; parpadea y se balancea un poquito
+  const f = getCharFrames('carlos').left;
+  const blink = t % 3.7 > 3.55, bob = t % 2.2 > 1.4 ? 1 : 0;
+  const { x0, x1, y0, y1 } = TR_WIN;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x + x0, y + y0, x1 - x0 + 1, y1 - y0 + 1); ctx.clip();
+  ctx.drawImage(blink ? f.blink : f.idle, x + 23, y + 24 + bob);
+  ctx.restore();
+  ctx.drawImage(tr.front, x, y);
+}
+
+// Portón de madera al fondo del patio, que da a la calle
+function paintGate() {
+  const [cv, x] = makeCanvas(28, 44);
+  const { R, P } = painter(x);
+  // pilares blancos con remate
+  for (const px of [0, 23]) {
+    R(px, 6, 5, 38, '#efebe3'); R(px, 6, 1, 38, '#ffffff'); R(px + 4, 6, 1, 38, '#c9c2b6');
+    R(px - (px ? 0 : 0), 4, 5, 2, '#d8d1c4'); R(px, 3, 5, 1, '#ffffff');
+  }
+  // hojas del portón: tablones verticales marrones
+  for (let xx = 5; xx < 23; xx++) {
+    const plank = Math.floor((xx - 5) / 3);
+    R(xx, 10, 1, 34, plank % 2 ? '#7a4a2a' : '#8b5a36');
+    if ((xx - 5) % 3 === 0) R(xx, 10, 1, 34, '#5a3220');
+  }
+  R(5, 9, 18, 2, '#5a3220'); R(5, 9, 18, 1, '#a06a41');
+  R(13, 10, 2, 34, '#4a2a18'); // unión de las dos hojas
+  // travesaños, bisagras y manijas
+  for (const yy of [16, 34]) { R(5, yy, 18, 2, '#6b4429'); R(5, yy, 18, 1, '#9b6a43'); }
+  R(5, 15, 3, 1, '#3a3f45'); R(5, 33, 3, 1, '#3a3f45'); R(20, 15, 3, 1, '#3a3f45'); R(20, 33, 3, 1, '#3a3f45');
+  P(12, 26, '#e2b33c'); P(15, 26, '#e2b33c'); P(12, 27, '#9c6a12'); P(15, 27, '#9c6a12');
+  // numerito de la calle
+  R(17, 21, 5, 4, '#ffffff'); drawText(x, '1', 18, 21, '#3d5c9c');
+  return cv;
+}
+
 export class Structures {
   constructor() {
     this.complex = paintComplex();
-    this.trailer = paintTrailer();
-    this.brick = paintBrickWall(304, 40);
+    this.brick = paintBrickWall(GATE_X - 216, 40);
+    this.gate = paintGate();
     this.tree = paintTree();
     this.hedgeL = paintHedge(16, 60, 5);
-    this.fenceR = paintFence(16, 24);
     this.bushes = [
       [27.4 * TILE, paintBush(18, 14, 3, ['#ff9ad5', '#ffffff'])],
       [37.6 * TILE, paintBush(22, 16, 7, null)],
       [59.2 * TILE, paintBush(20, 15, 11, ['#ffd34d', '#ffffff'])],
-      [62.6 * TILE, paintBush(14, 11, 13, ['#ff5d6c'])],
     ];
     this.clothes = Object.fromEntries(Object.entries(CLOTHES).map(([k, [m, p]]) => [k, mapSprite(m, p)]));
   }
@@ -596,7 +638,7 @@ export class Structures {
     const gy = S * TILE - camY;
     ctx.drawImage(this.brick, 216 - camX, gy - 40);
     ctx.drawImage(this.hedgeL, 0 - camX, gy - 60);
-    ctx.drawImage(this.fenceR, 77 * TILE - camX, gy - 24);
+    ctx.drawImage(this.gate, GATE_X - camX, gy - 44);
     ctx.drawImage(this.tree, 30 * TILE - camX, gy - 72);
     // tendedero
     const p1 = 45 * TILE - camX, p2 = 56 * TILE - camX, top = gy - 30;
@@ -616,9 +658,19 @@ export class Structures {
     for (const [bx, spr] of this.bushes) ctx.drawImage(spr, Math.round(bx) - camX, gy - spr.height);
   }
 
-  drawBuildings(ctx, camX, camY) {
+  /** piso de madera del departamento: va encima de los bloques de cemento */
+  drawFloor(ctx, camX, camY) {
+    const x0 = 11 * TILE - camX, y = S * TILE - camY, w = 9 * TILE;
+    ctx.fillStyle = '#b07a4a'; ctx.fillRect(x0, y, w, 3);
+    ctx.fillStyle = '#c99260'; ctx.fillRect(x0, y, w, 1);
+    ctx.fillStyle = '#8a5a36'; ctx.fillRect(x0, y + 3, w, 1);
+    for (let i = 5; i < w; i += 9) ctx.fillRect(x0 + i, y + 1, 1, 2);
+    ctx.fillStyle = '#6f9fd0'; ctx.fillRect(x0 + 26, y, 22, 1); // alfombra
+  }
+
+  drawBuildings(ctx, camX, camY, t) {
     ctx.drawImage(this.complex, 2 * TILE - camX, (S - 16) * TILE - camY);
-    ctx.drawImage(this.trailer, TRAILER_X - camX, S * TILE - TRAILER_H - camY);
+    drawTrailer(ctx, TRAILER_X - camX, S * TILE - TRAILER_H - camY, t);
   }
 }
 

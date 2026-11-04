@@ -1,6 +1,6 @@
 // Interfaz HTML: HUD, taller, regalos, pausa y menú principal.
 import { UPGRADES, GIFTS, CHARACTERS, LAYERS, MAX_DEPTH, HP_MAX, SUPPLIES } from './config.js';
-import { ICON_URL, DOG, POPI } from './sprites.js';
+import { ICON_URL, DOG, POPI, charPortrait } from './sprites.js';
 import { fmtMoney } from './util.js';
 
 const $ = (id) => document.getElementById(id);
@@ -13,7 +13,7 @@ export class UI {
     if (this.isTouch) document.body.classList.add('touch');
 
     document.querySelectorAll('img[data-icon]').forEach((img) => { img.src = ICON_URL[img.dataset.icon]; });
-    document.querySelector('.shop-cat').src = DOG.happyA.toDataURL();
+    document.querySelector('.shop-cat').src = charPortrait('carlos', 1).toDataURL(); // Carlos atiende el taller
     document.querySelector('.gift-img').src = ICON_URL.giftBig;
 
     // marcas de regalos en el medidor de profundidad

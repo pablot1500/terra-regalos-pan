@@ -83,12 +83,12 @@
 
   <script type="module">
     import { getCharFrames, drawArmShovel, drawDrill, CHAR_W, CHAR_H, STAFF } from './src/sprites.js';
-    import { paintTrailer, TRAILER_W, TRAILER_H } from './src/structures.js';
+    import { drawTrailer, TRAILER_W, TRAILER_H } from './src/structures.js';
     import { makeCanvas } from './src/util.js';
 
     const CHARS = [
-      ['pablo', 'Pablo', 'Pelo negro con rulos, barba de unos días y buzo gris con capucha.'],
-      ['pancha', 'Panchi', 'Pelo largo castaño cobrizo, suéter caqui y jeans.'],
+      ['pablo', 'Pablo', 'Pelo negro ondulado con volumen, barba de unos días, remera violeta, pantalón negro y zapatillas blancas.'],
+      ['pancha', 'Panchi', 'Pelo largo castaño cobrizo, remera blanca, jean azul y zapatillas negras con cordones celestes.'],
       ['carlos', 'Carlos', 'Pelado, flaquito y con cara amigable: camisa celeste y pantalón caqui.'],
       ['aguilus', 'Aguilus', 'Águila mago: cresta castaña, antifaz rojizo, pico ganchudo y túnica violeta con ribetes.'],
     ];
@@ -225,10 +225,9 @@
           drawChar(x, c.id, { ...o, anim: 'idle' }, 0, f);
           blit(cv, b, z);
         }
-        const tr = paintTrailer();
         const [b, x] = makeCanvas(TRAILER_W + 40, TRAILER_H + 12);
         paintBg(x, b.width, b.height, o.bg === 'check' ? 'check' : 'sky', TRAILER_H + 4);
-        x.drawImage(tr, 20, 4);
+        drawTrailer(x, 20, 4, 0);
         // Pablo frente a la ventanita, para ver la escala
         x.drawImage(getCharFrames('pablo').right.idle, 20 + 28, TRAILER_H + 4 - CHAR_H);
         blit($('trailer'), b, Math.max(3, Math.min(8, Math.floor((innerWidth - 60) / b.width))));
