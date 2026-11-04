@@ -79,7 +79,8 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
   - **Plumas-dardo** en abanico, **columnas de fuego** que salen del piso (titilan antes) y **picadas** contra el piso con ondas de choque que hay que saltar. Estos no se atajan: se esquivan.
   - Tiene **10 de vida** (barra abajo en el centro). A la mitad se enoja y va más rápido.
   - En la pelea el jetpack dura muy poquito y tiene poca fuerza, y hay un techo invisible: no se puede escapar volando.
-  - Si te noquean, te levantás en la plataforma y Aguilus conserva la vida que le sacaste.
+  - Si te noquean, te desmayás y aparecés en casa (con una pluma violeta en la almohada): hay que volver a bajar y Aguilus se recupera del todo. Cuando llegás de nuevo, te gasta con una charla distinta según cuántas veces te ganó.
+  - Después de ganarle, en la pausa aparece **Volver a pelear con Aguilus** para repetir la pelea.
 - **Final:** Aguilus queda tirado, se rinde y les ruega que no lo dejen ahí abajo. Se abrazan los tres, salen volando por el pozo del cantero y aterrizan sobre las baldosas al lado del arbolito, donde Aguilus jadea, se recompone y se va volando. Termina con un chiste con Carlos y el cartel de fin.
 - Los guiones están en [`src/boss.js`](src/boss.js) (`encounterScript` y `victoryScript`); el sprite de Aguilus, en [`src/aguilus.js`](src/aguilus.js).
 - El medidor de la derecha marca la profundidad y dónde están los regalos.

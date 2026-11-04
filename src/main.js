@@ -156,7 +156,7 @@ class Game {
     this.tips = d.tips || {};
     this.inv = { torch: (d.inv && Number.isFinite(d.inv.torch)) ? d.inv.torch : 0 };
     this.popiWith = !!d.popi;
-    this.boss = new Boss(this, !!d.bossDone);
+    this.boss = new Boss(this, !!d.bossDone, d.bossLosses || 0);
     this.torches = Array.isArray(d.torches)
       ? d.torches.filter((t) => t && Number.isFinite(t.x) && Number.isFinite(t.y)).map((t) => ({ x: t.x, y: t.y, seed: Number.isFinite(t.seed) ? t.seed : Math.random() * 10 }))
       : [];
@@ -263,6 +263,7 @@ class Game {
       torches: this.torches.map((t) => ({ x: t.x, y: t.y, seed: t.seed })),
       popi: !!this.popi,
       bossDone: !!(this.boss && this.boss.state === 'done'),
+      bossLosses: this.boss ? this.boss.losses : 0,
       player: p ? { char: p.char, x: p.x, y: p.y, hp: p.hp, energy: p.energy } : null,
       savedAt: Date.now(),
     };

@@ -91,8 +91,9 @@ const FEATHER = (() => {
 })();
 
 export class Boss {
-  constructor(game, done) {
+  constructor(game, done, losses = 0) {
     this.g = game;
+    this.losses = losses;     // cuántas veces te ganó (para que te gaste al volver)
     this.state = done ? 'done' : 'waiting'; // waiting → scene → fight → scene → done
     this.hp = BOSS.hp;
     const ch = game.world.chests.find((c) => c.core);
@@ -168,6 +169,7 @@ export class Boss {
   finish(p, sc, skipped) {
     const g = this.g;
     this.state = 'done';
+    this.losses = 0;
     const me = sc.actors[p.char];
     const x = skipped || !me ? LAND_X - 10 : me.x;
     p.x = x - p.w / 2; p.y = SURFACE * TILE - p.h; p.vx = 0; p.vy = 0; p.peakY = p.y;
@@ -180,7 +182,10 @@ export class Boss {
     ]);
   }
 
-  /** el jugador cayó K.O. durante la pelea: se levanta en la plataforma y sigue */
+  /**
+   * el jugador cayó K.O. durante la pelea: se desmaya, "algo" lo lleva hasta casa
+   * y tiene que volver a bajar. Aguilus se recupera y lo espera junto al cofre.
+   */
   playerDown(p) {
     const g = this.g;
     g.state = 'faint';
@@ -188,23 +193,39 @@ export class Boss {
     p.heldRock = null;
     g.audio.jet(false);
     g.audio.play('faint');
-    this.clearHazards();
-    // si estaba en plena picada, vuelve a volar
-    this.attack = null;
-    this.y = this.baseY = SKY_Y;
+    g.counters.deaths++;
+    for (let i = 0; i < 14; i++) g.particles.add({ x: p.cx, y: p.cy, vx: (Math.random() - 0.5) * 60, vy: -Math.random() * 60, life: 0.8, max: 0.8, color: '#ffffff', star: true, grav: 40 });
+    this.losses++;
+    this.reset();
+    g.ui.setBossBar(null);
     setTimeout(() => g.ui.fade(true), 400);
     setTimeout(() => {
-      g.ui.showMsg('¡K.O.!', 'Aguilus te dejó viendo estrellitas.\n¡Pero todavía no ganó!', [{
-        label: '¡Revancha!',
+      g.ui.showMsg('¡Te desmayaste!', 'Aguilus te dejó viendo estrellitas y caíste redondo.\n\nCuando abriste los ojos estabas en casa. Nadie sabe cómo llegaste... solo había una pluma violeta en tu almohada.\n\nAguilus te espera abajo de todo, ¡y ya se recuperó!', [{
+        label: 'Volver a bajar',
         onClick: () => {
-          p.dead = false; p.hp = HP_MAX; p.hurtT = 1.5;
-          p.x = clamp(this.partner.x + 16, ARENA.x0, ARENA.x1) - p.w / 2; p.y = FLOOR_Y - p.h; p.vx = 0; p.vy = 0; p.peakY = p.y;
-          this.castT = 2.5;
+          p.spawn();
+          if (g.popi) g.popi.place();
+          p.hp = HP_MAX;
+          p.energy = g.stats.energyMax;
+          g.cam.x = p.cx - g.vw / 2;
+          g.cam.y = p.cy - g.vh / 2;
           g.ui.fade(false);
           g.state = 'play';
+          g.save();
         },
       }]);
     }, 1300);
+  }
+
+  /** vuelve a esperar parado junto al cofre, con la vida llena */
+  reset() {
+    this.state = 'waiting';
+    this.hp = BOSS.hp;
+    this.phase2 = false;
+    this.clearHazards();
+    this.attack = null; this.sinceRocks = 1;
+    this.x = this.tx = this.homeX; this.y = FLOOR_Y; this.baseY = SKY_Y; this.vx = 0; this.facing = -1;
+    this.partner = null;
   }
 
   // ------------------------------------------------------------
@@ -658,6 +679,7 @@ const LAND_X = 34 * TILE;
 // ------------------------------------------------------------
 function* encounterScript(sc, B, p) {
   const g = sc.g, me = p.char, mate = B.mateId;
+  if (B.losses > 0) { yield* rematchScript(sc, B, p); return; }
   const meX = clamp(p.cx, ARENA.x0, ARENA.x1);
   const towards = B.homeX > meX ? 1 : -1;
   const mateX = clamp(meX - towards * 18, ARENA.x0, ARENA.x1);
@@ -698,6 +720,59 @@ function* encounterScript(sc, B, p) {
   yield sc.say(me, g.ui.isTouch ? '¡Y con el botón LANZAR se las devuelvo!' : '¡Y con la E se las tiro de vuelta!');
   yield sc.say(mate, 'Pero sus plumas, el fuego y las picadas no se atajan: ¡esos hay que esquivarlos!');
   yield sc.say(mate, '¡Y ojo, que acá abajo el jetpack casi no tiene fuerza! No hay forma de escaparse volando.');
+}
+
+/** cuando volvés a bajar después de que te noqueó: Aguilus te gasta */
+function* rematchScript(sc, B, p) {
+  const g = sc.g, me = p.char, mate = B.mateId, n = B.losses;
+  const name = CHARACTERS[me].name;
+  const meX = clamp(p.cx, ARENA.x0, ARENA.x1);
+  const towards = B.homeX > meX ? 1 : -1;
+  const mateX = clamp(meX - towards * 18, ARENA.x0, ARENA.x1);
+  sc.actor(me, meX, FLOOR_Y, { facing: towards });
+  sc.actor(mate, mateX, FLOOR_Y - 220, { facing: towards });
+  sc.actor('aguilus', B.homeX, FLOOR_Y, { facing: -towards, phase: 0 });
+  const mid = (meX + B.homeX) / 2;
+  sc.fixed = { x: mid, y: FLOOR_Y - 20 };
+  sc.setZoom(Math.abs(B.homeX - meX) > 170 ? 1 : 1.5);
+  sc.snapCam();
+  sc.drop(mate, FLOOR_Y);
+  yield sc.arrive(mate);
+  sc.fixed = { x: B.homeX, y: FLOOR_Y - 18 };
+  sc.setZoom(2.2);
+  // las gastadas cambian según cuántas veces te ganó
+  const pick = (arr) => arr[(n - 1) % arr.length];
+  yield sc.say('aguilus', pick([
+    `¡Ja! ¿Ya te despertaste, ${name}? Pensé que te ibas a quedar durmiendo la siesta hasta el año que viene.`,
+    `¡¿Otra vez vos?! Ya van ${n} veces... Te voy a empezar a cobrar la entrada.`,
+    `${n} a 0, ${name}. ¿Querés que te preste mi báculo, a ver si así te va mejor?`,
+  ]));
+  sc.fixed = { x: mid, y: FLOOR_Y - 20 };
+  sc.setZoom(1.5);
+  yield sc.say(me, pick([
+    'Eso fue un calentamiento nomás.',
+    'Me resbalé. El piso está lleno de magma, ¿sabés?',
+    'Te estaba estudiando los movimientos...',
+  ]));
+  sc.fixed = { x: B.homeX, y: FLOOR_Y - 18 };
+  sc.setZoom(2.2);
+  yield sc.say('aguilus', pick([
+    'Ajá. Y las estrellitas que veías, ¿también eran de calentamiento?',
+    'Claro, claro. Y yo soy un pollito.',
+    '¿Y qué aprendiste? ¿Que las rocas de magma duelen? ¡Jiji!',
+  ]));
+  sc.fixed = { x: mid, y: FLOOR_Y - 20 };
+  sc.setZoom(1.5);
+  yield sc.say(mate, '¡No le hagas caso! ¡Esta vez le ganamos!');
+  yield sc.say('aguilus', '¡Ya veremos! ¡Ahí va otra lluvia de magma!');
+  sc.actors.aguilus.pose = 'fly';
+  sc.fly('aguilus', B.homeX, SKY_Y, 55);
+  g.audio.play('charge');
+  g.shake(3);
+  sc.fixed = { x: mid, y: FLOOR_Y - 60 };
+  sc.setZoom(1);
+  yield sc.arrive('aguilus');
+  yield sc.say(mate, 'Acordate: las rocas se atajan con el taladro, ¡y lo demás se esquiva!');
 }
 
 function* victoryScript(sc, B, p) {
