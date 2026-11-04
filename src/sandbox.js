@@ -1,6 +1,7 @@
 // Sandbox de personajes: se abre con ?sandbox en la misma página del juego
 // (así anda en cualquier hosting, sin depender de una página aparte).
-import { getCharFrames, drawArmShovel, drawDrill, CHAR_W, CHAR_H, STAFF } from './sprites.js';
+import { getCharFrames, drawArmShovel, drawDrill, CHAR_W, CHAR_H } from './sprites.js';
+import { drawAguilus } from './aguilus.js';
 import { drawTrailer, TRAILER_W, TRAILER_H } from './structures.js';
 import { makeCanvas } from './util.js';
 
@@ -58,7 +59,6 @@ const HTML = `
       <option value="3">Taladro</option>
       <option value="5">Taladro diamante</option>
       <option value="7">Taladro cósmico</option>
-      <option value="staff">Báculo (Aguilus)</option>
       <option value="none">Nada</option>
     </select>
   </label>
@@ -95,9 +95,10 @@ const CHARS = [
   ['pablo', 'Pablo', 'Pelo negro ondulado con volumen, barba de unos días, remera violeta, pantalón negro y zapatillas blancas.'],
   ['pancha', 'Panchi', 'Pelo largo castaño cobrizo, remera blanca, jean azul y zapatillas negras con cordones celestes.'],
   ['carlos', 'Carlos', 'Pelado, flaquito y con cara amigable: camisa celeste y pantalón caqui.'],
-  ['aguilus', 'Aguilus', 'Águila mago: cresta castaña, antifaz rojizo, pico ganchudo y túnica violeta con ribetes.'],
+  ['aguilus', 'Aguilus', 'Águila mago (el jefe): más alto y estilizado, cresta castaña, antifaz rojizo, pico ganchudo, túnica violeta larga y báculo con orbe.'],
 ];
 const FRAMES = ['idle', 'idleB', 'blink', 'walkA', 'walkB', 'walkC', 'air'];
+const AG_FRAMES = ['idle', 'cast', 'fly', 'hurt', 'weak'];
 const STRIKE_AT = 0.62;
 const $ = (id) => document.getElementById(id);
 const opts = () => ({
@@ -110,7 +111,7 @@ for (const k of ['zoom', 'jet', 'helmet']) {
 }
 
 // escena chica a resolución nativa: el personaje parado en el piso
-const SW = 32, SH = 32, GROUND = 28;
+const SW = 32, SH = 44, GROUND = 40;
 function paintBg(x, w, h, bg, ground) {
   if (bg === 'sky') {
     x.fillStyle = '#9fd6f5'; x.fillRect(0, 0, w, h);
@@ -130,14 +131,14 @@ function paintBg(x, w, h, bg, ground) {
   }
 }
 
-function drawStaff(x, sx, sy, facing, bob) {
-  // en la mano de adelante, con el orbe arriba de la cabeza
-  const hx = facing > 0 ? sx + 12 : sx + CHAR_W - 1 - 12;
-  x.drawImage(STAFF, hx - 2, sy - 5 + bob);
-  x.fillStyle = '#e8b48a'; x.fillRect(hx, sy + 13 + bob, 1, 2);
-}
-
 function drawChar(x, id, o, t, frameOverride) {
+  if (id === 'aguilus') {
+    // el jefe tiene su propio sprite: quieto, lanzando un hechizo, volando, golpeado o tirado
+    const pose = frameOverride || { walk: 'idle', air: 'fly', fly: 'fly', dig: 'cast' }[o.anim] || 'idle';
+    const up = pose === 'fly' || pose === 'cast' || pose === 'hurt' ? 4 : 0;
+    drawAguilus(x, SW / 2, GROUND - up, o.facing, pose, t, pose === 'hurt' && Math.floor(t * 10) % 2 === 0);
+    return;
+  }
   const frames = getCharFrames(id, o.jet, o.helmet)[o.facing > 0 ? 'right' : 'left'];
   let frame = frameOverride;
   let arm = 1.0, sh = 1.05, len = 4;
@@ -163,7 +164,6 @@ function drawChar(x, id, o, t, frameOverride) {
   }
   x.drawImage(frames[frame], sx, sy);
   if (o.tool === 'none') return;
-  if (o.tool === 'staff') { drawStaff(x, sx, sy, o.facing, bob); return; }
   const lvl = +o.tool, drill = lvl >= 3;
   let digging = o.anim === 'dig' && !frameOverride;
   if (digging) {
@@ -189,7 +189,7 @@ const cards = CHARS.map(([id, name, desc]) => {
   card.appendChild(stage);
   const strip = document.createElement('div');
   strip.className = 'strip';
-  const thumbs = FRAMES.map((f) => {
+  const thumbs = (id === 'aguilus' ? AG_FRAMES : FRAMES).map((f) => {
     const fig = document.createElement('figure');
     const c = document.createElement('canvas');
     fig.appendChild(c);

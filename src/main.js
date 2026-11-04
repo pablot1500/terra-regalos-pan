@@ -15,7 +15,9 @@ import { Lighting } from './lighting.js';
 import { Particles, Pickups, FloatTexts } from './entities.js';
 import { Player } from './player.js';
 import { Popi } from './popi.js';
-import { Intro } from './intro.js';
+import { Scene } from './scene.js';
+import { introScript } from './intro.js';
+import { Boss } from './boss.js';
 import { Input } from './input.js';
 import { Audio } from './audio.js';
 import { UI } from './ui.js';
@@ -73,8 +75,8 @@ class Game {
     this.shakeT = 0; this.shakeA = 0;
     this.toastTimes = {};
     this.zoom = 1;
-    this.state = 'splash'; // splash → intro → title → descend (la cámara baja del cielo) → play
-    this.intro = null;
+    this.state = 'splash'; // splash → intro → title → descend (la cámara baja del cielo) → play (con 'scene' para las escenas del juego)
+    this.scene = null;
     try { this.charId = localStorage.getItem('terra-regalos-pan:char') || 'pancha'; } catch { this.charId = 'pancha'; }
     this.charId = { el: 'pablo', ella: 'pancha' }[this.charId] || this.charId; // nombres viejos de los personajes
     if (!CHARACTERS[this.charId]) this.charId = 'pancha';
@@ -114,6 +116,7 @@ class Game {
     this.torches = [];
     this.popi = null;
     this.players = [new Player(this, this.charId)];
+    this.boss = new Boss(this, false);
     this.pickups.list = [];
     this.particles.list = [];
   }
@@ -140,6 +143,7 @@ class Game {
     this.freshGame(d.seed || DEFAULT_SEED);
     if (d.v === 2) this.world.importDug(d.dug);
     else this.world.importDugTiles(d.dug);
+    if (d.lava) this.world.importLava(d.lava);
     this.money = d.money || 0;
     const du = d.upgrades || {};
     for (const u of UPGRADES) this.upgrades[u.id] = clamp(du[u.id] || 0, 0, u.levels.length - 1);
@@ -152,6 +156,7 @@ class Game {
     this.tips = d.tips || {};
     this.inv = { torch: (d.inv && Number.isFinite(d.inv.torch)) ? d.inv.torch : 0 };
     this.popiWith = !!d.popi;
+    this.boss = new Boss(this, !!d.bossDone);
     this.torches = Array.isArray(d.torches)
       ? d.torches.filter((t) => t && Number.isFinite(t.x) && Number.isFinite(t.y)).map((t) => ({ x: t.x, y: t.y, seed: Number.isFinite(t.seed) ? t.seed : Math.random() * 10 }))
       : [];
@@ -206,11 +211,36 @@ class Game {
     this.ui.show('screen-title', false);
     this.ui.setIntro(true);
     this.state = 'intro';
-    this.intro = new Intro(this);
+    this.scene = new Scene(this, introScript, {
+      onSkip: () => { const tc = this.titleCam(); this.cam.x = tc.x; this.cam.y = tc.y; },
+      onEnd: () => this.endIntro(),
+    });
+  }
+
+  /** escena dentro del juego (charla con Aguilus, final): congela el juego y muestra los diálogos */
+  startScene(script, { onEnd = null, onSkip = null } = {}) {
+    this.state = 'scene';
+    this.audio.jet(false);
+    this.input.releaseLatch();
+    this.ui.setPrompt(null);
+    this.ui.show('hud', false);
+    this.ui.show('touch', false);
+    this.ui.setIntro(true, 'Saltar ▸▸');
+    this.scene = new Scene(this, script, {
+      onSkip,
+      onEnd: (skipped, sc) => {
+        this.scene = null;
+        this.ui.setIntro(false);
+        this.ui.show('hud', true);
+        this.ui.show('touch', this.ui.isTouch);
+        this.state = 'play';
+        if (onEnd) onEnd(skipped, sc);
+      },
+    });
   }
 
   endIntro() {
-    this.intro = null;
+    this.scene = null;
     this.ui.setIntro(false);
     this.state = 'title';
     this.ui.setPlaying(false);
@@ -226,11 +256,13 @@ class Game {
       upgrades: this.upgrades,
       gifts: this.openedGifts,
       dug: this.world.exportDug(),
+      lava: this.world.exportLava(),
       counters: this.counters,
       tips: this.tips,
       inv: this.inv,
       torches: this.torches.map((t) => ({ x: t.x, y: t.y, seed: t.seed })),
       popi: !!this.popi,
+      bossDone: !!(this.boss && this.boss.state === 'done'),
       player: p ? { char: p.char, x: p.x, y: p.y, hp: p.hp, energy: p.energy } : null,
       savedAt: Date.now(),
     };
@@ -432,6 +464,7 @@ class Game {
 
   faint(player, reason) {
     if (this.state !== 'play') return;
+    if (this.boss && this.boss.fighting) { this.boss.playerDown(player); return; }
     this.state = 'faint';
     player.dead = true;
     this.audio.jet(false);
@@ -527,9 +560,16 @@ class Game {
         this.addText(DOG_POS.x + 10, DOG_POS.y - 2, '¡GUAU!', '#fff4e0');
       }
       this.wasNearDog = nearDog;
+      if (this.boss) this.boss.update(dt, p);
       const enteredShop = p.inShop && !nearDog && !this.wasInShop;
       this.wasInShop = p.inShop && !nearDog;
-      if (nearDog) {
+      if (this.boss && this.boss.fighting) {
+        // pelea con Aguilus: E devuelve la roca atajada
+        const held = !!p.heldRock;
+        this.ui.setActButton(held ? 'LANZAR' : null);
+        this.ui.setPrompt(held && !this.ui.isTouch ? 'Presioná E para tirarle la roca a Aguilus' : null);
+        if (inp.interact && held) this.boss.throwRock(p, inp);
+      } else if (nearDog) {
         this.ui.setPrompt(this.ui.isTouch ? null : 'Presioná E para llevar a Popi');
         this.ui.setActButton('POPI');
         if (inp.interact) this.togglePopi();
@@ -559,7 +599,9 @@ class Game {
       if (inp.pause) this.ui.closeSub();
     } else if (this.state === 'intro') {
       this.audio.setDepth(0);
-      this.intro.update(dt);
+      this.scene.update(dt);
+    } else if (this.state === 'scene') {
+      if (this.scene) this.scene.update(dt);
     } else if (this.state === 'descend') {
       const d = this.descend;
       d.t += dt;
@@ -588,6 +630,7 @@ class Game {
     const cx0 = this.cam.x / TILE - 12, cx1 = (this.cam.x + this.vw) / TILE + 12;
     const cy0 = this.cam.y / TILE - 12, cy1 = (this.cam.y + this.vh) / TILE + 12;
     if (this.popi) this.lights.push([this.popi.cx / TILE, this.popi.cy / TILE, 3.5, 0.85]);
+    if (this.boss && this.boss.fighting) this.lights.push([this.boss.x / TILE, (this.boss.y - 20) / TILE, 6, 0.9]);
     for (const tq of this.torches) {
       const tx = tq.x / TILE, ty = tq.y / TILE;
       if (tx < cx0 || tx > cx1 || ty < cy0 || ty > cy1) continue;
@@ -660,8 +703,8 @@ class Game {
     const vw = this.vw, vh = this.vh;
     let tx, ty;
     const sky = ['splash', 'title', 'intro', 'descend'].includes(this.state);
-    if (this.state === 'intro' && this.intro) {
-      this.intro.updateCam(dt);
+    if ((this.state === 'intro' || this.state === 'scene') && this.scene) {
+      this.scene.updateCam(dt);
       tx = this.cam.x; ty = this.cam.y;
     } else if (this.state === 'descend') {
       const d = this.descend, u = clamp(d.t / d.dur, 0, 1);
@@ -672,6 +715,11 @@ class Game {
       const tc = this.titleCam();
       tx = tc.x + Math.sin(this.time * 0.12) * 60;
       ty = tc.y;
+    } else if (this.boss && this.boss.fighting) {
+      // pelea: encuadre fijo con el piso abajo, para ver a Aguilus volando arriba
+      const p = this.players[0];
+      tx = p.cx * 0.6 + this.boss.x * 0.4 - vw / 2;
+      ty = this.boss.floorY - vh * 0.84;
     } else {
       const p = this.players[0];
       tx = p.cx - vw / 2;
@@ -761,8 +809,9 @@ class Game {
       drawTorch(ctx, x, y, t, tq.seed);
     }
     this.pickups.draw(ctx, camX, camY, t);
-    const inGame = !['splash', 'title', 'intro'].includes(this.state);
-    if (this.intro) this.intro.draw(ctx, camX, camY);
+    const inGame = !['splash', 'title', 'intro', 'scene'].includes(this.state);
+    if (this.boss && inGame) this.boss.draw(ctx, camX, camY);
+    if (this.scene) this.scene.draw(ctx, camX, camY);
     if (this.popi && inGame) this.popi.draw(ctx, camX, camY);
     if (inGame) for (const p of this.players) p.draw(ctx, camX, camY);
     this.particles.draw(ctx, camX, camY);

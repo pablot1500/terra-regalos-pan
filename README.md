@@ -69,6 +69,18 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 - Si te quedás sin energía bajo tierra o te caés muy fuerte, te desmayás: volvés a casa y perdés el 10% de la plata.
 - De los **1000 m** para abajo aparece la **obsidiana** (negrísima, se mezcla con el abismo), con cuevas grandes para volar, cada vez menos tesoros y **parches de lava**: brilla, quema, y si cavás por debajo se derrama como un líquido.
 - A los **1500 m** la roca termina en una línea ondulada: abajo está el **núcleo**, una caverna enorme de magma. Al romper el piso caés unos 190 m (el fondo se mueve con parallax: magma lejos y, hacia abajo, un mundo abierto de cuevas de lava con mesetas, cascadas y un lago) hasta una plataforma sobre un mar de lava. La lava que se derrama desde arriba se va evaporando mientras cae. El último cofre está en la punta de abajo a la derecha de la plataforma (por ahora no se abre).
+- La lava se guarda tal como quedó: si se derramó, no vuelve a aparecer al recargar. La que queda cayendo fuera de pantalla sigue moviéndose de a poco.
+
+## Aguilus (el jefe)
+
+- Al pisar la plataforma del núcleo arranca una charla con **Aguilus**, el águila mago que escondió los regalos. Es más alto y estilizado que Pablo y Panchi, con túnica larga y báculo. La pareja cae detrás y da los consejos para la pelea.
+- **Pelea:** Aguilus vuela de un lado al otro y, cada tanto, levanta el báculo y hace llover rocas de magma (en el piso aparece un aviso de dónde caen).
+  - Manteniendo el taladro apuntado a una roca, se queda pegada en la punta; con **E** (o el botón LANZAR) se la devolvés. Apunta al mouse o al taladro, y si va más o menos hacia Aguilus, se corrige sola.
+  - Tiene **10 de vida** (barra abajo en el centro). A la mitad se enoja y va más rápido.
+  - En la pelea el jetpack dura muy poquito y tiene poca fuerza, y hay un techo invisible: no se puede escapar volando.
+  - Si te noquean, te levantás en la plataforma y Aguilus conserva la vida que le sacaste.
+- **Final:** Aguilus queda tirado, se rinde y les ruega que no lo dejen ahí abajo. Se abrazan los tres y suben volando hasta el patio, donde Aguilus jadea, se recompone y se va volando. Termina con un chiste con Carlos y el cartel de fin.
+- Los guiones están en [`src/boss.js`](src/boss.js) (`encounterScript` y `victoryScript`); el sprite de Aguilus, en [`src/aguilus.js`](src/aguilus.js).
 - El medidor de la derecha marca la profundidad y dónde están los regalos.
 - La música cambia con la profundidad: dos canciones para la superficie (hasta 300 m), dos para la zona media (300 a 800 m) y dos para lo profundo (800 a 1500 m) y una épica de combate final al entrar al núcleo, con fundidos entre una y otra. Están escritas en texto en [`src/music.js`](src/music.js).
 - El progreso se guarda solo en el navegador (localStorage).
@@ -93,7 +105,10 @@ styles.css        estilos de la interfaz
 server.js         servidor local sin dependencias
 src/
   main.js         loop del juego, estados, eventos (taller, cofres, desmayos)
-  intro.js        cinemática de inicio: guión, personajes, cámara y la nota
+  scene.js        motor de escenas: actores, cámara con zoom, diálogos
+  intro.js        guión de la cinemática de inicio y la nota
+  boss.js         Aguilus: encuentro, pelea con rocas de magma y final
+  aguilus.js      sprite de Aguilus (más alto, con báculo y poses)
   sandbox.js      sandbox para ver los personajes (Pablo, Panchi, Carlos y Aguilus) y la casa rodante
   config.js       todos los números y textos ajustables
   world.js        generación del mundo, cavado libre (terreno de 2 px), render por chunks

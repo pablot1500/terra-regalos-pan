@@ -118,25 +118,6 @@ const TOP = {
     'kjjkoCcdcCo.....',
     'kkkkoCCCCCo.....',
   ],
-  // águila mago: cresta castaña, antifaz rojizo, pico ganchudo y túnica violeta
-  aguilus: [
-    '..o.o.oo........',
-    '.oHohohhoo......',
-    'ohHhhhhhhhoo....',
-    'oHhhhhghhhhho...',
-    '.oHhhhhhhhhhho..',
-    '.oHhhhhvvhhhho..',
-    'ohhhhhhrvvyYYo..',
-    'oHhhhhrwerryYYo.',
-    'oCchhfrrrryyyYYo',
-    '.oCfffffffoyoYYo',
-    '.oCfFfFfFfo..oo.',
-    '.kk.oCdfffdCo...',
-    'kjJkoCcdfdcczo..',
-    'kJrkoCcldllcCo..',
-    'kjjkoCccldcCCo..',
-    'kkkkoCCcdcCCCo..',
-  ],
 };
 // piernas (filas 16-21): pantalón, zapatillas con cordones (L) y suela (z)
 const LEGS = {
@@ -185,16 +166,8 @@ export const CHAR_PAL = {
     c: '#7db8d8', C: '#5590b3', d: '#eaf4f8', l: '#f4f1ea',
     p: '#9c8a68', P: '#7a6a4e', b: '#4e3020', u: '#c9b79c', z: '#2e1c12',
   },
-  // plumas castañas, cara crema, pico amarillo con punta gris y túnica violeta con ribetes
-  aguilus: {
-    ...BASE_PAL,
-    h: '#8a5530', H: '#5a3218', g: '#b07a4a', f: '#f2e3c4', F: '#d9c49c', r: '#d9603a',
-    y: '#f2c14e', Y: '#9fb0a0', v: '#3a2014', e: '#1d1012', E: '#3a2a1a',
-    s: '#e8b48a', c: '#4a3070', C: '#2e1c4a', d: '#a374dc', z: '#c9c0b0', l: '#c9a26b',
-    p: '#3e2860', P: '#2e1c4a', b: '#6b4429', u: '#8a5a36',
-  },
 };
-// báculo de Aguilus (por ahora solo en el sandbox)
+// báculo de Aguilus
 export const STAFF = mapSprite(
   ['.ooo.', 'oVWvo', 'oVvvo', 'ovvvo', '.ooo.', '.nNn.', '..Nn.', '.nN..', '..nN.', '.Nn..', '..nN.', '.nN..', '..Nn.', '.nN..', '..nN.', '.Nn..', '..nN.', '.nN..', '..Nn.', '..n..'],
   { o: '#2b1d2b', V: '#c98cff', v: '#8a3fd0', W: '#ffffff', n: '#5a3218', N: '#a8703f' },

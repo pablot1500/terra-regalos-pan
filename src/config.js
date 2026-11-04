@@ -202,4 +202,15 @@ export const GIFTS = [
   },
 ];
 
-export const ENDING_TEXT = '¡Llegaron al fondo y encontraron todos los regalos!\nGracias por jugar.';
+export const ENDING_TEXT = '¡Le ganaron a Aguilus, rescataron los regalos y hasta se hicieron amigos!\n¡Feliz cumple, Panchita! ♥\nGracias por jugar.';
+
+// Pelea con Aguilus en el fondo del núcleo
+export const BOSS = {
+  hp: 10,            // rocas que hay que pegarle
+  rockDmg: 14,       // daño de cada roca de magma
+  catchR: 10,        // qué tan cerca de la punta del taladro tiene que pasar la roca para atajarla
+  throwSpeed: 300,
+  jetTime: 0.6,      // en la pelea el jetpack dura poquito (se recarga al pisar)...
+  jetSpeed: 100,     // ...y tiene menos fuerza
+  ceiling: 150,      // techo invisible: no se puede escapar volando
+};

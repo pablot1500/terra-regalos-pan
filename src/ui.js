@@ -37,8 +37,8 @@ export class UI {
     this.selectChar(game.charId);
 
     $('btn-splash').addEventListener('click', () => game.startIntro());
-    $('intro-skip').addEventListener('click', () => game.intro && game.intro.skip());
-    $('intro').addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; if (game.intro) game.intro.advance(); });
+    $('intro-skip').addEventListener('click', () => game.scene && game.scene.skip());
+    $('intro').addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; if (game.scene) game.scene.advance(); });
     $('intro-note-ok').addEventListener('click', () => { const cb = this.noteCb; this.introNote(null); if (cb) cb(); });
     $('btn-intro').addEventListener('click', () => { game.audio.play('ui'); game.startIntro(); });
     // configuración y controles: se abren desde el título o desde la pausa
@@ -153,9 +153,17 @@ export class UI {
   }
 
   // ---------- Intro ----------
-  setIntro(on) {
+  setIntro(on, skipLabel = 'Saltar intro ▸▸') {
     this.show('intro', on);
     $('intro').classList.toggle('on', on);
+    $('intro-skip').textContent = skipLabel;
+  }
+
+  /** barra de vida de Aguilus (null la esconde) */
+  setBossBar(frac) {
+    const el = $('boss-bar');
+    el.classList.toggle('hidden', frac === null);
+    if (frac !== null) el.querySelector('.fill').style.width = Math.max(0, frac) * 100 + '%';
   }
 
   introCaption(text) {
@@ -371,5 +379,8 @@ export class UI {
     this.show('screen-msg', true);
   }
 
-  fade(on) { $('fade').classList.toggle('on', on); }
+  fade(on, white = false) {
+    if (on) $('fade').classList.toggle('white', white);
+    $('fade').classList.toggle('on', on);
+  }
 }

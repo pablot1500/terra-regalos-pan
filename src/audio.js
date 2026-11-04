@@ -113,6 +113,10 @@ export class Audio {
       case 'talk': this.tone(520 + Math.random() * 160, 0.035, { type: 'square', vol: 0.03 }); break;
       case 'surprise': this.tone(523, 0.08, { vol: 0.12 }); this.tone(1047, 0.16, { vol: 0.12, delay: 0.07 }); break;
       case 'paper': this.noise(0.18, { vol: 0.16, freq: 2600, type: 'bandpass' }); break;
+      case 'charge': this.tone(220, 0.6, { type: 'triangle', vol: 0.1, slide: 660 }); break;
+      case 'magma': this.noise(0.35, { vol: 0.3, freq: 500 }); this.tone(140, 0.3, { type: 'triangle', vol: 0.18, slide: 60 }); break;
+      case 'throw': this.noise(0.15, { vol: 0.2, freq: 1800, type: 'bandpass' }); this.tone(300, 0.12, { vol: 0.08, slide: 700 }); break;
+      case 'bossHit': [660, 440, 330].forEach((f, i) => this.tone(f, 0.1, { type: 'square', vol: 0.09, delay: i * 0.06 })); break;
       case 'rest': this.tone(880, 0.2, { type: 'sine', vol: 0.06 }); break;
     }
   }

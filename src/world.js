@@ -550,17 +550,58 @@ export class World {
     return n;
   }
 
-  /** La lava cae y se desparrama como un líquido espeso (solo cerca de la cámara). */
+  // ---------- Guardado de la lava (se guarda tal como quedó, para que no vuelva a aparecer) ----------
+  exportLava() {
+    // tramos alternados de "sin lava" / "con lava" desde la primera fila donde puede haber lava
+    const { lava } = this, start = this.lavaRow0 * this.sw;
+    const runs = [];
+    let cur = 0, n = 0;
+    for (let q = start; q < lava.length; q++) {
+      if (lava[q] === cur) { n++; continue; }
+      runs.push(n.toString(36)); cur = lava[q]; n = 1;
+    }
+    runs.push(n.toString(36));
+    return runs.join(',');
+  }
+
+  importLava(str) {
+    if (!str) return;
+    const { lava, sub } = this, start = this.lavaRow0 * this.sw;
+    lava.fill(0, start);
+    let q = start, v = 0;
+    for (const tok of str.split(',')) {
+      const n = parseInt(tok, 36) || 0;
+      if (v) for (let k = 0; k < n && q + k < lava.length; k++) if (!sub[q + k]) lava[q + k] = 1;
+      q += n; v ^= 1;
+    }
+  }
+
+  /** La lava cae y se desparrama como un líquido espeso. Cerca de la cámara se mueve en cada paso;
+   *  el resto se va actualizando de a franjas, así la que quedó cayendo fuera de pantalla no se congela. */
   updateLava(dt, camX, camY, vw, vh) {
     this.lavaAcc += dt;
     if (this.lavaAcc < LAVA.tick) return;
     this.lavaAcc = Math.min(this.lavaAcc - LAVA.tick, LAVA.tick);
     const M = 56;
-    const { sw, sub, lava, lavaStamp } = this;
     const sy0 = Math.max(this.lavaRow0, Math.floor(camY / SUB) - M), sy1 = Math.min(this.sh - 2, Math.ceil((camY + vh) / SUB) + M);
-    if (sy0 > sy1) return;
-    const sx0 = 1, sx1 = sw - 2;
     const tick = this.lavaTick = this.lavaTick % 255 + 1;
+    if (sy0 <= sy1) this.stepLava(sy0, sy1, tick);
+    // franja lejana: recorre todo el resto en ronda
+    const BAND = 40, lo = this.lavaRow0, hi = this.sh - 2;
+    let f0 = this.lavaScan || lo;
+    if (f0 > hi) f0 = lo;
+    const f1 = Math.min(hi, f0 + BAND - 1);
+    this.lavaScan = f1 + 1;
+    if (f1 < sy0 || f0 > sy1) this.stepLava(f0, f1, tick);
+    else {
+      if (f0 < sy0) this.stepLava(f0, sy0 - 1, tick);
+      if (f1 > sy1) this.stepLava(sy1 + 1, f1, tick);
+    }
+  }
+
+  stepLava(sy0, sy1, tick) {
+    const { sw, sub, lava, lavaStamp } = this;
+    const sx0 = 1, sx1 = sw - 2;
     const free = (q) => !sub[q] && !lava[q];
     // la lava que cae dentro de la caverna del núcleo se va evaporando de a poco mientras cae:
     // cuanto más abajo, más probable; nunca llega a la plataforma

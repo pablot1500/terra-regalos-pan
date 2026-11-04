@@ -1,4 +1,4 @@
-import { TILE, WORLD_W, EDGE, PHYS, DIG, CRYSTAL_DIG, BRUSH_R, HP_MAX, REST, HOVER, LAVA } from './config.js';
+import { TILE, WORLD_W, EDGE, PHYS, DIG, CRYSTAL_DIG, BRUSH_R, HP_MAX, REST, HOVER, LAVA, BOSS } from './config.js';
 import { DEF, T, isDiggable, hardness } from './tiles.js';
 import { getCharFrames, drawArmShovel, drawDrill, CHAR_W, CHAR_H } from './sprites.js';
 import { HOME_ZONE, SHOP_ZONE, SPAWN, inZone } from './structures.js';
@@ -59,6 +59,8 @@ export class Player {
     this.hovering = false;    // modo vuelo del jetpack (últimos niveles)
     this.burnT = 0;           // para mostrar de a ratos el daño de la lava
     this.burnAcc = 0;
+    this.heldRock = null;     // roca de magma atajada con el taladro (pelea con Aguilus)
+    this.jetFuel = 0;         // en la pelea el jetpack dura poquito
   }
 
   toggleHover() {
@@ -168,7 +170,9 @@ export class Player {
 
     let walkIx = ix;
     let target = null;
-    if (aim) {
+    // en la pelea con Aguilus el taladro no cava: sirve para atajar las rocas
+    const arena = !!(g.boss && g.boss.fighting);
+    if (aim && !arena) {
       target = this.findTarget(aim);
       if (!target) aim = null;
       else if (!isDiggable(target.hit.t)) {
@@ -179,7 +183,7 @@ export class Player {
 
     // ---- movimiento horizontal ----
     this.sprinting = !!inp.sprint && walkIx !== 0;
-    if (this.hovering && !st.hover) this.hovering = false;
+    if (this.hovering && (!st.hover || arena)) this.hovering = false;
     const H = this.hovering ? HOVER[st.hover] : null;
     const want = H ? walkIx * H.h * (this.sprinting ? 1.35 : 1)
       : walkIx * PHYS.walk * (this.flying ? 1.12 : 1) * (this.sprinting ? PHYS.sprintMult : 1);
@@ -222,11 +226,13 @@ export class Player {
         if (this.vy > st.glide) this.vy = Math.max(st.glide, this.vy - PHYS.jetAccel * dt);
         this.peakY = this.y;
         this.jetFlame(dt);
-      } else if (wantJet && this.energy > 0) {
+      } else if (wantJet && (arena ? this.jetFuel > 0 : this.energy > 0)) {
         this.flying = true;
-        this.vy -= PHYS.jetAccel * dt;
-        if (this.vy < -st.jetSpeed) this.vy = -st.jetSpeed;
-        if (!st.infEnergy) this.energy = Math.max(0, this.energy - st.jetCost * dt);
+        this.vy -= PHYS.jetAccel * (arena ? 0.9 : 1) * dt;
+        const cap = arena ? BOSS.jetSpeed : st.jetSpeed;
+        if (this.vy < -cap) this.vy = -cap;
+        if (arena) this.jetFuel -= dt;
+        else if (!st.infEnergy) this.energy = Math.max(0, this.energy - st.jetCost * dt);
         this.peakY = this.y;
         this.jetFlame(dt);
       } else if (wantJet && this.energy <= 0 && Math.random() < 0.1) {
@@ -241,7 +247,9 @@ export class Player {
     if (this.moveY(this.vy * dt)) {
       if (this.vy < 0) this.vy = 0;
     }
+    if (arena && this.y < g.boss.ceilY) { this.y = g.boss.ceilY; this.vy = Math.max(0, this.vy); }
     this.onGround = this.vy >= 0 && this.collides(this.x, this.y + 1);
+    if (arena && this.onGround) this.jetFuel = BOSS.jetTime;
     if (this.onGround) {
       if (!wasGround) this.land();
       this.vy = 0;
@@ -258,8 +266,11 @@ export class Player {
       g.particles.add({ x: this.cx - Math.sign(this.vx) * 3, y: this.y + this.h, vx: -Math.sign(this.vx) * (10 + Math.random() * 20), vy: -10 - Math.random() * 15, life: 0.35, max: 0.35, color: 'rgba(220,205,180,0.7)', size: 1, grav: 40 });
     }
 
-    // ---- cavar ----
-    this.updateDig(dt, aim, target);
+    // ---- cavar (o atajar rocas en la pelea) ----
+    if (arena) {
+      this.aim = aim; this.digging = !!aim; this.digPoint = null; this.digProg = 0; this.tooHard = false;
+      if (aim) this.digAnim += dt;
+    } else this.updateDig(dt, aim, target);
 
     // ---- zonas ----
     this.resting = inZone(HOME_ZONE, this.cx, this.cy);
