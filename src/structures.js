@@ -634,11 +634,11 @@ export class Structures {
   }
 
   /** Fondo del patio (pared, árbol, tendedero) — va detrás de todo */
-  drawBackdrop(ctx, camX, camY, t, lift = 0) {
+  drawBackdrop(ctx, camX, camY, t, lift = 0, px = 1) {
     const g0 = S * TILE - camY;
     // parallax al bajar del cielo: la pared del fondo sube un poco más que el piso
     // (y su último renglón se estira hasta el suelo, así sigue apoyada)
-    const l = Math.round(lift * 0.22), gy = g0 - l;
+    const l = Math.round(lift * 0.22 / px) * px, gy = g0 - l;
     const stand = (img, x, y) => {
       ctx.drawImage(img, x, y);
       if (l > 0) ctx.drawImage(img, 0, img.height - 1, img.width, 1, x, y + img.height, img.width, l);

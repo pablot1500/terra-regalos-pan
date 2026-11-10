@@ -228,12 +228,28 @@ export class UI {
     const l1 = $('logo-l1');
     let i = 0;
     // cada palabra no se corta; cada letra es un span (para que caigan, ondeen y salten)
-    l1.innerHTML = l1.textContent.split(' ').map((w) => `<span class="w">${[...w].map((c) => `<span class="ch" style="--i:${i++}">${c}</span>`).join('')}</span>`).join('<span class="ch sp"> </span>');
+    // (la entrada va en el span de afuera y el salto del mouse en el de adentro: si fueran el mismo,
+    // al sacar el mouse se volvía a correr la entrada, que arranca invisible, y la letra desaparecía)
+    l1.innerHTML = l1.textContent.split(' ').map((w) => `<span class="w">${[...w].map((c) => `<span class="ch" style="--i:${i++}"><span class="hv">${c}</span></span>`).join('')}</span>`).join('<span class="ch sp"> </span>');
+    const stamp = document.querySelector('.logo .stamp');
+    stamp.innerHTML = `<span class="hv">${stamp.textContent}</span>`;
     // el 2 dibujado en pixeles (con las fuentes pixel parecía una S dada vuelta)
     const TWO = ['.###.', '#...#', '....#', '...#.', '..#..', '.#...', '#####'];
     const px = TWO.flatMap((row, y) => [...row].map((c, x) => (c === '#' ? `<rect x="${x}" y="${y}" width="1" height="1"/>` : ''))).join('');
-    document.querySelector('.logo .two').innerHTML = `<svg viewBox="-1 -1 7 9" aria-label="2"><g class="sh" transform="translate(0.5 0.6)">${px}</g><g class="fg">${px}</g></svg>`;
-    l1.querySelectorAll('.ch').forEach((el) => el.addEventListener('pointerenter', () => { if (this.g.audio.ctx) this.g.audio.play('talk'); }));
+    const two = document.querySelector('.logo .two');
+    two.innerHTML = `<span class="hv"><svg viewBox="-1 -1 7 9" aria-label="2"><g class="sh" transform="translate(0.5 0.6)">${px}</g><g class="fg">${px}</g></svg></span>`;
+    // efecto al pasar el mouse (o tocar): se juega completo una vez y vuelve a quedar como estaba
+    const hover = (el, sound) => {
+      const hv = el.querySelector('.hv');
+      el.addEventListener('pointerenter', () => {
+        hv.classList.remove('pop'); void hv.offsetWidth; hv.classList.add('pop');
+        if (sound && this.g.audio.ctx) this.g.audio.play(sound);
+      });
+      hv.addEventListener('animationend', () => hv.classList.remove('pop'));
+    };
+    l1.querySelectorAll('.ch:not(.sp)').forEach((el) => hover(el, 'talk'));
+    hover(stamp, 'ui');
+    hover(two, 'coin');
     const box = document.querySelector('.logo-box');
     document.querySelectorAll('.title-gift').forEach((img) => {
       img.src = ICON_URL.giftBig;

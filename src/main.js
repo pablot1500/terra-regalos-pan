@@ -993,9 +993,9 @@ class Game {
     const t = this.time;
 
     const lift = this.skyLift(camY, vh);
-    this.bg.draw(ctx, camX, camY, vw, vh, t, lift);
+    this.bg.draw(ctx, camX, camY, vw, vh, t, lift, 1 / S);
     this.coreBg.draw(ctx, camX, camY, vw, vh, t, this.vw, this.vh);
-    this.structs.drawBackdrop(ctx, camX, camY, t, lift);
+    this.structs.drawBackdrop(ctx, camX, camY, t, lift, 1 / S);
     this.structs.drawBuildings(ctx, camX, camY, t);
     this.world.draw(ctx, camX, camY, vw, vh);
     this.structs.drawFloor(ctx, camX, camY);

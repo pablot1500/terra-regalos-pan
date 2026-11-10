@@ -469,16 +469,17 @@ html, body, button { -webkit-tap-highlight-color: transparent; }
 /* cada letra de "Cumple Panchita" cae, después ondea; al pasar el mouse salta */
 .logo .l1 .ch { display: inline-block; animation: ch-drop 0.55s cubic-bezier(.3,1.6,.5,1) both, ch-wave 2.6s ease-in-out infinite; animation-delay: calc(var(--i) * 45ms), calc(0.9s + var(--i) * 90ms); }
 .logo .l1 .ch.sp { width: 0.32em; }
-.logo .l1 .ch:hover { animation: ch-pop 0.5s ease-out; color: var(--gold); }
+.logo .hv { display: inline-block; }
+.logo .l1 .ch:hover .hv { color: var(--gold); }
+.logo .l1 .hv.pop { animation: ch-pop 0.5s ease-out; color: var(--gold); }
 @keyframes ch-drop { from { opacity: 0; transform: translateY(-80px) rotate(-20deg); } to { opacity: 1; transform: none; } }
 @keyframes ch-wave { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 @keyframes ch-pop { 0% { transform: none; } 35% { transform: translateY(-14px) scale(1.25) rotate(-8deg); } 70% { transform: translateY(2px) scale(0.95); } 100% { transform: none; } }
 .logo .l1 { animation: none; }
-/* "Salven los regalos": un sello estampado en diagonal */
+/* "Salven los regalos": estampado en diagonal como un sello (sin caja atrás) */
 .logo .stamp {
-  display: inline-block; padding: 5px 16px 7px; color: var(--gold); text-shadow: 0 3px 0 var(--ink);
-  background: rgba(43,31,51,0.88); border: 3px solid var(--ink);
-  box-shadow: inset 0 0 0 3px rgba(255,211,77,0.55), 0 4px 0 var(--ink);
+  display: inline-block; font-size: 1.3em; color: var(--gold);
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink), 0 0 18px rgba(255,211,77,0.35);
   transform: rotate(-8deg); animation: stamp-in 0.5s cubic-bezier(.5,0,.6,1.4) 0.95s both;
 }
 @keyframes stamp-in {
@@ -486,8 +487,8 @@ html, body, button { -webkit-tap-highlight-color: transparent; }
   70% { opacity: 1; transform: rotate(-6deg) scale(0.9); filter: none; }
   100% { opacity: 1; transform: rotate(-8deg) scale(1); }
 }
-.logo .stamp:hover { animation: stamp-wiggle 0.45s ease-in-out; }
-@keyframes stamp-wiggle { 0%, 100% { transform: rotate(-8deg); } 25% { transform: rotate(-12deg) scale(1.05); } 75% { transform: rotate(-4deg) scale(1.05); } }
+.logo .stamp .hv.pop { animation: stamp-wiggle 0.45s ease-in-out; }
+@keyframes stamp-wiggle { 0%, 100% { transform: none; } 25% { transform: rotate(-4deg) scale(1.06); } 75% { transform: rotate(4deg) scale(1.06); } }
 /* el golpe del sello sacude un poquito todo el título */
 .logo-box { animation: title-thump 0.35s ease-out 1.38s; }
 @keyframes title-thump { 20% { transform: translate(-3px, 3px); } 45% { transform: translate(3px, -2px); } 70% { transform: translate(-2px, 1px); } }
@@ -498,11 +499,14 @@ html, body, button { -webkit-tap-highlight-color: transparent; }
   color: #fff4e0; background: var(--pink); border: 3px solid var(--ink); border-radius: 50%;
   box-shadow: inset -4px -4px 0 var(--pink-d), 0 4px 0 var(--ink); text-shadow: 0 3px 0 var(--ink);
   animation: two-in 0.45s cubic-bezier(.3,1.8,.5,1) 1.45s both, two-pulse 1.8s ease-in-out 2s infinite;
+  /* medio montado sobre el final de "regalos" */
+  position: relative; z-index: 1; margin-left: -0.4em; top: -0.7em;
 }
-.logo .two:hover { animation: two-spin 0.6s ease-in-out; }
+.logo .two .hv { display: grid; place-items: center; width: 100%; height: 100%; }
+.logo .two .hv.pop { animation: two-spin 0.6s ease-in-out; }
 @keyframes two-in { from { opacity: 0; transform: scale(0) rotate(-180deg); } to { opacity: 1; transform: rotate(10deg); } }
 @keyframes two-pulse { 0%, 100% { transform: rotate(10deg) scale(1); } 50% { transform: rotate(4deg) scale(1.1); } }
-@keyframes two-spin { from { transform: rotate(10deg); } to { transform: rotate(370deg) scale(1.15); } }
+@keyframes two-spin { 0% { transform: none; } 70% { transform: rotate(330deg) scale(1.2); } 100% { transform: rotate(360deg); } }
 /* regalitos flotando alrededor del título */
 .title-gift {
   position: absolute; width: 34px; height: 34px; image-rendering: pixelated; cursor: pointer;
@@ -523,7 +527,7 @@ html, body, button { -webkit-tap-highlight-color: transparent; }
 .spark.s5 { left: 46%; top: -12px; animation-delay: -1.4s; font-size: 9px; }
 @keyframes twinkle { 0%, 100% { opacity: 0.15; transform: scale(0.6) rotate(0deg); } 50% { opacity: 1; transform: scale(1.2) rotate(45deg); } }
 @media (prefers-reduced-motion: reduce) {
-  .logo .l1 .ch, .logo .stamp, .logo .two, .title-gift, .logo-box, .logo-box .spark { animation: none !important; }
+  .logo .l1 .ch, .logo .hv, .logo .stamp, .logo .two, .title-gift, .logo-box, .logo-box .spark { animation: none !important; }
 }
 
 .logo .l1 .w { display: inline-block; white-space: nowrap; }

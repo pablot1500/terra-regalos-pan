@@ -217,21 +217,24 @@ export class Background {
    * Cada capa sube una parte de eso según lo lejos que está (p = 1 se mueve como el piso, 0 queda quieta),
    * así al bajar las capas del fondo se mueven más lento que el patio y se nota la profundidad.
    */
-  draw(ctx, camX, camY, vw, vh, t, lift = 0) {
+  draw(ctx, camX, camY, vw, vh, t, lift = 0, px = 1) {
     const gy = SURFACE * TILE - camY;
-    const L = (p) => Math.round(lift * (1 - p));
+    // todo se acomoda a pixeles reales de la pantalla (no a pixeles del arte):
+    // así las capas se deslizan suave aunque se muevan a distinto ritmo que la cámara
+    const R = (v) => Math.round(v / px) * px;
+    const L = (p) => lift * (1 - p);
     ctx.fillStyle = '#0b0810';
     ctx.fillRect(0, 0, vw, vh);
     if (gy <= 0) return;
 
     // cielo en bandas
-    const skyTopY = gy - 300 - L(0.1);
+    const skyTopY = R(gy - 300 - L(0.1));
     const bandH = 300 / SKY.length;
     ctx.fillStyle = SKY[0];
     ctx.fillRect(0, 0, vw, Math.min(gy, Math.max(0, skyTopY + bandH)));
     for (let i = 0; i < SKY.length; i++) {
-      const y0 = Math.round(skyTopY + i * bandH);
-      const y1 = Math.round(skyTopY + (i + 1) * bandH);
+      const y0 = R(skyTopY + i * bandH);
+      const y1 = R(skyTopY + (i + 1) * bandH);
       if (y1 < 0 || y0 > vh) continue;
       ctx.fillStyle = SKY[i];
       // la última banda llega hasta el suelo (que ahora puede estar en medio pixel)
@@ -243,7 +246,7 @@ export class Background {
     }
 
     // sol
-    const sx = Math.round(vw * 0.78 - camX * 0.02), sy = Math.round(gy - 200) - L(0.2);
+    const sx = R(vw * 0.78 - camX * 0.02), sy = R(gy - 200 - L(0.2));
     if (sy > -30) {
       ctx.fillStyle = 'rgba(255,240,180,0.25)';
       ctx.beginPath(); ctx.arc(sx, sy, 20, 0, Math.PI * 2); ctx.fill();
@@ -258,9 +261,9 @@ export class Background {
       let xx = (c.x + t * c.sp - camX * c.par) % span;
       if (xx < 0) xx += span;
       xx -= 80;
-      const yy = Math.round(gy - 300 + c.y) - L(0.2 + c.par);
+      const yy = R(gy - 300 + c.y - L(0.2 + c.par));
       if (xx > vw || yy > gy) continue;
-      ctx.drawImage(c.spr, Math.round(xx), yy);
+      ctx.drawImage(c.spr, R(xx), yy);
     }
 
     // gaviotas
@@ -268,8 +271,8 @@ export class Background {
       const span = 900;
       let xx = (b.x + t * b.sp - camX * 0.3) % span;
       if (xx < 0) xx += span;
-      xx = Math.round(xx - 40);
-      const yy = Math.round(gy - 300 + b.y + Math.sin(t * 2 + b.x) * 3) - L(0.45);
+      xx = R(xx - 40);
+      const yy = R(gy - 300 + b.y + Math.sin(t * 2 + b.x) * 3 - L(0.45));
       const flap = Math.floor(t * 6 + b.x) % 2;
       ctx.fillStyle = '#3b4a5a';
       ctx.fillRect(xx, yy, 1, 1);
@@ -278,9 +281,8 @@ export class Background {
     }
 
     // costa y mar
-    const fx = Math.round(-camX * P_FAR);
-    const lf = L(0.3);
-    const fy = gy - 100 - lf;
+    const fx = R(-camX * P_FAR);
+    const fy = R(gy - 100 - L(0.3)), lf = gy - 100 - fy;
     ctx.drawImage(this.far, fx, fy);
     // al subir la capa, el último renglón se estira hasta el suelo para que no quede un hueco
     if (lf > 0) ctx.drawImage(this.far, 0, FAR_H - 1, this.far.width, 1, fx, fy + FAR_H, this.far.width, lf);
@@ -294,8 +296,8 @@ export class Background {
       }
     }
     // barrio
-    const mx = Math.round(-camX * P_MID);
-    const lm = L(0.55), my = gy - 24 - this.mid.base - lm, mc = this.mid.c;
+    const mx = R(-camX * P_MID);
+    const my = R(gy - 24 - this.mid.base - L(0.55)), lm = gy - 24 - this.mid.base - my, mc = this.mid.c;
     ctx.drawImage(mc, mx, my);
     if (lm > 0) ctx.drawImage(mc, 0, mc.height - 1, mc.width, 1, mx, my + mc.height, mc.width, lm);
   }
