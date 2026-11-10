@@ -130,6 +130,7 @@ export class Net {
     this.conn = null;
     this.linked = false;
     if (role === 'host') {
+      if (g.popi && g.popi.owner === this.remote) g.popi = null; // Popi vuelve al patio
       this.remote = null;
       if (was) {
         g.syncBuddy();
@@ -154,6 +155,7 @@ export class Net {
     if (this.conn) { try { this.conn.send({ t: 'bye' }); } catch { /* nada */ } }
     setTimeout(() => this.close(), 150);
     if (role === 'host') {
+      if (this.g.popi && this.g.popi.owner === this.remote) this.g.popi = null;
       this.remote = null;
       this.linked = false;
       this.g.syncBuddy();
@@ -256,7 +258,7 @@ export class Net {
       p: this.playerState(g.players[0]),
       m: Math.floor(g.money), up: g.upgrades, inv: g.inv.torch, gf: g.openedGifts,
       pk: g.pickups.list.map((k) => [Math.round(k.x), Math.round(k.y), k.item]),
-      po: g.popi ? [r1(g.popi.x), r1(g.popi.y), g.popi.facing, g.popi.onGround ? 1 : 0, g.popi.digging ? 1 : 0, g.popi.flying ? 1 : 0] : null,
+      po: g.popi ? [r1(g.popi.x), r1(g.popi.y), g.popi.facing, g.popi.onGround ? 1 : 0, g.popi.digging ? 1 : 0, g.popi.flying ? 1 : 0, g.popi.owner === g.players[0] ? 'h' : 'g'] : null,
       ch: g.chatter.netState(g.players[0]),
       b: B ? this.bossState(B) : null,
     };
@@ -312,6 +314,7 @@ export class Net {
       case 'buy': { const r = g.doBuy(m.id); this.send('res', r); return; }
       case 'supply': { const r = g.doBuySupply(m.id, m.n); this.send('res', r); return; }
       case 'torch': g.addTorch(m.x, m.y, true); return;
+      case 'popi': if (this.remote) g.setPopi(this.remote); return;
       case 'chest': { const ch = g.world.chests.find((c) => c.id === m.id); if (ch && this.remote) g.openChest(ch, this.remote); return; }
       case 'throw': if (g.boss && this.remote) g.boss.throwRock(this.remote, m.aim || null); return;
       case 'down': if (g.boss && g.boss.fighting) g.boss.playerDown(); return;
@@ -403,12 +406,15 @@ export class Net {
     g.pickups.list = s.pk.map(([x, y, item]) => ({ x, y, item, t: 1, vx: 0, vy: 0 }));
     if (s.to) g.torches = s.to.map(([x, y, seed]) => ({ x, y, seed }));
     // Popi (lo maneja el anfitrión)
+    const before = g.popiState();
     if (s.po) {
       if (!g.popi) g.popi = new Popi(g);
       const P = g.popi;
       [P.x, P.y, P.facing] = s.po;
       P.onGround = !!s.po[3]; P.digging = !!s.po[4]; P.flying = !!s.po[5];
+      g.popiOwner = s.po[6] === 'g' ? 'me' : 'other';
     } else g.popi = null;
+    if (g.state === 'shop' && before !== g.popiState()) g.ui.renderShop();
     g.chatter.remoteState = s.ch;
     if (s.b) this.applyBoss(s.b);
   }

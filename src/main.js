@@ -300,7 +300,7 @@ class Game {
       chatIdx: this.chatter.idx,
       inv: this.inv,
       torches: this.torches.map((t) => ({ x: t.x, y: t.y, seed: t.seed })),
-      popi: !!this.popi,
+      popi: !!this.popi && this.popi.owner === this.players[0],
       bossDone: !!(this.boss && this.boss.state === 'done'),
       bossLosses: this.boss ? this.boss.losses : 0,
       player: p ? { char: p.char, x: p.x, y: p.y, hp: p.hp, energy: p.energy } : null,
@@ -525,19 +525,33 @@ class Game {
   }
 
   togglePopi() {
-    if (this.net.isGuest) { this.ui.toast('A Popi lo maneja quien creó la sala', 'warn'); return; }
+    if (this.net.isGuest) { this.net.send('popi'); return; } // online: el anfitrión decide
+    this.setPopi(this.players[0]);
+  }
+
+  /** Popi va con quien lo pide (online, cualquiera de los dos), o vuelve al patio si ya estaba con esa persona */
+  setPopi(who) {
+    const say = (m, kind = 'good') => (who.remote ? this.net.send('toast', { m, k: kind }) : this.ui.toast(m, kind));
     if (this.popi) {
+      if (this.popi.owner !== who) { say(`Popi está con ${CHARACTERS[this.popi.owner.char].name}`, 'warn'); return; }
       this.popi.poof();
       this.popi = null;
-      this.ui.toast('Popi te espera en el patio', 'good');
+      say('Popi te espera en el patio');
     } else {
-      this.popi = new Popi(this);
+      this.popi = new Popi(this, who);
       this.popi.poof();
-      this.audio.play('bark');
-      this.ui.toast('¡Popi se puso el casco y viene con vos!', 'good');
+      this.sfx('bark');
+      say('¡Popi se puso el casco y viene con vos!');
     }
-    this.ui.renderShop();
+    if (this.state === 'shop') this.ui.renderShop();
     this.save();
+  }
+
+  /** null = Popi está en el patio; 'me' = está conmigo; 'other' = está con el otro jugador (online) */
+  popiState() {
+    if (!this.popi) return null;
+    if (this.net.isGuest) return this.popiOwner || 'other';
+    return this.popi.owner === this.players[0] ? 'me' : 'other';
   }
 
   openShop() {
@@ -690,6 +704,9 @@ class Game {
     const inp = this.input.read(this.cam.x, this.cam.y);
     const p = this.players[0];
 
+    // online: aunque el anfitrión esté en la pausa o en el Taller, el mundo compartido sigue andando para el otro
+    if (this.net.isHost && (this.state === 'paused' || this.state === 'shop')) this.updateShared(dt);
+
     if (this.state === 'play') {
       if (inp.pause) this.pause();
       if (inp.torchPressed) this.placeTorch(p);
@@ -716,7 +733,7 @@ class Game {
       if (!guest) this.chatter.update(dt);
       if (this.popi) { if (guest) this.popi.anim += dt; else this.popi.update(dt); }
       // Popi espera en el patio: al acercarte te ladra y te lo podés llevar
-      const nearDog = !guest && !this.popi && Math.abs(p.cx - (DOG_POS.x + 10)) < 22 && Math.abs(p.y + p.h - (DOG_POS.y + 14)) < 12;
+      const nearDog = !this.popi && Math.abs(p.cx - (DOG_POS.x + 10)) < 22 && Math.abs(p.y + p.h - (DOG_POS.y + 14)) < 12;
       if (nearDog && !this.wasNearDog) {
         this.audio.play('bark');
         this.addText(DOG_POS.x + 10, DOG_POS.y - 2, '¡GUAU!', '#fff4e0');
@@ -818,6 +835,18 @@ class Game {
     this.updateCamera(dt);
     if (this.shakeT > 0) { this.shakeT -= dt; if (this.shakeT <= 0) this.shakeA = 0; }
     this.input.endFrame();
+  }
+
+  /** lo compartido (lava, minerales, Popi, Aguilus, charlas) sin mover al personaje de esta pantalla */
+  updateShared(dt) {
+    this.counters.playTime += dt;
+    this.world.updateLava(dt, this.cam.x, this.cam.y, this.vw, this.vh);
+    this.world.steam.length = 0;
+    for (const pl of this.players) if (pl.remote) this.net.stepPuppet(pl, dt);
+    this.chatter.update(dt);
+    if (this.popi) this.popi.update(dt);
+    if (this.boss) this.boss.update(dt);
+    this.pickups.update(dt);
   }
 
   updateTips(p) {

@@ -268,6 +268,7 @@ export class Boss {
 
   hurtPlayer(p, dmg, kx = 0) {
     if (p.dead || p.hurtT > 0 || p.guardT > 0) return false;
+    if (!p.remote && this.g.state !== 'play') return false; // online: mientras tenés la pausa abierta no te pegan
     if (p.remote) {
       // el daño del otro se lo aplica su propio dispositivo
       this.g.net.send('hurt', { dmg, kx });
@@ -281,6 +282,7 @@ export class Boss {
 
   /** golpe de roca: pega aunque recién te hayan pegado (como antes) */
   rockHit(p) {
+    if (!p.remote && this.g.state !== 'play') return;
     if (p.remote) { if (!(p.guardT > 0)) { this.g.net.send('hurt', { dmg: BOSS.rockDmg, kx: 0 }); p.guardT = 0.3; } return; }
     p.hurt(BOSS.rockDmg, 'rock');
   }

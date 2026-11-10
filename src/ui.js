@@ -401,17 +401,20 @@ export class UI {
 
     section('Compañero');
     {
-      const withMe = !!g.popi;
+      const st = g.popiState();
+      const withMe = st === 'me', other = st === 'other';
+      const otherName = other && g.net.remote ? CHARACTERS[g.net.remote.char].name : 'tu compañero';
       const card = document.createElement('div');
       card.className = 'up supply';
       card.innerHTML = `
-        <div class="up-ico"><img src="${(withMe ? POPI.right.idleA : DOG.happyA).toDataURL()}" alt="" style="width:36px;height:26px"></div>
+        <div class="up-ico"><img src="${(st ? POPI.right.idleA : DOG.happyA).toDataURL()}" alt="" style="width:36px;height:26px"></div>
         <div><h4>Popi</h4><p class="desc">Tu perro salchicha. Con su casquito y su mini jetpack camina, salta y vuela solo detrás tuyo, y te ayuda a cavar los bloques de al lado. No gasta energía ni se lastima.</p></div>
-        <p class="have">${withMe ? 'Está con vos' : 'Te espera en el patio (acercate y apretá E, o tocá POPI)'}</p>
+        <p class="have">${withMe ? 'Está con vos' : other ? `Está con ${otherName}` : 'Te espera en el patio (acercate y apretá E, o tocá POPI)'}</p>
       `;
       const b = document.createElement('button');
       b.className = 'btn buy' + (withMe ? ' alt' : '');
-      b.textContent = withMe ? 'Dejar a Popi en el patio' : 'Llevar a Popi';
+      b.textContent = withMe ? 'Dejar a Popi en el patio' : other ? `Popi está con ${otherName}` : 'Llevar a Popi';
+      b.disabled = other;
       b.addEventListener('click', () => g.togglePopi());
       card.appendChild(b);
       list.appendChild(card);

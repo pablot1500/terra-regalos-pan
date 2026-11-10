@@ -9,8 +9,9 @@ const HELP_RADIUS = 0.6;   // y con un círculo más chico
 const FOLLOW_GAP = 14;     // px detrás del personaje
 
 export class Popi {
-  constructor(game) {
+  constructor(game, owner = game.players[0]) {
     this.g = game;
+    this.owner = owner;   // a quién sigue (online puede ser el personaje del otro)
     this.w = 6;   // misma anchura que el personaje: entra en cualquier pozo que cave
     this.h = 9;
     this.vx = 0; this.vy = 0;
@@ -26,12 +27,15 @@ export class Popi {
     this.place();
   }
 
+  /** el personaje al que acompaña (si ya no está en juego, el de esta pantalla) */
+  get lead() { return this.g.players.includes(this.owner) ? this.owner : this.g.players[0]; }
+
   get cx() { return this.x + this.w / 2; }
   get cy() { return this.y + this.h / 2; }
 
   /** aparece al lado del personaje */
   place() {
-    const p = this.g.players[0];
+    const p = this.lead;
     this.x = p.cx - this.w / 2 - p.facing * 8;
     this.y = p.y + p.h - this.h;
     if (this.collides(this.x, this.y)) this.x = p.cx - this.w / 2;
@@ -79,7 +83,7 @@ export class Popi {
   }
 
   update(dt) {
-    const g = this.g, p = g.players[0];
+    const g = this.g, p = this.lead;
     if (!p || p.dead) return;
     this.anim += dt;
 
