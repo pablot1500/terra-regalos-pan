@@ -6,6 +6,8 @@
   <meta name="theme-color" content="#2b1f33">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Cumple Panchita">
   <title>Cumple Panchita · Salven los regalos 2</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,6 +44,7 @@
         <button id="q-sfx" class="q-btn" aria-label="Sonidos" title="Sonidos (N)"><img class="ico" data-icon="speaker" alt=""></button>
         <button id="q-music" class="q-btn" aria-label="Música" title="Música (M)"><img class="ico" data-icon="note" alt=""></button>
       </div>
+      <div id="net-badge" class="hidden"></div>
       <div id="boss-bar" class="hidden"><span>Aguilus</span><div class="track"><div class="fill"></div></div></div>
       <div id="toasts"></div>
       <div id="prompt" class="hidden"></div>
@@ -49,6 +52,7 @@
 
     <!-- Controles táctiles -->
     <div id="touch" class="hidden">
+      <div id="stick-zone"></div>
       <div id="stick"><div id="stick-knob"></div></div>
       <button id="t-act" class="tbtn act hidden">TALLER</button>
       <button id="t-dig" class="tbtn dig">CAVAR</button>
@@ -88,6 +92,7 @@
         <div class="menu">
           <button id="btn-continue" class="btn big hidden">Continuar</button>
           <button id="btn-new" class="btn big alt">Empezar</button>
+          <button id="btn-online" class="btn alt">Jugar online de a dos</button>
           <div class="row">
             <button id="btn-settings" class="btn small alt">Configuración</button>
             <button id="btn-controls" class="btn small alt">Controles</button>
@@ -98,6 +103,28 @@
           </div>
         </div>
         <p class="hint" id="title-hint"></p>
+        <p class="hint hidden" id="ios-hint">En iPhone/iPad: Compartir → <b>Agregar a pantalla de inicio</b> para jugar en pantalla completa</p>
+      </div>
+    </div>
+
+    <!-- Jugar online -->
+    <div id="screen-online" class="screen modal hidden">
+      <div class="panel pause">
+        <h2>Jugar online de a dos</h2>
+        <div id="online-menu">
+          <p class="hint">Uno crea la sala y le pasa el código al otro. Se puede jugar desde compu, celu o tablet, mientras los dos tengan internet. La partida que se juega (y se guarda) es la de quien crea la sala.</p>
+          <button class="btn" id="on-host">Crear sala</button>
+          <div class="join-row">
+            <input id="on-code" maxlength="4" placeholder="CÓDIGO" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+            <button class="btn alt" id="on-join">Unirme</button>
+          </div>
+        </div>
+        <p id="on-status" class="on-status hidden"></p>
+        <p id="on-room" class="on-room hidden"></p>
+        <div class="row">
+          <button class="btn small danger hidden" id="on-leave">Salir de la sala</button>
+          <button class="btn small alt" id="on-close">Cerrar</button>
+        </div>
       </div>
     </div>
 
@@ -136,7 +163,10 @@
           <button class="btn small alt" id="p-settings">Configuración</button>
           <button class="btn small alt" id="p-controls">Controles</button>
         </div>
-        <button class="btn small alt" id="p-songs">Probar canciones</button>
+        <div class="row">
+          <button class="btn small alt" id="p-songs">Probar canciones</button>
+          <button class="btn small alt" id="p-online">Jugar online</button>
+        </div>
         <div class="row">
           <button class="btn small alt" id="btn-title">Ir al inicio</button>
           <button class="btn small danger" id="btn-reset">Borrar partida</button>
@@ -194,7 +224,8 @@
             <p><b>E</b> comprar en la ventanita del taller · <b>Esc</b> pausa</p>
           </div>
           <div class="ctl-touch">
-            <p><b>Joystick</b> caminar · hacia abajo para cavar</p>
+            <p><b>Joystick</b> caminar · aparece donde apoyes el pulgar en la mitad izquierda · hacia abajo para cavar</p>
+            <p><b>Tocá y mantené sobre el juego</b> para cavar hacia el dedo (también ataja rocas)</p>
             <p><b>CAVAR</b> cava hacia donde apunta el joystick · con <b>AUTO</b> activado, un toque empieza y otro frena</p>
             <p>Botón chiquito: <b>antorcha</b> · joystick a fondo: <b>correr</b></p>
             <p><b>SALTAR</b> salta · mantené para volar · con el joystick abajo bajás despacio</p>

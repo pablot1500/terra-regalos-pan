@@ -26,12 +26,12 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 
 | Acción | Teclado / mouse | Celular |
 |---|---|---|
-| Caminar | A / D o ← → | Joystick |
+| Caminar | A / D o ← → | Joystick (aparece donde apoyás el pulgar en la mitad izquierda) |
 | Correr (también volando) | Shift | Joystick a fondo |
 | Saltar · volar con el jetpack | Espacio o W (mantener) | SALTAR (mantener) |
 | Bajar despacio con el jetpack (no gasta energía) | S o ↓ (mantener) | SALTAR + joystick abajo |
 | Cavar hacia abajo | Click abajo o J + S | Joystick abajo |
-| Cavar en cualquier dirección | Click (apuntando con el mouse) | CAVAR + joystick (360°) |
+| Cavar en cualquier dirección | Click (apuntando con el mouse) | Tocar y mantener sobre el juego (cava hacia el dedo) o CAVAR + joystick (360°) |
 | Cavar con teclado | J + W/A/S/D (8 direcciones) | — |
 | Poner antorcha | T | Botón de antorcha |
 | Comprar en el taller (parado frente a la ventanita) | E | Botón TALLER |
@@ -39,6 +39,17 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 | Cavado automático (un click empieza, otro frena) | B o botón AUTO | Botón AUTO + toque en CAVAR |
 | Música / sonidos | M / N o los botones de arriba | Botones de arriba |
 | Pausa | Esc | Botón ❚❚ |
+
+En iPhone/iPad conviene agregarlo a la pantalla de inicio (Compartir → Agregar a pantalla de inicio) para jugar en pantalla completa. En iPad los botones son más grandes.
+
+## Jugar online de a dos
+
+- En el título o en la pausa: **Jugar online de a dos**. Uno toca **Crear sala** y le pasa el código de 4 letras al otro, que lo escribe y toca **Unirme**. Funciona entre compu, celu y tablet en cualquier combinación, mientras los dos tengan internet.
+- La partida que se juega y se guarda es la de quien crea la sala (el anfitrión). El que se une maneja al otro personaje (si el anfitrión es Panchi, el invitado es Pablo, y al revés); su propia partida guardada no se toca.
+- Cada uno maneja su personaje en su pantalla y ve al otro moverse. El mundo es compartido: lo que cava uno lo ve el otro, la plata y las mejoras son del equipo (el invitado también puede comprar en el Taller), los minerales los agarra cualquiera y las antorchas y los cofres son de los dos. Las charlas cada 120 m también aparecen.
+- Las escenas con Aguilus se ven en las dos pantallas (cualquiera puede pasar los diálogos o saltarlas) y en la pelea Aguilus ataca a cualquiera de los dos; los dos pueden atajar rocas y tirárselas. Si cae uno, vuelven los dos a casa.
+- Si el invitado se desconecta, la sala sigue abierta y puede volver a entrar con el mismo código. Si se va el anfitrión, el invitado vuelve al inicio.
+- Usa WebRTC con [PeerJS](https://peerjs.com/) (se conecta directo entre los dos dispositivos, sin servidor propio; el servidor gratuito de PeerJS solo los presenta). En algunas redes muy cerradas (algunas redes de empresa o datos móviles) la conexión directa puede no funcionar.
 
 ## Intro y pantalla de inicio
 
@@ -124,6 +135,7 @@ src/
   popi.js         Popi, el perro compañero (seguir, volar, ayudar a cavar)
   buddy.js        IA del compañero (sigue, vuela y ayuda a cavar)
   chatter.js      charlas entre Pablo y Panchi cada 120 m (burbujas de diálogo)
+  net.js          jugar online de a dos (sala con código, sincronización)
   entities.js     partículas, tesoros que saltan, textos flotantes
   input.js        teclado, mouse y táctil
   audio.js        efectos de sonido (WebAudio, sin archivos)

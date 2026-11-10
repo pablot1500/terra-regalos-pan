@@ -48,6 +48,7 @@ export class Pickups {
   constructor(game) { this.game = game; this.list = []; }
 
   spawn(x, y, item) {
+    if (this.game.net && this.game.net.isGuest) return; // online: los minerales los hace caer el anfitrión
     this.list.push({ x, y, vx: (Math.random() - 0.5) * 70, vy: -70 - Math.random() * 40, t: 0, item });
   }
 

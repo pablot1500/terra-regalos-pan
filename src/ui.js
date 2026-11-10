@@ -54,6 +54,23 @@ export class UI {
     $('settings-ok').addEventListener('click', () => sub('screen-settings', false));
     $('controls-ok').addEventListener('click', () => sub('screen-controls', false));
     $('songs-ok').addEventListener('click', () => sub('screen-songs', false));
+    // jugar online
+    const net = game.net;
+    net.onStatus = (msg, kind) => this.netStatus(msg, kind);
+    $('btn-online').addEventListener('click', () => { game.audio.unlock(); game.audio.play('ui'); this.openOnline(); });
+    $('p-online').addEventListener('click', () => { game.audio.play('ui'); this.show('screen-pause', false); this.openOnline(); });
+    $('on-close').addEventListener('click', () => {
+      game.audio.play('ui');
+      this.show('screen-online', false);
+      if (game.state === 'paused') this.show('screen-pause', true);
+    });
+    $('on-host').addEventListener('click', () => { game.audio.play('ui'); game.hostOnline(); });
+    $('on-join').addEventListener('click', () => { game.audio.play('ui'); net.join($('on-code').value); });
+    $('on-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') net.join($('on-code').value); e.stopPropagation(); });
+    $('on-code').addEventListener('input', () => { $('on-code').value = $('on-code').value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4); });
+    $('on-leave').addEventListener('click', () => { game.audio.play('ui'); net.leave(); this.openOnline(); });
+    const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (ios && !navigator.standalone) this.show('ios-hint', true);
     $('songs-auto').addEventListener('click', () => { if (game.audio.music) game.audio.music.release(); this.refreshSongs(); });
     $('p-songs').addEventListener('click', () => this.refreshSongs());
     this.closeSub = () => {
@@ -132,6 +149,41 @@ export class UI {
     $('songs-now').textContent = now + (a.musicOn ? '' : ' (la música está apagada)');
   }
 
+  /** pantalla de jugar online: muestra el menú o el estado de la sala */
+  openOnline() {
+    const net = this.g.net;
+    this.show('screen-online', true);
+    const inRoom = !!net.role;
+    this.show('online-menu', !inRoom);
+    this.show('on-leave', inRoom);
+    // el invitado no puede crear salas desde adentro de otra partida
+    $('on-host').textContent = this.g.state === 'title' || this.g.state === 'splash' ? 'Crear sala (con tu partida)' : 'Crear sala con esta partida';
+    if (!inRoom) { this.show('on-status', false); this.show('on-room', false); }
+    else this.netStatus(net.statusMsg || '', net.linked ? 'ok' : 'wait');
+  }
+
+  netStatus(msg, kind) {
+    const net = this.g.net;
+    const el = $('on-status');
+    el.textContent = msg;
+    el.className = 'on-status ' + (kind || '');
+    this.show('on-status', !!msg);
+    const showCode = net.role === 'host' && net.code;
+    $('on-room').textContent = showCode ? net.code : '';
+    this.show('on-room', !!showCode);
+    const inRoom = !!net.role;
+    this.show('online-menu', !inRoom);
+    this.show('on-leave', inRoom);
+    if (net.role === 'host' && !net.linked && net.code) this.setNetBadge(`Sala ${net.code} · esperando...`);
+    // el invitado entra directo a la partida
+    if (net.role === 'guest' && net.linked) this.show('screen-online', false);
+  }
+
+  setNetBadge(text) {
+    $('net-badge').textContent = text || '';
+    this.show('net-badge', !!text);
+  }
+
   refreshAudioBtns() {
     $('btn-sfx').textContent = 'Sonidos: ' + (this.g.audio.sfxOn ? 'Sí' : 'No');
     $('btn-music').textContent = 'Música: ' + (this.g.audio.musicOn ? 'Sí' : 'No');
@@ -208,6 +260,7 @@ export class UI {
   }
 
   introCaption(text) {
+    this.captionText = text || null;
     const el = $('intro-caption');
     if (text) el.textContent = text;
     el.classList.toggle('hidden', !text);
@@ -424,6 +477,7 @@ export class UI {
   }
 
   fade(on, white = false) {
+    this.fadeState = on ? (white ? 'white' : 'black') : null;
     if (on) $('fade').classList.toggle('white', white);
     $('fade').classList.toggle('on', on);
   }

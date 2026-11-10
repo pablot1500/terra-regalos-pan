@@ -119,14 +119,32 @@ export class Boss {
   // ------------------------------------------------------------
   //  Fases
   // ------------------------------------------------------------
-  update(dt, p) {
+  /** los que pelean: las personas (la tuya y, online, la del otro). El compañero bot mira de lejos. */
+  fighters() {
+    return this.g.players.filter((pl) => !pl.ai);
+  }
+
+  /** jugador que manejás en esta pantalla */
+  get local() { return this.g.players[0]; }
+
+  update(dt) {
     this.t += dt;
     if (this.state === 'waiting') {
-      // cuando el jugador pisa la plataforma del núcleo, arranca el encuentro
-      if (p.onGround && !p.dead && Math.abs(p.y + p.h - FLOOR_Y) < 3 && p.cx > ARENA.x0 - 16 && p.cx < ARENA.x1 + 16) this.startEncounter(p);
+      // cuando alguien pisa la plataforma del núcleo, arranca el encuentro
+      for (const p of this.fighters()) {
+        if (p.onGround && !p.dead && Math.abs(p.y + p.h - FLOOR_Y) < 3 && p.cx > ARENA.x0 - 16 && p.cx < ARENA.x1 + 16) { this.startEncounter(p); break; }
+      }
       return;
     }
-    if (this.state === 'fight') this.updateFight(dt, p);
+    if (this.state === 'fight') this.updateFight(dt);
+  }
+
+  /** ubica a un jugador (si es el del otro, se lo manda por la red) */
+  place(p, cx, fy, facing, full = false) {
+    if (p.remote) { this.g.net.send('tp', { cx, fy, f: facing, full }); p.x = cx - p.w / 2; p.y = fy - p.h; p.tx = undefined; return; }
+    p.x = cx - p.w / 2; p.y = fy - p.h; p.vx = 0; p.vy = 0; p.peakY = p.y;
+    p.facing = facing; p.heldRock = null; p.jetFuel = BOSS.jetTime; p.hovering = false;
+    if (full) p.hp = HP_MAX;
   }
 
   startEncounter(p) {
@@ -144,10 +162,11 @@ export class Boss {
 
   startFight(sc, p) {
     const A = sc.actors;
-    const me = A[p.char], mate = A[this.mateId], ag = A.aguilus;
-    p.x = me.x - p.w / 2; p.y = FLOOR_Y - p.h; p.vx = 0; p.vy = 0; p.peakY = p.y;
-    p.facing = me.facing; p.heldRock = null; p.jetFuel = BOSS.jetTime;
-    this.partner = { id: this.mateId, x: mate.x, facing: mate.facing };
+    const mate = A[this.mateId], ag = A.aguilus;
+    const fs = this.fighters();
+    for (const f of fs) { const a = A[f.char]; if (a) this.place(f, a.x, FLOOR_Y, a.facing); }
+    // sin otra persona, la pareja queda en la plataforma dando ánimo
+    this.partner = fs.length < 2 ? { id: this.mateId, x: mate.x, facing: mate.facing } : null;
     this.x = ag.x; this.y = SKY_Y; this.baseY = SKY_Y; this.tx = this.x; this.vx = 0;
     this.state = 'fight';
     this.castT = 1.6; this.attack = null; this.sinceRocks = 1;
@@ -159,7 +178,7 @@ export class Boss {
     this.state = 'scene';
     this.clearHazards();
     this.attack = null;
-    p.heldRock = null;
+    for (const f of this.fighters()) f.heldRock = null;
     this.g.ui.setBossBar(null);
     this.g.startScene((sc) => victoryScript(sc, this, p), {
       onEnd: (skipped, sc) => this.finish(p, sc, skipped),
@@ -170,11 +189,14 @@ export class Boss {
     const g = this.g;
     this.state = 'done';
     this.losses = 0;
-    const me = sc.actors[p.char];
-    const x = skipped || !me ? LAND_X - 10 : me.x;
-    p.x = x - p.w / 2; p.y = SURFACE * TILE - p.h; p.vx = 0; p.vy = 0; p.peakY = p.y;
-    p.facing = 1; p.heldRock = null; p.hp = HP_MAX;
+    // todos aterrizan en el patio (online, el otro también)
+    for (const f of this.fighters()) {
+      const a = sc.actors[f.char];
+      const x = skipped || !a ? LAND_X + (f === this.local ? -10 : 10) : a.x;
+      this.place(f, x, SURFACE * TILE, 1, true);
+    }
     g.save();
+    if (g.net.isHost) g.net.send('ending', { earned: Math.floor(g.counters.earned) });
     const mins = Math.floor(g.counters.playTime / 60);
     g.state = 'paused';
     g.ui.showMsg('¡Fin! ♥', `${ENDING_TEXT}\n\nTiempo: ${mins} min · Bloques cavados: ${Math.round(g.counters.tiles)}\nPlata juntada: ${fmtMoney(g.counters.earned)}`, [
@@ -186,8 +208,9 @@ export class Boss {
    * el jugador cayó K.O. durante la pelea: se desmaya, "algo" lo lleva hasta casa
    * y tiene que volver a bajar. Aguilus se recupera y lo espera junto al cofre.
    */
-  playerDown(p) {
-    const g = this.g;
+  playerDown() {
+    const g = this.g, p = this.local, online = g.net.isHost;
+    if (online) g.net.send('teamDown'); // online: vuelven los dos
     g.state = 'faint';
     p.dead = true;
     p.heldRock = null;
@@ -200,7 +223,10 @@ export class Boss {
     g.ui.setBossBar(null);
     setTimeout(() => g.ui.fade(true), 400);
     setTimeout(() => {
-      g.ui.showMsg('¡Te desmayaste!', 'Aguilus te dejó viendo estrellitas y caíste redondo.\n\nCuando abriste los ojos estabas en casa. Nadie sabe cómo llegaste... solo había una pluma violeta en tu almohada.\n\nAguilus te espera abajo de todo, ¡y ya se recuperó!', [{
+      const msg = online
+        ? ['¡Se desmayaron!', 'Aguilus los dejó viendo estrellitas.\n\nCuando abrieron los ojos estaban en casa... con una pluma violeta en la almohada.\n\nAguilus los espera abajo de todo, ¡y ya se recuperó!']
+        : ['¡Te desmayaste!', 'Aguilus te dejó viendo estrellitas y caíste redondo.\n\nCuando abriste los ojos estabas en casa. Nadie sabe cómo llegaste... solo había una pluma violeta en tu almohada.\n\nAguilus te espera abajo de todo, ¡y ya se recuperó!'];
+      g.ui.showMsg(msg[0], msg[1], [{
         label: 'Volver a bajar',
         onClick: () => {
           p.spawn();
@@ -241,10 +267,28 @@ export class Boss {
   }
 
   hurtPlayer(p, dmg, kx = 0) {
-    if (p.dead || p.hurtT > 0) return false;
+    if (p.dead || p.hurtT > 0 || p.guardT > 0) return false;
+    if (p.remote) {
+      // el daño del otro se lo aplica su propio dispositivo
+      this.g.net.send('hurt', { dmg, kx });
+      p.guardT = 0.8;
+      return true;
+    }
     if (kx) { p.vx = kx; p.vy = Math.min(p.vy, -110); }
     p.hurt(dmg, 'boss');
     return true;
+  }
+
+  /** golpe de roca: pega aunque recién te hayan pegado (como antes) */
+  rockHit(p) {
+    if (p.remote) { if (!(p.guardT > 0)) { this.g.net.send('hurt', { dmg: BOSS.rockDmg, kx: 0 }); p.guardT = 0.3; } return; }
+    p.hurt(BOSS.rockDmg, 'rock');
+  }
+
+  /** a quién apunta el próximo ataque (online: a cualquiera de los dos) */
+  pickTarget() {
+    const fs = this.fighters().filter((f) => !f.dead);
+    return fs[Math.floor(Math.random() * fs.length)] || this.local;
   }
 
   /** se mueve de un lado a otro con ritmo cambiante: lento, normal, ráfagas rápidas y pausas */
@@ -275,15 +319,20 @@ export class Boss {
     if (Math.abs(this.vx) > 110 && Math.random() < 0.6) this.g.particles.add({ x: this.x - Math.sign(this.vx) * 8, y: this.y - 8 - Math.random() * 18, vx: -this.vx * 0.3, vy: 0, life: 0.3, max: 0.3, color: 'rgba(255,240,220,0.5)', size: 1, grav: 0 });
   }
 
-  updateFight(dt, p) {
+  updateFight(dt) {
     const g = this.g;
+    const fs = this.fighters();
+    for (const f of fs) if (f.guardT > 0) f.guardT -= dt;
+    // cada ataque apunta a alguien (online puede ser cualquiera de los dos)
+    if (!this.target || !fs.includes(this.target) || this.target.dead) this.target = this.pickTarget();
+    const p = this.target;
     this.flash = Math.max(0, this.flash - dt);
     const atk = this.attack;
     if (!atk || atk.free) this.cruise(dt, atk ? 0.5 : 1);
     if (atk) this.updateAttack(dt, p, atk);
     else {
       this.castT -= dt;
-      if (this.castT <= 0) this.startAttack(p);
+      if (this.castT <= 0) { this.target = this.pickTarget(); this.startAttack(this.target); }
     }
     if (!this.attack || this.attack.type !== 'dive') this.facing = p.cx > this.x ? 1 : -1;
     // la pareja da ánimo de vez en cuando
@@ -295,8 +344,8 @@ export class Boss {
     }
     for (const m of this.marks) m.t -= dt;
     this.marks = this.marks.filter((m) => m.t > 0);
-    this.updateRocks(dt, p);
-    this.updateHazards(dt, p);
+    this.updateRocks(dt, fs);
+    this.updateHazards(dt, fs);
   }
 
   // ---- ataques ----
@@ -310,7 +359,7 @@ export class Boss {
       for (const [k, w] of opts) { if ((r -= w) < 0) { type = k; break; } }
     }
     this.sinceRocks = type === 'rocks' ? 0 : this.sinceRocks + 1;
-    g.audio.play('charge');
+    g.sfx('charge');
     if (type === 'rocks') this.attack = { type, t: 0, wind: 0.75, free: true };
     else if (type === 'feathers') this.attack = { type, t: 0, wind: 0.65, free: true, shots: this.phase2 ? 2 : 1 };
     else if (type === 'pillars') {
@@ -364,7 +413,7 @@ export class Boss {
       this.x += this.vx * dt + (Math.random() - 0.5) * 1.2;
       if (a.t < 0.55) a.tx = clamp(p.cx, ARENA.x0 + 8, ARENA.x1 - 8);
       this.facing = a.tx > this.x ? 1 : -1;
-      if (a.t >= 0.85) { a.stage = 'dive'; a.t = 0; g.audio.play('swoosh'); }
+      if (a.t >= 0.85) { a.stage = 'dive'; a.t = 0; g.sfx('swoosh'); }
       return;
     }
     if (a.stage === 'dive') {
@@ -373,7 +422,7 @@ export class Boss {
       if (d <= v) {
         this.x = a.tx; this.y = FLOOR_Y;
         a.stage = 'ground'; a.t = 0;
-        g.audio.play('boom'); g.shake(5);
+        g.sfx('boom'); g.shakeAll(5);
         for (let i = 0; i < 14; i++) g.particles.add({ x: this.x + (Math.random() - 0.5) * 20, y: FLOOR_Y - 1, vx: (Math.random() - 0.5) * 90, vy: -Math.random() * 50, life: 0.6, max: 0.6, color: Math.random() < 0.5 ? '#7a4a2c' : '#ff8a2e', size: 1, grav: 160 });
         for (const dir of [-1, 1]) this.waves.push({ x: this.x + dir * 8, dir });
       } else { this.x += dx / d * v; this.y += dy / d * v; }
@@ -388,7 +437,9 @@ export class Boss {
     // embestida: chocarlo en la picada o justo al aterrizar duele
     if (a.stage === 'dive' || (a.stage === 'ground' && a.t < 0.15)) {
       const b = this.body();
-      if (p.x < b.x1 && p.x + p.w > b.x0 && p.y < b.y1 && p.y + p.h > b.y0) this.hurtPlayer(p, BOSS.diveDmg, p.cx > this.x ? 140 : -140);
+      for (const q of this.fighters()) {
+        if (q.x < b.x1 && q.x + q.w > b.x0 && q.y < b.y1 && q.y + q.h > b.y0) this.hurtPlayer(q, BOSS.diveDmg, q.cx > this.x ? 140 : -140);
+      }
     }
   }
 
@@ -401,13 +452,13 @@ export class Boss {
       const a = base + (i - (n - 1) / 2) * 0.24;
       this.feathers.push({ x: ox, y: oy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, a });
     }
-    g.audio.play('throw');
+    g.sfx('throw');
   }
 
   spawnRocks(p) {
     const g = this.g, o = this.orb(), spr = rockSprites();
     const n = (this.phase2 ? 3 : 2) + (Math.random() < 0.35 ? 1 : 0);
-    g.audio.play('magma');
+    g.sfx('magma');
     for (let i = 0; i < n; i++) {
       const tx = clamp(p.cx + (i - (n - 1) / 2) * 30 + (Math.random() - 0.5) * 18, ARENA.x0, ARENA.x1);
       const T = (this.phase2 ? 1.05 : 1.3) + Math.random() * 0.35;
@@ -421,14 +472,16 @@ export class Boss {
     }
   }
 
-  updateRocks(dt, p) {
+  updateRocks(dt, fs) {
     const g = this.g;
-    const tip = p.digging && p.aim && !p.dead ? { x: p.cx + p.aim.x * 9, y: p.cy - 1 + p.aim.y * 9 } : null;
+    const tipOf = (p) => (p.digging && p.aim && !p.dead ? { x: p.cx + p.aim.x * 9, y: p.cy - 1 + p.aim.y * 9 } : null);
     for (const r of this.rocks) {
       if (r.dead) continue;
       r.t += dt;
       if (r.state === 'held') {
-        // queda pegada en la punta del taladro
+        // queda pegada en la punta del taladro de quien la atajó
+        const p = r.by, tip = tipOf(p);
+        if (!p || p.dead || p.heldRock !== r) { this.shatter(r); continue; }
         const ax = tip ? p.aim.x : p.facing, ay = tip ? p.aim.y : -0.3;
         const h = tip || { x: p.cx + p.facing * 7, y: p.cy - 3 };
         r.x = h.x + ax * (r.rad - 2); r.y = h.y + ay * (r.rad - 2);
@@ -437,30 +490,36 @@ export class Boss {
       r.vy += (r.state === 'thrown' ? THROW_G : ROCK_G) * dt;
       r.x += r.vx * dt; r.y += r.vy * dt;
       if (Math.random() < 0.5) g.particles.add({ x: r.x + (Math.random() - 0.5) * r.rad, y: r.y, vx: (Math.random() - 0.5) * 8, vy: -6, life: 0.4, max: 0.4, color: Math.random() < 0.4 ? '#ff7a1e' : 'rgba(70,50,45,0.6)', size: 1, grav: -10, smoke: Math.random() < 0.3 });
-      if (r.state === 'fall' && !p.dead) {
-        // atajarla con el taladro
-        if (tip && Math.hypot(r.x - tip.x, r.y - tip.y) < BOSS.catchR + r.rad * 0.4) {
-          if (!p.heldRock) {
-            r.state = 'held'; p.heldRock = r;
-            g.audio.play('clink');
-            for (let i = 0; i < 6; i++) g.particles.add({ x: r.x, y: r.y, vx: (Math.random() - 0.5) * 50, vy: -Math.random() * 40, life: 0.4, max: 0.4, color: '#ffd34d', star: true, grav: 80 });
-            g.tip('catch', g.ui.isTouch ? '¡La atajaste! Apuntá y tocá LANZAR para devolvérsela' : '¡La atajaste! Apuntá con el mouse y apretá E para devolvérsela');
-          } else this.shatter(r);
-          continue;
+      if (r.state === 'fall') {
+        let done = false;
+        for (const p of fs) {
+          if (p.dead) continue;
+          // atajarla con el taladro
+          const tip = tipOf(p);
+          if (tip && Math.hypot(r.x - tip.x, r.y - tip.y) < BOSS.catchR + r.rad * 0.4) {
+            if (!p.heldRock) {
+              r.state = 'held'; r.by = p; p.heldRock = r;
+              g.sfx('clink');
+              for (let i = 0; i < 6; i++) g.particles.add({ x: r.x, y: r.y, vx: (Math.random() - 0.5) * 50, vy: -Math.random() * 40, life: 0.4, max: 0.4, color: '#ffd34d', star: true, grav: 80 });
+              if (p === this.local) g.tip('catch', g.ui.isTouch ? '¡La atajaste! Apuntá y tocá LANZAR para devolvérsela' : '¡La atajaste! Apuntá con el mouse y apretá E para devolvérsela');
+            } else this.shatter(r);
+            done = true; break;
+          }
+          // si no, te pega
+          const m = r.rad * 0.6;
+          if (r.x > p.x - m && r.x < p.x + p.w + m && r.y > p.y - m && r.y < p.y + p.h + m) {
+            this.rockHit(p);
+            this.shatter(r);
+            done = true; break;
+          }
         }
-        // si no, te pega
-        const m = r.rad * 0.6;
-        if (r.x > p.x - m && r.x < p.x + p.w + m && r.y > p.y - m && r.y < p.y + p.h + m) {
-          p.hurt(BOSS.rockDmg, 'rock');
-          this.shatter(r);
-          continue;
-        }
+        if (done) continue;
       }
       if (r.state === 'thrown') {
         const b = this.body(), m = r.rad * 0.5;
         if (r.x > b.x0 - m && r.x < b.x1 + m && r.y > b.y0 - m && r.y < b.y1 + m) {
           this.shatter(r);
-          this.hit(p);
+          this.hit(r.by || this.local);
           continue;
         }
       }
@@ -470,14 +529,16 @@ export class Boss {
   }
 
   /** plumas, columnas de fuego y ondas de choque: no se atajan, hay que esquivarlas */
-  updateHazards(dt, p) {
+  updateHazards(dt, fs) {
     const g = this.g;
     for (const f of this.feathers) {
       f.x += f.vx * dt; f.y += f.vy * dt;
       if (Math.random() < 0.3) g.particles.add({ x: f.x, y: f.y, vx: 0, vy: 0, life: 0.25, max: 0.25, color: '#c98cff', size: 1, grav: 0 });
-      if (!p.dead && f.x > p.x - 1 && f.x < p.x + p.w + 1 && f.y > p.y - 1 && f.y < p.y + p.h + 1) {
-        f.dead = true;
-        this.hurtPlayer(p, BOSS.featherDmg, Math.sign(f.vx) * 60);
+      for (const p of fs) {
+        if (!p.dead && !f.dead && f.x > p.x - 1 && f.x < p.x + p.w + 1 && f.y > p.y - 1 && f.y < p.y + p.h + 1) {
+          f.dead = true;
+          this.hurtPlayer(p, BOSS.featherDmg, Math.sign(f.vx) * 60);
+        }
       }
       if (g.world.solidPx(f.x, f.y) || f.y > FLOOR_Y + 4 || f.x < ARENA.x0 - 80 || f.x > ARENA.x1 + 80 || f.y < this.ceilY - 100) f.dead = true;
     }
@@ -487,7 +548,7 @@ export class Boss {
       const was = c.t;
       c.t += dt;
       if (was < 0 && c.t >= 0) {
-        g.audio.play('flame'); g.shake(2);
+        g.sfx('flame'); g.shakeAll(2);
         for (let i = 0; i < 10; i++) g.particles.add({ x: c.x + (Math.random() - 0.5) * 10, y: FLOOR_Y - 2, vx: (Math.random() - 0.5) * 40, vy: -60 - Math.random() * 80, life: 0.6, max: 0.6, color: Math.random() < 0.5 ? '#ffd34d' : '#ff6a1a', size: 1, grav: 60 });
       }
       if (c.t < 0) {
@@ -495,8 +556,11 @@ export class Boss {
         continue;
       }
       const h = pillarH(c.t);
-      if (!c.hit && h > 8 && !p.dead && Math.abs(p.cx - c.x) < 6 + p.w / 2 - 1 && p.y + p.h > FLOOR_Y - h) {
-        if (this.hurtPlayer(p, BOSS.pillarDmg, p.cx > c.x ? 90 : -90)) c.hit = true;
+      c.hits = c.hits || new Set();
+      for (const p of fs) {
+        if (!c.hits.has(p) && h > 8 && !p.dead && Math.abs(p.cx - c.x) < 6 + p.w / 2 - 1 && p.y + p.h > FLOOR_Y - h) {
+          if (this.hurtPlayer(p, BOSS.pillarDmg, p.cx > c.x ? 90 : -90)) c.hits.add(p);
+        }
       }
     }
     this.pillars = this.pillars.filter((c) => c.t < 0.9);
@@ -505,8 +569,10 @@ export class Boss {
       w.x += w.dir * (this.phase2 ? 150 : 125) * dt;
       if (Math.random() < 0.6) g.particles.add({ x: w.x, y: FLOOR_Y - 2, vx: -w.dir * 10, vy: -30 - Math.random() * 30, life: 0.35, max: 0.35, color: Math.random() < 0.5 ? '#7a4a2c' : '#ff8a2e', size: 1, grav: 160 });
       // se salta: solo pega si estás en el piso (o casi)
-      if (!p.dead && Math.abs(p.cx - w.x) < 5 && p.y + p.h > FLOOR_Y - 6) {
-        if (this.hurtPlayer(p, BOSS.waveDmg, w.dir * 120)) w.dead = true;
+      for (const p of fs) {
+        if (!p.dead && !w.dead && Math.abs(p.cx - w.x) < 5 && p.y + p.h > FLOOR_Y - 6) {
+          if (this.hurtPlayer(p, BOSS.waveDmg, w.dir * 120)) w.dead = true;
+        }
       }
       if (w.x < ARENA.x0 - 16 || w.x > ARENA.x1 + 16) w.dead = true;
     }
@@ -516,40 +582,41 @@ export class Boss {
   shatter(r) {
     const g = this.g;
     r.dead = true;
-    g.audio.play('break');
+    g.sfx('break');
     for (let i = 0; i < 6 + r.rad; i++) g.particles.add({ x: r.x, y: r.y, vx: (Math.random() - 0.5) * 70, vy: -Math.random() * 60, life: 0.5, max: 0.5, color: Math.random() < 0.55 ? '#3a2316' : Math.random() < 0.5 ? '#ff6a1a' : '#ffd060', size: 1, grav: 200 });
   }
 
   /** dirección del tiro: al mouse en compu, hacia donde apunta el taladro en el celu. Sin ayudas: se puede errar. */
-  aimDir(p, r) {
+  aimDir(p, r, useMouse = true) {
     const g = this.g, inp = g.input;
     let dx, dy;
-    if (!g.ui.isTouch && inp.mouseSeen) { dx = inp.mouse.x + g.cam.x - r.x; dy = inp.mouse.y + g.cam.y - r.y; }
-    else if (p.aim) { dx = p.aim.x; dy = p.aim.y; }
+    if (useMouse && !g.ui.isTouch && inp.mouseSeen) { dx = inp.mouse.x + g.cam.x - r.x; dy = inp.mouse.y + g.cam.y - r.y; }
+    else if (p.aim || p.lastAim) { const a = p.aim || p.lastAim; dx = a.x; dy = a.y; }
     else { dx = p.facing; dy = -0.35; }
     const d = Math.hypot(dx, dy) || 1;
     return { x: dx / d, y: dy / d };
   }
 
   /** E: devuelve la roca */
-  throwRock(p, inp) {
+  /** aim: {mx, my} hacia dónde apunta el mouse, o null (taladro / joystick / para adelante) */
+  throwRock(p, aim) {
     const g = this.g, r = p.heldRock;
     if (!r) return;
     let dx, dy;
-    if (!g.ui.isTouch && g.input.mouseSeen) { dx = inp.mx - r.x; dy = inp.my - r.y; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d; }
-    else ({ x: dx, y: dy } = this.aimDir(p, r));
+    if (aim && Number.isFinite(aim.mx)) { dx = aim.mx - r.x; dy = aim.my - r.y; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d; }
+    else ({ x: dx, y: dy } = this.aimDir(p, r, false));
     const v = BOSS.throwSpeed;
     r.state = 'thrown'; r.vx = dx * v; r.vy = dy * v;
     p.heldRock = null;
-    g.audio.play('throw');
+    g.sfx('throw');
   }
 
   hit(p) {
     const g = this.g;
     this.hp--;
     this.flash = 0.3;
-    g.audio.play('bossHit');
-    g.shake(2.5);
+    g.sfx('bossHit');
+    g.shakeAll(2.5);
     g.addText(this.x, this.y - AG_H - 6, '¡AUCH!', '#ffd34d');
     for (let i = 0; i < 6; i++) g.particles.add({ x: this.x + (Math.random() - 0.5) * 10, y: this.y - 20, vx: (Math.random() - 0.5) * 50, vy: -20 - Math.random() * 30, life: 0.8, max: 0.8, color: '#c9c0b0', size: 1, grav: 40 });
     g.ui.setBossBar(Math.max(0, this.hp) / BOSS.hp);
@@ -696,7 +763,7 @@ function* encounterScript(sc, B, p) {
   const mid = (meX + B.homeX) / 2;
   sc.fixed = { x: mid, y: FLOOR_Y - 20 };
   sc.setZoom(Math.abs(B.homeX - meX) > 170 ? 1 : 1.5);
-  g.audio.play('surprise');
+  g.sfx('surprise');
   sc.emote(me, '!'); sc.emote(mate, '!');
   yield sc.say('aguilus', '¡Vaya, vaya! Así que llegaron hasta el centro de la Tierra...');
   sc.fixed = { x: B.homeX, y: FLOOR_Y - 18 };
@@ -710,8 +777,8 @@ function* encounterScript(sc, B, p) {
   // se eleva
   sc.actors.aguilus.pose = 'fly';
   sc.fly('aguilus', B.homeX, SKY_Y, 45);
-  g.audio.play('charge');
-  g.shake(3);
+  g.sfx('charge');
+  g.shakeAll(3);
   sc.fixed = { x: mid, y: FLOOR_Y - 60 };
   sc.setZoom(1);
   yield sc.arrive('aguilus');
@@ -767,8 +834,8 @@ function* rematchScript(sc, B, p) {
   yield sc.say('aguilus', '¡Ya veremos! ¡Ahí va otra lluvia de magma!');
   sc.actors.aguilus.pose = 'fly';
   sc.fly('aguilus', B.homeX, SKY_Y, 55);
-  g.audio.play('charge');
-  g.shake(3);
+  g.sfx('charge');
+  g.shakeAll(3);
   sc.fixed = { x: mid, y: FLOOR_Y - 60 };
   sc.setZoom(1);
   yield sc.arrive('aguilus');
@@ -776,20 +843,24 @@ function* rematchScript(sc, B, p) {
 }
 
 function* victoryScript(sc, B, p) {
-  const g = sc.g, me = p.char, mate = B.mateId, A = sc.actors;
+  // online el golpe final lo puede dar cualquiera de los dos: la pareja es siempre el otro personaje
+  const g = sc.g, me = p.char, mate = me === 'pablo' ? 'pancha' : 'pablo', A = sc.actors;
   const gx = clamp(B.x, ARENA.x0 + 50, ARENA.x1 - 30);
   const ag = sc.actor('aguilus', gx, B.y, { pose: 'hurt', facing: -1, phase: 0 }); // primero: queda detrás en el abrazo
   sc.actor(me, clamp(p.cx, ARENA.x0, ARENA.x1), FLOOR_Y, { facing: gx > p.cx ? 1 : -1 });
-  sc.actor(mate, B.partner ? B.partner.x : p.cx - 16, FLOOR_Y, { facing: gx > (B.partner ? B.partner.x : p.cx) ? 1 : -1 });
+  // online la pareja es la otra persona: arranca donde estaba
+  const other = B.fighters().find((f) => f !== p);
+  const mx = other ? clamp(other.cx, ARENA.x0, ARENA.x1) : B.partner ? B.partner.x : p.cx - 16;
+  sc.actor(mate, mx, FLOOR_Y, { facing: gx > mx ? 1 : -1 });
   sc.fixed = { x: gx, y: FLOOR_Y - 26 };
   sc.setZoom(1.5);
   sc.snapCam();
-  g.shake(4);
+  g.shakeAll(4);
   yield sc.wait(0.6);
   sc.drop('aguilus', FLOOR_Y);
   yield sc.arrive('aguilus');
   ag.pose = 'weak';
-  g.shake(3);
+  g.shakeAll(3);
   sc.walk(me, gx - 22, 50); sc.walk(mate, gx - 38, 50);
   sc.fixed = { x: gx - 18, y: FLOOR_Y - 14 };
   sc.setZoom(2.2);
@@ -859,7 +930,7 @@ function* victoryScript(sc, B, p) {
   sc.setZoom(2);
   yield sc.arrive(me, mate, 'aguilus');
   g.audio.jet(false);
-  g.audio.play('land');
+  g.sfx('land');
   for (const id of [me, mate, 'aguilus']) A[id].lockFacing = false;
   for (const id of [me, mate]) { A[id].flying = false; A[id].pose = 'idle'; }
   A.aguilus.flying = false;
@@ -878,7 +949,7 @@ function* victoryScript(sc, B, p) {
   A.aguilus.pose = 'fly';
   A.aguilus.facing = 1;
   sc.fly('aguilus', LAND_X + 330, GY - 280, 130);
-  g.audio.play('jump');
+  g.sfx('jump');
   yield sc.wait(1.8);
   A.aguilus.hidden = true;
   A[me].facing = 1; A[mate].facing = -1;

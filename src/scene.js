@@ -5,7 +5,7 @@ import { drawAguilus, aguilusPortrait, AG_H } from './aguilus.js';
 import { clamp, pixelLine } from './util.js';
 
 let carlosFace = null;
-const SPEAKERS = {
+export const SPEAKERS = {
   pablo: { name: 'Pablo', icon: () => ICON_URL.char_pablo },
   pancha: { name: 'Panchi', icon: () => ICON_URL.char_pancha },
   popi: { name: 'Popi', icon: () => DOG.happyA.toDataURL() },

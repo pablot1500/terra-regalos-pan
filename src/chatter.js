@@ -64,6 +64,14 @@ export class Chatter {
     return a && b ? [a, b] : null;
   }
 
+  /** lo que se manda por la red: quién habla ('h' = el anfitrión, 'g' = el invitado) y cuánto se ve */
+  netState(local) {
+    const c = this.cur;
+    if (!c) return null;
+    const L = c.lines[c.i];
+    return { w: L.who === local ? 'h' : 'g', r: L.rows, s: Math.floor(c.shown) };
+  }
+
   update(dt) {
     const pair = this.pair();
     if (!pair) { this.cur = null; return; }
@@ -103,10 +111,20 @@ export class Chatter {
   }
 
   draw(ctx, camX, camY, vw) {
-    const c = this.cur;
-    if (!c || !this.pair()) return;
-    const L = c.lines[c.i], p = L.who;
-    const rows = L.rows;
+    let p, rows, shown;
+    const g = this.g;
+    if (this.remoteState) {
+      // invitado online: la charla la maneja el anfitrión ('h' es él, 'g' soy yo)
+      const R = this.remoteState;
+      p = R.w === 'g' ? g.players[0] : g.net.remote;
+      rows = R.r; shown = R.s;
+      if (!p) return;
+    } else {
+      const c = this.cur;
+      if (!c || !this.pair()) return;
+      const L = c.lines[c.i];
+      p = L.who; rows = L.rows; shown = c.shown;
+    }
     const w = Math.max(...rows.map((r) => r.length)) * 4 - 1 + 6;
     const h = rows.length * 7 - 2 + 6;
     const head = Math.round(p.y + p.h - CHAR_H - camY);
@@ -123,7 +141,7 @@ export class Chatter {
     ctx.fillStyle = '#fff4e0';
     ctx.fillRect(tx - 1, by + h - 1, 3, 1); ctx.fillRect(tx, by + h, 1, 1);
     // texto que se va escribiendo
-    let left = Math.floor(c.shown);
+    let left = Math.floor(shown);
     rows.forEach((r, i) => {
       if (left <= 0) return;
       const part = r.slice(0, left);

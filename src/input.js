@@ -5,6 +5,7 @@ export class Input {
     this.edges = new Set();
     this.mouse = { down: false, x: 0, y: 0 };
     this.touch = { sx: 0, sy: 0, jump: false, dig: false };
+    this.touchAim = null;   // dedo apoyado sobre el juego: cava hacia ahí (como el mouse)
     this.scale = 1;
     this.enabled = true;
     this.onAnyInput = null;
@@ -31,6 +32,22 @@ export class Input {
     window.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') this.mouse.down = false; });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
+    // táctil: tocar y mantener sobre el juego cava hacia el dedo
+    canvas.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' || this.touchAim) return;
+      e.preventDefault();
+      try { canvas.setPointerCapture(e.pointerId); } catch { /* nada */ }
+      this.touchAim = { id: e.pointerId, x: 0, y: 0 };
+      this.setTouchAim(e, canvas);
+      if (this.onAnyInput) this.onAnyInput();
+    });
+    canvas.addEventListener('pointermove', (e) => { if (this.touchAim && e.pointerId === this.touchAim.id) this.setTouchAim(e, canvas); });
+    const endAim = (e) => { if (this.touchAim && e.pointerId === this.touchAim.id) this.touchAim = null; };
+    canvas.addEventListener('pointerup', endAim);
+    canvas.addEventListener('pointercancel', endAim);
+    // iOS: sin zoom con dos dedos ni con doble toque
+    for (const ev of ['gesturestart', 'gesturechange', 'dblclick']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
+
     this.setupTouch();
   }
 
@@ -41,13 +58,21 @@ export class Input {
     this.mouse.y = (e.clientY - r.top) / this.scale;
   }
 
+  setTouchAim(e, canvas) {
+    const r = canvas.getBoundingClientRect();
+    this.touchAim.x = (e.clientX - r.left) / this.scale;
+    this.touchAim.y = (e.clientY - r.top) / this.scale;
+  }
+
   resetTouch() {
     this.touch.sx = 0; this.touch.sy = 0; this.touch.jump = false; this.touch.dig = false;
+    this.touchAim = null;
   }
 
   setupTouch() {
     const stick = document.getElementById('stick');
     const knob = document.getElementById('stick-knob');
+    const zone = document.getElementById('stick-zone');
     let id = null, cx = 0, cy = 0;
     const R = 42;
     const upd = (e) => {
@@ -57,30 +82,47 @@ export class Input {
       this.touch.sx = dx / R; this.touch.sy = dy / R;
       knob.style.transform = `translate(${dx}px, ${dy}px)`;
     };
-    stick.addEventListener('pointerdown', (e) => {
+    const start = (e, el, floating) => {
       e.preventDefault();
+      if (id !== null) return;
       id = e.pointerId;
-      stick.setPointerCapture(id);
-      const r = stick.getBoundingClientRect();
-      cx = r.left + r.width / 2; cy = r.top + r.height / 2;
+      try { el.setPointerCapture(id); } catch { /* nada */ }
+      if (floating) {
+        // joystick flotante: aparece donde apoyás el pulgar (cómodo en iPhone y iPad)
+        const pr = stick.offsetParent.getBoundingClientRect();
+        stick.style.left = (e.clientX - pr.left - stick.offsetWidth / 2) + 'px';
+        stick.style.top = (e.clientY - pr.top - stick.offsetHeight / 2) + 'px';
+        stick.style.bottom = 'auto';
+        stick.classList.add('active');
+        cx = e.clientX; cy = e.clientY;
+      } else {
+        const r = stick.getBoundingClientRect();
+        cx = r.left + r.width / 2; cy = r.top + r.height / 2;
+      }
       const prevDown = this.touch.sy > 0.55;
       upd(e);
       if (!prevDown && this.touch.sy > 0.55) this.edges.add('t-down');
       if (this.onAnyInput) this.onAnyInput();
-    });
-    stick.addEventListener('pointermove', (e) => {
+    };
+    const move = (e) => {
       if (e.pointerId !== id) return;
       const prevDown = this.touch.sy > 0.55;
       upd(e);
       if (!prevDown && this.touch.sy > 0.55) this.edges.add('t-down');
-    });
+    };
     const end = (e) => {
       if (e.pointerId !== id) return;
       id = null; this.touch.sx = 0; this.touch.sy = 0;
       knob.style.transform = '';
+      stick.style.left = ''; stick.style.top = ''; stick.style.bottom = '';
+      stick.classList.remove('active');
     };
-    stick.addEventListener('pointerup', end);
-    stick.addEventListener('pointercancel', end);
+    for (const [el, floating] of [[stick, false], [zone, true]]) {
+      el.addEventListener('pointerdown', (e) => start(e, el, floating));
+      el.addEventListener('pointermove', move);
+      el.addEventListener('pointerup', end);
+      el.addEventListener('pointercancel', end);
+    }
 
     const btn = (elId, prop) => {
       const el = document.getElementById(elId);
@@ -139,9 +181,9 @@ export class Input {
       sy: T.sy,
       digPressed: e('KeyJ') || e('KeyK') || e('KeyX') || e('t-dig'),
       downPressed: e('t-down'),
-      mouseDig: this.mouse.down || !!this.mouse.latched,
-      mx: this.mouse.x + camX,
-      my: this.mouse.y + camY,
+      mouseDig: this.mouse.down || !!this.mouse.latched || !!this.touchAim,
+      mx: (this.touchAim ? this.touchAim.x : this.mouse.x) + camX,
+      my: (this.touchAim ? this.touchAim.y : this.mouse.y) + camY,
       interact: e('KeyE') || e('Enter') || e('t-act'),
       musicPressed: e('KeyM'),
       sfxPressed: e('KeyN'),

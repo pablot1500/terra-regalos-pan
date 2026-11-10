@@ -171,6 +171,7 @@ export class Player {
 
     // ---- apuntar ----
     let aim = this.readAim(inp, ix);
+    if (aim) this.lastAim = aim;
     if (aim && Math.abs(aim.x) > 0.2) this.facing = aim.x > 0 ? 1 : -1;
     else if (ix) this.facing = ix;
 

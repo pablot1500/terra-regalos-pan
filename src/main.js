@@ -20,6 +20,7 @@ import { introScript } from './intro.js';
 import { Boss } from './boss.js';
 import { BuddyAI } from './buddy.js';
 import { Chatter } from './chatter.js';
+import { Net } from './net.js';
 import { Input } from './input.js';
 import { Audio } from './audio.js';
 import { UI } from './ui.js';
@@ -85,6 +86,7 @@ class Game {
     // modo de a dos: el otro personaje acompaña manejado por la IA (buddy.js)
     try { this.duo = localStorage.getItem('terra-regalos-pan:duo') !== '0'; } catch { this.duo = true; }
     this.chatter = new Chatter(this);
+    this.net = new Net(this); // jugar online de a dos (net.js)
     this.savedData = null;
     this.freshGame();
     this.ui = new UI(this);
@@ -123,6 +125,7 @@ class Game {
     this.popi = null;
     this.players = [new Player(this, this.charId)];
     this.boss = new Boss(this, false);
+    this.net.hookWorld(this.world);
     this.pickups.list = [];
     this.particles.list = [];
   }
@@ -185,7 +188,8 @@ class Game {
   syncBuddy() {
     const p = this.players[0];
     this.players = [p];
-    if (this.duo) {
+    if (this.net.remote) this.players.push(this.net.remote); // online: el otro es una persona
+    else if (this.duo) {
       const ai = new BuddyAI(this);
       const b = new Player(this, p.char === 'pablo' ? 'pancha' : 'pablo', ai);
       ai.p = b;
@@ -305,7 +309,7 @@ class Game {
   }
 
   save() {
-    if (!['play', 'shop', 'paused', 'gift'].includes(this.state)) return;
+    if (!['play', 'shop', 'paused', 'gift'].includes(this.state) || this.net.isGuest) return;
     const d = this.serialize();
     this.savedData = d;
     store.save(d);
@@ -313,6 +317,7 @@ class Game {
 
   toTitle() {
     this.save();
+    if (this.net.role) this.net.leave();
     this.audio.jet(false);
     this.ui.show('screen-pause', false);
     this.state = 'title';
@@ -342,7 +347,8 @@ class Game {
     this.state = 'paused';
     this.audio.jet(false);
     this.ui.show('screen-pause', true);
-    this.ui.showRematch(!!this.boss && this.boss.state === 'done');
+    this.ui.showRematch(!!this.boss && this.boss.state === 'done' && !this.net.isGuest);
+    this.ui.show('btn-reset', !this.net.isGuest); // el invitado no toca su partida guardada
     this.save();
   }
 
@@ -380,7 +386,61 @@ class Game {
     this.ui.toast(msg, 'good');
   }
 
-  addText(x, y, text, color) { this.texts.add(x, y, text, color); }
+  addText(x, y, text, color) {
+    this.texts.add(x, y, text, color);
+    if (this.net.linked) this.net.send('tx', { x: Math.round(x), y: Math.round(y), s: text, c: color });
+  }
+
+  /** sonido que también escucha el otro jugador online (pelea, escenas) */
+  sfx(name) {
+    this.audio.play(name);
+    if (this.net.isHost) this.net.send('sfx', { n: name });
+  }
+
+  /** temblor de pantalla para los dos */
+  shakeAll(a) {
+    this.shake(a);
+    if (this.net.isHost) this.net.send('sh', { a });
+  }
+
+  /** mejoras que llegan por la red (invitado) */
+  applyUpgrades(up) {
+    this.upgrades = { ...up };
+    this.stats = computeStats(this.upgrades);
+  }
+
+  /** online: crear la sala con la partida actual (o con la guardada, si estás en el título) */
+  hostOnline() {
+    if (this.state === 'title' || this.state === 'splash') {
+      this.ui.show('screen-online', false);
+      if (this.savedData) this.continueGame(); else this.startNew();
+      this.ui.show('screen-online', true);
+    }
+    this.net.host();
+  }
+
+  /** online: el invitado arma la partida del anfitrión */
+  enterGuestGame(w) {
+    this.freshGame(w.seed);
+    this.world.importDug(w.dug);
+    if (w.lava) this.world.importLava(w.lava);
+    this.money = w.money;
+    this.applyUpgrades(w.up);
+    this.inv.torch = w.inv;
+    this.openedGifts = w.gifts.slice();
+    for (const ch of this.world.chests) if (this.openedGifts.includes(ch.id)) { ch.opened = true; ch.open = 1; }
+    this.torches = w.torches.map(([x, y, seed]) => ({ x, y, seed }));
+    this.boss = new Boss(this, w.bossDone);
+    const p = new Player(this, w.guestChar);
+    p.x = w.at[0]; p.y = w.at[1]; p.peakY = p.y;
+    this.players = [p];
+    this.popi = null;
+    for (const id of ['screen-title', 'screen-splash', 'screen-pause', 'screen-online', 'screen-shop']) this.ui.show(id, false);
+    this.ui.setPlaying(true);
+    this.state = 'play';
+    this.cam.x = p.cx - this.vw / 2; this.cam.y = p.cy - this.vh / 2;
+    this.chatter.reset(p);
+  }
 
   shake(a) { this.shakeT = 0.25; this.shakeA = Math.max(this.shakeA, a); }
 
@@ -393,36 +453,54 @@ class Game {
     const cols = it.glow ? ['#ffffff', `rgb(${it.glow.join(',')})`] : ['#fff0a0', '#ffd34d'];
     for (let i = 0; i < 4; i++) this.particles.add({ x: player.cx, y: player.cy, vx: (Math.random() - 0.5) * 60, vy: -30 - Math.random() * 40, life: 0.5, max: 0.5, color: cols[i % 2], star: true, grav: 60 });
     if (it.value >= 300) this.toast(`¡${it.name}! +${fmtMoney(it.value)}`, null, 'good');
+    if (player.remote) {
+      this.net.send('sfx', { n: it.sfx });
+      if (it.value >= 300) this.net.send('toast', { m: `¡${it.name}! +${fmtMoney(it.value)}` });
+    }
     this.tip('money', '¡Plata! Gastala en el Taller, la casa rodante a la derecha del patio');
   }
 
   buy(id) {
+    if (this.net.isGuest) { this.net.send('buy', { id }); return; }
+    const r = this.doBuy(id);
+    if (!r) return;
+    this.audio.play(r.ok ? 'buy' : 'deny');
+    if (r.msg) this.ui.toast(r.msg, 'good');
+  }
+
+  /** compra una mejora (la plata y las mejoras son del equipo) */
+  doBuy(id) {
     const up = UPGRADES.find((u) => u.id === id);
     const lvl = this.upgrades[id];
-    if (lvl >= up.levels.length - 1) return;
+    if (lvl >= up.levels.length - 1) return null;
     const cost = up.levels[lvl + 1][1];
-    if (this.money < cost) { this.audio.play('deny'); return; }
+    if (this.money < cost) return { ok: false };
     this.money -= cost;
     this.upgrades[id] = lvl + 1;
     this.stats = computeStats(this.upgrades);
     if (id === 'bateria') for (const p of this.players) p.energy = this.stats.energyMax;
-    this.audio.play('buy');
     const newTier = up.tiers && up.tiers[lvl + 1] !== up.tiers[lvl] ? up.tiers[lvl + 1] : null;
-    this.ui.toast(newTier ? `¡Nuevo: ${newTier}!` : `¡${up.name} mejorada!`, 'good');
-    this.ui.renderShop();
+    if (this.state === 'shop') this.ui.renderShop();
     this.save();
+    return { ok: true, msg: newTier ? `¡Nuevo: ${newTier}!` : `¡${up.name} mejorada!` };
   }
 
   buySupply(id, n) {
+    if (this.net.isGuest) { this.net.send('supply', { id, n }); return; }
+    const r = this.doBuySupply(id, n);
+    this.audio.play(r.ok ? 'buy' : 'deny');
+    if (r.msg) this.ui.toast(r.msg, 'good');
+  }
+
+  doBuySupply(id, n) {
     const it = SUPPLIES[id];
     const cost = it.price * n;
-    if (this.money < cost) { this.audio.play('deny'); return; }
+    if (this.money < cost) return { ok: false };
     this.money -= cost;
     this.inv[id] += n;
-    this.audio.play('buy');
-    this.ui.toast(`+${n} ${it.name.toLowerCase()}${n > 1 ? 's' : ''}`, 'good');
-    this.ui.renderShop();
+    if (this.state === 'shop') this.ui.renderShop();
     this.save();
+    return { ok: true, msg: `+${n} ${it.name.toLowerCase()}${n > 1 ? 's' : ''}` };
   }
 
   placeTorch(p) {
@@ -430,13 +508,24 @@ class Game {
     if (y < (SURFACE + 1) * TILE) { this.toast('Las antorchas se ponen bajo tierra', 'torchsky'); return; }
     if (this.inv.torch <= 0) { this.toast('No tenés antorchas: compralas en el Taller', 'notorch'); return; }
     if (this.torches.some((t) => Math.abs(t.x - x) < 6 && Math.abs(t.y - y) < 6)) return;
-    this.inv.torch--;
-    this.torches.push({ x, y, seed: Math.random() * 10 });
     this.audio.play('torch');
+    if (this.net.isGuest) this.net.send('torch', { x, y }); // las antorchas las anota el anfitrión
+    else this.addTorch(x, y);
     for (let i = 0; i < 6; i++) this.particles.add({ x, y, vx: (Math.random() - 0.5) * 30, vy: -Math.random() * 30, life: 0.5, max: 0.5, color: '#ffd34d', size: 1, grav: 40 });
   }
 
+  /** agrega una antorcha (en el anfitrión también las que pone el invitado) */
+  addTorch(x, y, fromNet = false) {
+    if (this.inv.torch <= 0) return;
+    if (fromNet && this.torches.some((t) => Math.abs(t.x - x) < 6 && Math.abs(t.y - y) < 6)) return;
+    this.inv.torch--;
+    this.torches.push({ x, y, seed: Math.random() * 10 });
+    this.net.torchVer++;
+    if (fromNet) this.audio.play('torch');
+  }
+
   togglePopi() {
+    if (this.net.isGuest) { this.ui.toast('A Popi lo maneja quien creó la sala', 'warn'); return; }
     if (this.popi) {
       this.popi.poof();
       this.popi = null;
@@ -465,9 +554,16 @@ class Game {
     if (this.state === 'shop') this.state = 'play';
   }
 
-  openChest(ch, player) {
-    if (this.state !== 'play' || ch.opened) return;
+  openChest(ch, player, fromNet = false) {
+    if (ch.opened) return;
+    // online: el cofre lo abre el anfitrión y los dos ven el regalo
+    if (this.net.isGuest && !fromNet) { if (!ch.asked) { ch.asked = true; this.net.send('chest', { id: ch.id }); setTimeout(() => { ch.asked = false; }, 2000); } return; }
+    if (this.state !== 'play' && !fromNet) return;
+    if (fromNet && !['play', 'paused', 'shop'].includes(this.state)) { ch.opened = true; ch.open = 1; return; }
+    if (this.state === 'shop') this.closeShop();
+    if (this.state === 'paused') this.ui.show('screen-pause', false);
     ch.opened = true;
+    if (this.net.isHost) this.net.send('chestOpen', { id: ch.id });
     this.state = 'cinematic';
     this.cine = { ch, t: 0, player };
     player.vx = 0;
@@ -514,13 +610,18 @@ class Game {
 
   faint(player, reason) {
     if (this.state !== 'play') return;
-    if (this.boss && this.boss.fighting) { this.boss.playerDown(player); return; }
+    if (this.boss && this.boss.fighting) {
+      // online: si cae uno en la pelea, vuelven los dos (el anfitrión decide)
+      if (this.net.isGuest) { this.state = 'faint'; player.dead = true; this.audio.jet(false); this.net.send('down'); return; }
+      this.boss.playerDown(player);
+      return;
+    }
     this.state = 'faint';
     player.dead = true;
     this.audio.jet(false);
     this.audio.play('faint');
     this.counters.deaths++;
-    const lost = Math.floor(this.money * DEATH_MONEY_PENALTY);
+    const lost = this.net.isGuest ? 0 : Math.floor(this.money * DEATH_MONEY_PENALTY);
     for (let i = 0; i < 14; i++) this.particles.add({ x: player.cx, y: player.cy, vx: (Math.random() - 0.5) * 60, vy: -Math.random() * 60, life: 0.8, max: 0.8, color: '#ffffff', star: true, grav: 40 });
     setTimeout(() => this.ui.fade(true), 400);
     setTimeout(() => {
@@ -596,7 +697,8 @@ class Game {
       if (inp.sfxPressed) this.ui.toggleSfx();
       if (inp.autoPressed) this.ui.toggleAuto();
       this.counters.playTime += dt;
-      this.world.updateLava(dt, this.cam.x, this.cam.y, this.vw, this.vh);
+      const guest = this.net.isGuest; // online: lo compartido lo maneja el anfitrión
+      if (!guest) this.world.updateLava(dt, this.cam.x, this.cam.y, this.vw, this.vh);
       for (const [x, y] of this.world.steam.splice(0)) {
         this.particles.add({ x, y, vx: (Math.random() - 0.5) * 14, vy: -14 - Math.random() * 16, life: 0.9, max: 0.9, color: 'rgba(120,100,100,0.55)', size: 2, grav: -20, smoke: true });
         if (Math.random() < 0.3) this.particles.add({ x, y, vx: (Math.random() - 0.5) * 30, vy: -30, life: 0.4, max: 0.4, color: '#ffd34d', size: 1, grav: 60 });
@@ -604,22 +706,23 @@ class Game {
       // el compañero bot se esconde durante las escenas y la pelea con Aguilus (ahí lo maneja la escena)
       const busy = !!(this.boss && (this.boss.state === 'scene' || this.boss.fighting));
       for (const pl of this.players) {
+        if (pl.remote) { this.net.stepPuppet(pl, dt); continue; }
         if (!pl.ai) { pl.update(dt, inp); continue; }
         const on = !busy && !p.dead;
         if (on && !pl.ai.active) pl.ai.place(p, true);
         pl.ai.active = on;
         if (on) pl.update(dt, pl.ai.input(dt, p));
       }
-      this.chatter.update(dt);
-      if (this.popi) this.popi.update(dt);
+      if (!guest) this.chatter.update(dt);
+      if (this.popi) { if (guest) this.popi.anim += dt; else this.popi.update(dt); }
       // Popi espera en el patio: al acercarte te ladra y te lo podés llevar
-      const nearDog = !this.popi && Math.abs(p.cx - (DOG_POS.x + 10)) < 22 && Math.abs(p.y + p.h - (DOG_POS.y + 14)) < 12;
+      const nearDog = !guest && !this.popi && Math.abs(p.cx - (DOG_POS.x + 10)) < 22 && Math.abs(p.y + p.h - (DOG_POS.y + 14)) < 12;
       if (nearDog && !this.wasNearDog) {
         this.audio.play('bark');
         this.addText(DOG_POS.x + 10, DOG_POS.y - 2, '¡GUAU!', '#fff4e0');
       }
       this.wasNearDog = nearDog;
-      if (this.boss) this.boss.update(dt, p);
+      if (this.boss) { if (guest) this.boss.t += dt; else this.boss.update(dt); }
       const enteredShop = p.inShop && !nearDog && !this.wasInShop;
       this.wasInShop = p.inShop && !nearDog;
       if (this.boss && this.boss.fighting) {
@@ -627,7 +730,10 @@ class Game {
         const held = !!p.heldRock;
         this.ui.setActButton(held ? 'LANZAR' : null);
         this.ui.setPrompt(held && !this.ui.isTouch ? 'Presioná E para tirarle la roca a Aguilus' : null);
-        if (inp.interact && held) this.boss.throwRock(p, inp);
+        if (inp.interact && held) {
+          const aim = !this.ui.isTouch && this.input.mouseSeen ? { mx: inp.mx, my: inp.my } : null;
+          if (guest) { this.net.send('throw', { aim }); p.heldRock = null; } else this.boss.throwRock(p, aim);
+        }
       } else if (nearDog) {
         this.ui.setPrompt(this.ui.isTouch ? null : 'Presioná E para llevar a Popi');
         this.ui.setActButton('POPI');
@@ -649,7 +755,7 @@ class Game {
       }
       this.counters.best = Math.max(this.counters.best, p.depth);
       this.audio.setDepth(p.depth);
-      this.pickups.update(dt);
+      if (!guest) this.pickups.update(dt);
       this.updateTips(p);
       this.saveTimer += dt;
       if (this.saveTimer > 12) { this.saveTimer = 0; this.save(); }
@@ -690,6 +796,8 @@ class Game {
     const cy0 = this.cam.y / TILE - 12, cy1 = (this.cam.y + this.vh) / TILE + 12;
     if (this.popi) this.lights.push([this.popi.cx / TILE, this.popi.cy / TILE, 3.5, 0.85]);
     if (this.boss && this.boss.fighting) this.lights.push([this.boss.x / TILE, (this.boss.y - 20) / TILE, 6, 0.9]);
+    // online: en las escenas que manda el anfitrión, los actores llevan su luz (tu personaje quedó en otro lado)
+    if (this.state === 'remoteScene' && this.scene) for (const ac of Object.values(this.scene.actors)) this.lights.push([ac.x / TILE, (ac.y - 10) / TILE, 6, 0.95]);
     for (const tq of this.torches) {
       const tx = tq.x / TILE, ty = tq.y / TILE;
       if (tx < cx0 || tx > cx1 || ty < cy0 || ty > cy1) continue;
@@ -704,6 +812,7 @@ class Game {
       const a = Math.random() * Math.PI * 2, d = 10 + Math.random() * 60;
       this.particles.add({ x: p.cx + Math.cos(a) * d, y: p.cy + Math.sin(a) * d * 0.7, vx: (Math.random() - 0.5) * 5, vy: (Math.random() - 0.5) * 4, life: 2.5 + Math.random() * 2, max: 4, color: 'rgba(255,238,205,0.55)', size: 1, grav: 1 });
     }
+    this.net.update(dt);
     this.particles.update(dt, this.world);
     this.texts.update(dt);
     this.updateCamera(dt);
@@ -765,6 +874,11 @@ class Game {
     if ((this.state === 'intro' || this.state === 'scene') && this.scene) {
       this.scene.updateCam(dt);
       tx = this.cam.x; ty = this.cam.y;
+    } else if (this.state === 'remoteScene' && this.net.sceneCam) {
+      // online: la escena la maneja el anfitrión; la cámara sigue a la suya
+      const c = this.net.sceneCam;
+      this.zoom += (c.z - this.zoom) * Math.min(1, dt * 6);
+      tx = c.x - vw / this.zoom / 2; ty = c.y - vh / this.zoom / 2;
     } else if (this.state === 'descend') {
       const d = this.descend, u = clamp(d.t / d.dur, 0, 1);
       const e = u < 0.5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2;
@@ -868,7 +982,7 @@ class Game {
       drawTorch(ctx, x, y, t, tq.seed);
     }
     this.pickups.draw(ctx, camX, camY, t);
-    const inGame = !['splash', 'title', 'intro', 'scene'].includes(this.state);
+    const inGame = !['splash', 'title', 'intro', 'scene', 'remoteScene'].includes(this.state);
     if (this.boss && inGame) this.boss.draw(ctx, camX, camY);
     if (this.scene) this.scene.draw(ctx, camX, camY);
     if (this.popi && inGame) this.popi.draw(ctx, camX, camY);
