@@ -957,29 +957,6 @@ class Game {
     return Math.max(0, SURFACE * TILE - vh * 0.6 - camY);
   }
 
-  /** rayos de sol que acompañan a la cámara cuando baja del cielo y se posan sobre el patio */
-  drawSunRays(ctx, vw, vh, t) {
-    const d = this.scene.drop, u = clamp(d.t / d.dur, 0, 1);
-    const a = Math.sin(Math.PI * Math.min(1, u * 1.15)) ** 1.5 * 0.16;
-    if (a <= 0.005) return;
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    const rays = [[0.18, 26, 0.0], [0.38, 14, 1.3], [0.55, 34, 2.1], [0.74, 18, 3.4], [0.9, 24, 4.6]];
-    for (const [fx, w, ph] of rays) {
-      const k = a * (0.65 + 0.35 * Math.sin(t * 0.9 + ph));
-      const x0 = vw * fx + vw * 0.25 - u * vw * 0.12, len = vh * 1.2;
-      const gr = ctx.createLinearGradient(0, 0, 0, len);
-      gr.addColorStop(0, `rgba(255,236,170,${k})`);
-      gr.addColorStop(1, 'rgba(255,236,170,0)');
-      ctx.fillStyle = gr;
-      ctx.beginPath();
-      ctx.moveTo(x0, -4); ctx.lineTo(x0 + w, -4);
-      ctx.lineTo(x0 + w * 2.2 - len * 0.45, len); ctx.lineTo(x0 - len * 0.45, len);
-      ctx.closePath(); ctx.fill();
-    }
-    ctx.restore();
-  }
-
   render() {
     // zoom de cámara (solo lo usa la intro): achica la vista y agranda los pixeles
     const z = this.zoom || 1;
@@ -1058,7 +1035,6 @@ class Game {
     const inGame = !['splash', 'title', 'intro', 'scene', 'remoteScene'].includes(this.state);
     if (this.boss && inGame) this.boss.draw(ctx, camX, camY);
     if (this.scene) this.scene.draw(ctx, camX, camY);
-    if (this.state === 'intro' && this.scene && this.scene.drop) this.drawSunRays(ctx, vw, vh, t);
     if (this.popi && inGame) this.popi.draw(ctx, camX, camY);
     // el compañero se dibuja primero: el personaje que manejás siempre queda adelante
     if (inGame) for (const p of [...this.players].reverse()) if (!p.ai || (p.ai.active && !this.players[0].dead)) p.draw(ctx, camX, camY);
