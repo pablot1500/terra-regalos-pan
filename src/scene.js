@@ -28,6 +28,7 @@ export class Scene {
     this.follow = null;
     this.fixed = null;
     this.tween = null;
+    this.drop = null;
     this.zoomT = 1;
     this.line = null;
     this.noteOpen = false;
@@ -98,6 +99,30 @@ export class Scene {
     this.ui.introSay(null);
     this.ui.introNote(text, () => { this.noteOpen = false; this.g.audio.play('paper'); });
     return () => !this.noteOpen;
+  }
+
+  /**
+   * la cámara baja del cielo (desde donde esté) hasta su encuadre (`fixed` o `follow`) con el zoom `z`,
+   * en `dur` segundos; el zoom se acerca recién en el último tramo
+   */
+  descend(dur, z = this.zoomT) {
+    const g = this.g, c = g.cam;
+    this.setZoom(z);
+    const z0 = g.zoom;
+    g.zoom = this.zoomT;
+    const tg = this.camTarget();
+    const cx1 = tg.x + this.viewW() / 2, cy1 = tg.y + this.viewH() / 2;
+    g.zoom = z0;
+    this.drop = { t: 0, dur, z0, z1: this.zoomT, cx0: c.x + this.viewW() / 2, cy0: c.y + this.viewH() / 2, cx1, cy1 };
+    return () => this.drop === null;
+  }
+
+  /** 0 → 1: cuánto se nota el parallax de la bajada (sube de a poco para que el fondo no salte) */
+  dropParallax() {
+    const d = this.drop;
+    if (!d) return 0;
+    const u = clamp(d.t / (d.dur * 0.3), 0, 1);
+    return u * u * (3 - 2 * u);
   }
 
   pan(x, y, dur) {
@@ -204,6 +229,10 @@ export class Scene {
       tw.t += dt;
       if (tw.t >= tw.dur) this.tween = null;
     }
+    if (this.drop) {
+      this.drop.t += dt;
+      if (this.drop.t >= this.drop.dur) { this.g.zoom = this.drop.z1; this.drop = null; this.snapCam(); }
+    }
     if (this.waitFn && this.waitFn()) { this.waitFn = null; this.step(); }
   }
 
@@ -222,13 +251,22 @@ export class Scene {
       return { x: mx - this.viewW() / 2, y: my - this.viewH() * 0.6 };
     }
     // el punto fijo queda un poco arriba del centro: abajo va la caja de diálogo
-    if (this.fixed) return { x: this.fixed.x - this.viewW() / 2, y: this.fixed.y - this.viewH() * 0.38 };
+    if (this.fixed) return { x: this.fixed.x - this.viewW() / 2, y: this.fixed.y - this.viewH() * (this.fixed.k ?? 0.38) };
     return { x: g.cam.x, y: g.cam.y };
   }
 
   /** mueve la cámara del juego (la llama Game.updateCamera durante las escenas) */
   updateCam(dt) {
     const c = this.g.cam, g = this.g;
+    if (this.drop) {
+      // bajada del cielo: movimiento suave de punta a punta y el zoom que se acerca al final
+      const d = this.drop, u = clamp(d.t / d.dur, 0, 1), e = ease(u);
+      const uz = clamp((u - 0.45) / 0.55, 0, 1);
+      g.zoom = d.z0 + (d.z1 - d.z0) * uz * uz * (3 - 2 * uz);
+      c.x = d.cx0 + (d.cx1 - d.cx0) * e - g.vw / g.zoom / 2;
+      c.y = d.cy0 + (d.cy1 - d.cy0) * e - g.vh / g.zoom / 2;
+      return;
+    }
     // el zoom va despacio hacia su objetivo y se queda clavado al llegar
     const dz = this.zoomT - g.zoom;
     g.zoom = Math.abs(dz) < 0.004 ? this.zoomT : g.zoom + dz * Math.min(1, dt * 2.4);

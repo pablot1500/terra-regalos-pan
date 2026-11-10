@@ -634,16 +634,23 @@ export class Structures {
   }
 
   /** Fondo del patio (pared, árbol, tendedero) — va detrás de todo */
-  drawBackdrop(ctx, camX, camY, t) {
-    const gy = S * TILE - camY;
-    ctx.drawImage(this.brick, 216 - camX, gy - 40);
-    ctx.drawImage(this.hedgeL, 0 - camX, gy - 60);
-    ctx.drawImage(this.gate, GATE_X - camX, gy - 44);
-    ctx.drawImage(this.tree, 30 * TILE - camX, gy - 72);
+  drawBackdrop(ctx, camX, camY, t, lift = 0) {
+    const g0 = S * TILE - camY;
+    // parallax al bajar del cielo: la pared del fondo sube un poco más que el piso
+    // (y su último renglón se estira hasta el suelo, así sigue apoyada)
+    const l = Math.round(lift * 0.22), gy = g0 - l;
+    const stand = (img, x, y) => {
+      ctx.drawImage(img, x, y);
+      if (l > 0) ctx.drawImage(img, 0, img.height - 1, img.width, 1, x, y + img.height, img.width, l);
+    };
+    stand(this.brick, 216 - camX, gy - 40);
+    stand(this.hedgeL, 0 - camX, gy - 60);
+    stand(this.gate, GATE_X - camX, gy - 44);
+    stand(this.tree, 30 * TILE - camX, gy - 72);
     // tendedero
     const p1 = 45 * TILE - camX, p2 = 56 * TILE - camX, top = gy - 30;
     ctx.fillStyle = '#6b6f78';
-    ctx.fillRect(p1, top, 1, 30); ctx.fillRect(p2, top, 1, 30);
+    ctx.fillRect(p1, top, 1, 30 + l); ctx.fillRect(p2, top, 1, 30 + l);
     ctx.fillRect(p1 - 2, top, 5, 1); ctx.fillRect(p2 - 2, top, 5, 1);
     const sag = (u) => top + 1 + Math.round(Math.sin(u * Math.PI) * 4);
     ctx.fillStyle = '#d9dde1';
@@ -655,7 +662,7 @@ export class Structures {
       ctx.drawImage(spr, xx, sag(u) + 1);
     });
     // arbustos contra la medianera
-    for (const [bx, spr] of this.bushes) ctx.drawImage(spr, Math.round(bx) - camX, gy - spr.height);
+    for (const [bx, spr] of this.bushes) stand(spr, Math.round(bx) - camX, gy - spr.height);
   }
 
   /** piso de madera del departamento: va encima de los bloques de cemento */

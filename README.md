@@ -56,6 +56,7 @@ En iPhone/iPad conviene agregarlo a la pantalla de inicio (Compartir → Agregar
 ## Intro y pantalla de inicio
 
 - Al abrir el juego hay que tocar la pantalla una vez (el navegador no deja sonar audio sin un toque) y arranca la **intro**:
+  - El botón se desvanece y la cámara baja del cielo hasta el patio, con rayos de sol y parallax (el cielo, las nubes, la costa, el barrio y la pared del fondo se mueven a distinto ritmo que el piso). Recién cuando llega, entran los personajes.
   - Pablo y Panchi llegan al patio charlando sobre el cumple y lo que pasó el año pasado con los regalos, y Popi los saluda.
   - Suben al departamento y Pablo busca los regalos debajo de la cama. En su lugar encuentra una nota anónima (y una pluma sospechosa): los regalos están "muy, muy abajo".
   - La cámara baja hasta el primer cofre y vuelve a subir al cielo.

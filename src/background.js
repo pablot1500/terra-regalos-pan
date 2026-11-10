@@ -212,14 +212,20 @@ export class Background {
     this.birds = [{ x: 120, y: 120, sp: 18 }, { x: 132, y: 116, sp: 18 }, { x: 400, y: 150, sp: 14 }, { x: 640, y: 190, sp: 10 }];
   }
 
-  draw(ctx, camX, camY, vw, vh, t) {
+  /**
+   * lift: cuánto está la cámara por arriba del patio mientras baja del cielo (intro y "bajar al juego").
+   * Cada capa sube una parte de eso según lo lejos que está (p = 1 se mueve como el piso, 0 queda quieta),
+   * así al bajar las capas del fondo se mueven más lento que el patio y se nota la profundidad.
+   */
+  draw(ctx, camX, camY, vw, vh, t, lift = 0) {
     const gy = SURFACE * TILE - camY;
+    const L = (p) => Math.round(lift * (1 - p));
     ctx.fillStyle = '#0b0810';
     ctx.fillRect(0, 0, vw, vh);
     if (gy <= 0) return;
 
     // cielo en bandas
-    const skyTopY = gy - 300;
+    const skyTopY = gy - 300 - L(0.1);
     const bandH = 300 / SKY.length;
     ctx.fillStyle = SKY[0];
     ctx.fillRect(0, 0, vw, Math.min(gy, Math.max(0, skyTopY + bandH)));
@@ -237,7 +243,7 @@ export class Background {
     }
 
     // sol
-    const sx = Math.round(vw * 0.78 - camX * 0.02), sy = Math.round(gy - 200);
+    const sx = Math.round(vw * 0.78 - camX * 0.02), sy = Math.round(gy - 200) - L(0.06);
     if (sy > -30) {
       ctx.fillStyle = 'rgba(255,240,180,0.25)';
       ctx.beginPath(); ctx.arc(sx, sy, 20, 0, Math.PI * 2); ctx.fill();
@@ -252,7 +258,7 @@ export class Background {
       let xx = (c.x + t * c.sp - camX * c.par) % span;
       if (xx < 0) xx += span;
       xx -= 80;
-      const yy = Math.round(gy - 300 + c.y);
+      const yy = Math.round(gy - 300 + c.y) - L(0.2 + c.par);
       if (xx > vw || yy > gy) continue;
       ctx.drawImage(c.spr, Math.round(xx), yy);
     }
@@ -263,7 +269,7 @@ export class Background {
       let xx = (b.x + t * b.sp - camX * 0.3) % span;
       if (xx < 0) xx += span;
       xx = Math.round(xx - 40);
-      const yy = Math.round(gy - 300 + b.y + Math.sin(t * 2 + b.x) * 3);
+      const yy = Math.round(gy - 300 + b.y + Math.sin(t * 2 + b.x) * 3) - L(0.45);
       const flap = Math.floor(t * 6 + b.x) % 2;
       ctx.fillStyle = '#3b4a5a';
       ctx.fillRect(xx, yy, 1, 1);
@@ -273,8 +279,11 @@ export class Background {
 
     // costa y mar
     const fx = Math.round(-camX * P_FAR);
-    const fy = gy - 100;
+    const lf = L(0.3);
+    const fy = gy - 100 - lf;
     ctx.drawImage(this.far, fx, fy);
+    // al subir la capa, el último renglón se estira hasta el suelo para que no quede un hueco
+    if (lf > 0) ctx.drawImage(this.far, 0, FAR_H - 1, this.far.width, 1, fx, fy + FAR_H, this.far.width, lf);
     // destellos del agua
     for (let i = 0; i < 26; i++) {
       const u = SEA_U + 10 + ((i * 97) % 900);
@@ -286,7 +295,9 @@ export class Background {
     }
     // barrio
     const mx = Math.round(-camX * P_MID);
-    ctx.drawImage(this.mid.c, mx, gy - 24 - this.mid.base);
+    const lm = L(0.55), my = gy - 24 - this.mid.base - lm, mc = this.mid.c;
+    ctx.drawImage(mc, mx, my);
+    if (lm > 0) ctx.drawImage(mc, 0, mc.height - 1, mc.width, 1, mx, my + mc.height, mc.width, lm);
   }
 
   pixelCircle(ctx, cx, cy, r, col) {

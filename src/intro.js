@@ -21,16 +21,28 @@ P.D.: Traigan pala. Y paciencia.`;
 export function* introScript(sc) {
   const g = sc.g;
   const A = sc.actors;
-  sc.actor('pancha', 640, FLOOR, { phase: 0 }); // entran por el portón
-  sc.actor('pablo', 660, FLOOR, { phase: 1.3 });
-  sc.follow = ['pancha', 'pablo'];
-  sc.setZoom(1.5);
-  sc.snapCam();
-  sc.caption('El día del cumple de Panchita...');
+  // la cámara arranca en el cielo (donde estaba el botón de empezar) y baja hasta el patio;
+  // recién cuando llega aparecen los dos, entrando caminando desde la derecha
+  const SPOT = 560;
+  sc.actor('pancha', SPOT, FLOOR, { phase: 0, hidden: true });
+  sc.actor('pablo', SPOT, FLOOR, { phase: 1.3, hidden: true });
+  sc.fixed = { x: SPOT, y: FLOOR, k: 0.6 };
   sc.ui.fade(false);
-  yield sc.wait(1.6);
-  sc.walk('pancha', 470); sc.walk('pablo', 492);
-  yield sc.wait(1.2);
+  yield sc.wait(0.35);
+  yield sc.descend(4.8, 1.5);
+  sc.caption('El día del cumple de Panchita...');
+  yield sc.wait(0.5);
+  const edge = SPOT + sc.viewW() / 2;
+  Object.assign(A.pancha, { x: edge + 10, hidden: false });
+  Object.assign(A.pablo, { x: edge + 30, hidden: false });
+  sc.walk('pancha', 470, 42); sc.walk('pablo', 492, 42);
+  yield () => A.pancha.x < SPOT + 40;
+  sc.fixed = null;
+  sc.follow = ['pancha', 'pablo'];
+  sc.camSpeed = 1.6;
+  yield sc.wait(1.4);
+  sc.camSpeed = null;
+  A.pancha.speed = 30; A.pablo.speed = 30;
   sc.caption(null);
   yield sc.say('pancha', '¡Llegamos! ¡Qué lindo festejar mi cumple juntos otra vez!');
   yield sc.say('pablo', 'Otro año más aguantándome... sos una campeona.');
