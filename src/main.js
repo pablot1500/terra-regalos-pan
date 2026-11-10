@@ -57,6 +57,8 @@ function computeStats(u) {
   };
 }
 
+const SPLASH_UP = 380; // cuánto más arriba que el título está la cámara antes de la intro
+
 class Game {
   constructor(boot = {}) {
     this.canvas = document.getElementById('game');
@@ -92,6 +94,7 @@ class Game {
     this.ui = new UI(this);
     this.resize();
     this.cam = this.titleCam();
+    this.cam.y -= SPLASH_UP; // arranca en la pantalla del botón, bien arriba en el cielo
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 200));
     document.addEventListener('visibilitychange', () => { if (document.hidden) { this.save(); if (this.state === 'play') this.pause(); } });
@@ -249,7 +252,7 @@ class Game {
     // el botón se desvanece mientras la cámara empieza a bajar
     const sp = document.getElementById('screen-splash');
     sp.classList.add('leaving');
-    setTimeout(() => { this.ui.show('screen-splash', false); sp.classList.remove('leaving'); }, 600);
+    setTimeout(() => { this.ui.show('screen-splash', false); sp.classList.remove('leaving'); }, 950);
     this.ui.show('screen-title', false);
     this.ui.setIntro(true);
     this.state = 'intro';
@@ -920,7 +923,8 @@ class Game {
     } else if (this.state === 'title' || this.state === 'splash') {
       const tc = this.titleCam();
       tx = tc.x + Math.sin(this.time * 0.12) * 60;
-      ty = tc.y;
+      // antes de la intro la cámara está bien arriba: de ahí baja hasta el patio
+      ty = this.state === 'splash' ? tc.y - SPLASH_UP : tc.y;
     } else if (this.boss && this.boss.fighting) {
       // pelea: encuadre fijo con el piso abajo, para ver a Aguilus volando arriba
       const p = this.players[0];
@@ -942,18 +946,15 @@ class Game {
   }
 
   /**
-   * parallax vertical cuando la cámara baja del cielo (intro y "bajar al juego"):
-   * cuántos px está la cámara por arriba del encuadre del patio, por cuánto se nota el efecto
+   * parallax vertical cuando la cámara baja del cielo en la intro:
+   * cuántos px está la cámara por arriba del encuadre del patio
    */
   skyLift(camY, vh) {
-    let w = 0;
-    if (this.state === 'intro' && this.scene) w = this.scene.dropParallax();
-    else if (this.state === 'descend' && this.descend) {
-      const u = clamp(this.descend.t / (this.descend.dur * 0.3), 0, 1);
-      w = u * u * (3 - 2 * u);
-    }
-    if (!w) return 0;
-    return Math.max(0, SURFACE * TILE - vh * 0.6 - camY) * w;
+    // va prendido desde la pantalla del botón y durante toda la bajada, siempre con la misma fuerza:
+    // así cada capa se mueve siempre para el mismo lado y las lejanas más lento que las cercanas
+    const on = this.state === 'splash' || (this.state === 'intro' && this.scene && this.scene.drop);
+    if (!on) return 0;
+    return Math.max(0, SURFACE * TILE - vh * 0.6 - camY);
   }
 
   /** rayos de sol que acompañan a la cámara cuando baja del cielo y se posan sobre el patio */

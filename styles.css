@@ -94,7 +94,7 @@ button { font-family: var(--font); cursor: pointer; }
 }
 @keyframes soft-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025); } }
 #screen-splash.leaving { pointer-events: none; }
-#screen-splash.leaving .splash-btn { animation: splash-out 0.55s ease-in forwards; }
+#screen-splash.leaving .splash-btn { animation: splash-out 0.9s ease-in forwards; }
 @keyframes splash-out {
   0% { opacity: 1; transform: scale(1); }
   30% { opacity: 1; transform: scale(1.08); }

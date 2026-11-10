@@ -117,14 +117,6 @@ export class Scene {
     return () => this.drop === null;
   }
 
-  /** 0 → 1: cuánto se nota el parallax de la bajada (sube de a poco para que el fondo no salte) */
-  dropParallax() {
-    const d = this.drop;
-    if (!d) return 0;
-    const u = clamp(d.t / (d.dur * 0.3), 0, 1);
-    return u * u * (3 - 2 * u);
-  }
-
   pan(x, y, dur) {
     const c = this.g.cam;
     this.follow = null; this.fixed = null;

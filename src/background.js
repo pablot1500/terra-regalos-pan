@@ -243,7 +243,7 @@ export class Background {
     }
 
     // sol
-    const sx = Math.round(vw * 0.78 - camX * 0.02), sy = Math.round(gy - 200) - L(0.06);
+    const sx = Math.round(vw * 0.78 - camX * 0.02), sy = Math.round(gy - 200) - L(0.2);
     if (sy > -30) {
       ctx.fillStyle = 'rgba(255,240,180,0.25)';
       ctx.beginPath(); ctx.arc(sx, sy, 20, 0, Math.PI * 2); ctx.fill();

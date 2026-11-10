@@ -28,8 +28,7 @@ export function* introScript(sc) {
   sc.actor('pablo', SPOT, FLOOR, { phase: 1.3, hidden: true });
   sc.fixed = { x: SPOT, y: FLOOR, k: 0.6 };
   sc.ui.fade(false);
-  yield sc.wait(0.35);
-  yield sc.descend(4.8, 1.5);
+  yield sc.descend(7.5, 1.5);
   sc.caption('El día del cumple de Panchita...');
   yield sc.wait(0.5);
   const edge = SPOT + sc.viewW() / 2;
