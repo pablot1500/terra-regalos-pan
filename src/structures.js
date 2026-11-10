@@ -658,7 +658,9 @@ export class Structures {
     const items = [['shirt', 0.14], ['dress', 0.32], ['sock', 0.47], ['sock', 0.53], ['towel', 0.68], ['pants', 0.86]];
     items.forEach(([k, u], i) => {
       const spr = this.clothes[k];
-      const xx = Math.round(p1 + (p2 - p1) * u - spr.width / 2 + Math.sin(t * 1.7 + i) * 0.8);
+      // el lugar en la soga va en pixeles del arte (pegado a la soga y los palos, que se mueven
+      // con la cámara de a pixel real) y el vaivén del viento en pixeles reales, bien suave
+      const xx = p1 + Math.round((p2 - p1) * u - spr.width / 2) + Math.round(Math.sin(t * 1.7 + i) * 0.8 / px) * px;
       ctx.drawImage(spr, xx, sag(u) + 1);
     });
     // arbustos contra la medianera
