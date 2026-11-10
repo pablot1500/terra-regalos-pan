@@ -85,7 +85,7 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 - **Final:** Aguilus queda tirado, se rinde y les ruega que no lo dejen ahí abajo. Se abrazan los tres, salen volando por el pozo del cantero y aterrizan sobre las baldosas al lado del arbolito, donde Aguilus jadea, se recompone y se va volando. Termina con un chiste con Carlos y el cartel de fin.
 - Los guiones están en [`src/boss.js`](src/boss.js) (`encounterScript` y `victoryScript`); el sprite de Aguilus, en [`src/aguilus.js`](src/aguilus.js).
 - El medidor de la derecha marca la profundidad y dónde están los regalos.
-- La música cambia con la profundidad: dos canciones para la superficie (hasta 300 m), dos para la zona media (300 a 800 m) y dos para lo profundo (800 a 1500 m) y una épica de combate final al entrar al núcleo, con fundidos entre una y otra. Están escritas en texto en [`src/music.js`](src/music.js).
+- La música cambia con la profundidad: tres canciones para la superficie (hasta 300 m), tres para la zona media (300 a 800 m), tres para lo profundo (800 a 1500 m) y tres de combate final en el núcleo. Dentro de cada zona se alternan al azar, con fundidos entre una y otra. Cada vuelta de una canción suena distinta: la primera arranca sin batería, después entran una segunda voz que armoniza y los arpegios, hay redobles al final de cada vuelta y muchas suben un tono en la última. Hay varios instrumentos (cuadrada, campana, cuerda pulsada, coro, sierra épica) y ritmos (cumbia, latido, galope de batalla). Están escritas en texto en [`src/music.js`](src/music.js).
 - El progreso se guarda solo en el navegador (localStorage).
 
 ## Dónde cambiar cosas
