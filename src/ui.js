@@ -2,6 +2,7 @@
 import { UPGRADES, GIFTS, CHARACTERS, LAYERS, MAX_DEPTH, HP_MAX, SUPPLIES } from './config.js';
 import { ICON_URL, DOG, POPI, charPortrait } from './sprites.js';
 import { fmtMoney } from './util.js';
+import { MusicDirector } from './music.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -47,13 +48,16 @@ export class UI {
       this.show(id, open);
       if (game.state === 'paused') this.show('screen-pause', !open);
     };
-    for (const [btn, id] of [['btn-settings', 'screen-settings'], ['p-settings', 'screen-settings'], ['btn-controls', 'screen-controls'], ['p-controls', 'screen-controls']]) {
+    for (const [btn, id] of [['btn-settings', 'screen-settings'], ['p-settings', 'screen-settings'], ['btn-controls', 'screen-controls'], ['p-controls', 'screen-controls'], ['p-songs', 'screen-songs']]) {
       $(btn).addEventListener('click', () => { game.audio.unlock(); sub(id, true); });
     }
     $('settings-ok').addEventListener('click', () => sub('screen-settings', false));
     $('controls-ok').addEventListener('click', () => sub('screen-controls', false));
+    $('songs-ok').addEventListener('click', () => sub('screen-songs', false));
+    $('songs-auto').addEventListener('click', () => { if (game.audio.music) game.audio.music.release(); this.refreshSongs(); });
+    $('p-songs').addEventListener('click', () => this.refreshSongs());
     this.closeSub = () => {
-      for (const id of ['screen-settings', 'screen-controls']) if (!$(id).classList.contains('hidden')) { sub(id, false); return true; }
+      for (const id of ['screen-settings', 'screen-controls', 'screen-songs']) if (!$(id).classList.contains('hidden')) { sub(id, false); return true; }
       return false;
     };
     $('btn-new').addEventListener('click', () => { game.audio.unlock(); game.requestNewGame(); });
@@ -94,6 +98,38 @@ export class UI {
     try { localStorage.setItem('terra-regalos-pan:char', id); } catch { /* nada */ }
     document.querySelectorAll('.char').forEach((b) => b.classList.toggle('sel', b.dataset.char === id));
     if ($('btn-duo')) this.refreshAudioBtns();
+  }
+
+  /** arma la lista de canciones del menú de prueba y marca la que está sonando */
+  refreshSongs() {
+    const a = this.g.audio, m = a.music;
+    const list = $('songs-list');
+    const ZONES = ['Superficie (hasta 300 m)', 'Zona media (300 a 800 m)', 'Profundo (800 a 1500 m)', 'Núcleo (combate final)'];
+    list.innerHTML = '';
+    MusicDirector.list().forEach((songs, z) => {
+      const h = document.createElement('h3');
+      h.textContent = ZONES[z];
+      list.appendChild(h);
+      const row = document.createElement('div');
+      row.className = 'song-row';
+      songs.forEach((name, i) => {
+        const b = document.createElement('button');
+        b.className = 'btn small alt song';
+        b.textContent = name;
+        if (m && m.forced && m.forced.zone === z && m.forced.idx === i) b.classList.add('sel');
+        b.addEventListener('click', () => {
+          a.unlock();
+          if (!a.musicOn) { a.setMusic(true); this.refreshAudioBtns(); }
+          if (a.music) a.music.play(z, i);
+          this.refreshSongs();
+        });
+        row.appendChild(b);
+      });
+      list.appendChild(row);
+    });
+    const now = m && m.forced ? '♪ Sonando: ' + MusicDirector.list()[m.forced.zone][m.forced.idx]
+      : m ? '♪ Música normal: cambia según la profundidad' : '♪ La música arranca al tocar una canción';
+    $('songs-now').textContent = now + (a.musicOn ? '' : ' (la música está apagada)');
   }
 
   refreshAudioBtns() {

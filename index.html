@@ -136,9 +136,24 @@
           <button class="btn small alt" id="p-settings">Configuración</button>
           <button class="btn small alt" id="p-controls">Controles</button>
         </div>
+        <button class="btn small alt" id="p-songs">Probar canciones</button>
         <div class="row">
           <button class="btn small alt" id="btn-title">Ir al inicio</button>
           <button class="btn small danger" id="btn-reset">Borrar partida</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prueba de canciones (desde la pausa) -->
+    <div id="screen-songs" class="screen modal hidden">
+      <div class="panel pause">
+        <h2>Canciones</h2>
+        <p class="hint" id="songs-now"></p>
+        <div id="songs-list" class="songs"></div>
+        <p class="hint">Tocá una para escucharla (se repite). Al volver al juego, la música vuelve a cambiar según la profundidad.</p>
+        <div class="row">
+          <button class="btn small alt" id="songs-auto">Música normal</button>
+          <button class="btn" id="songs-ok">Listo</button>
         </div>
       </div>
     </div>

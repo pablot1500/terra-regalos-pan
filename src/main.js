@@ -348,6 +348,7 @@ class Game {
 
   resume() {
     this.ui.show('screen-pause', false);
+    if (this.audio.music) this.audio.music.release(); // fin del modo prueba de canciones
     this.state = 'play';
   }
 

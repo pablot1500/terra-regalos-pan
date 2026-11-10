@@ -190,6 +190,7 @@ export class MusicDirector {
     this.zone = 0;          // zona en la que está el jugador
     this.away = 0;          // tiempo que lleva el jugador fuera de la zona de la canción
     this.songIdx = COMPILED.map((z) => Math.floor(Math.random() * z.length));
+    this.forced = null;     // canción elegida a mano desde la pausa (modo prueba): {zone, idx}
     this.track = null;
     this.lastT = this.c.currentTime;
     this.start(0);
@@ -202,6 +203,28 @@ export class MusicDirector {
     while (z > 0 && depth < UP[z - 1]) z--;
     this.zone = z;
   }
+
+  /** lista de canciones por zona (para el menú de prueba) */
+  static list() {
+    return COMPILED.map((z) => z.map((s) => s.name));
+  }
+
+  /** modo prueba: suena esta canción (en loop) sin importar la profundidad */
+  play(zone, idx) {
+    this.forced = { zone, idx };
+    this.songIdx[zone] = idx;
+    if (this.track) this.fadeOut('force', 0.35);
+  }
+
+  /** sale del modo prueba: vuelve la música de la zona donde está el jugador */
+  release() {
+    if (!this.forced) return;
+    this.forced = null;
+    if (this.track && this.track.zone !== this.zone) this.fadeOut('zone');
+  }
+
+  /** zona que tiene que sonar: la elegida a mano o la de la profundidad */
+  get want() { return this.forced ? this.forced.zone : this.zone; }
 
   /** otra canción de la zona, distinta de la que acaba de sonar */
   pickNext(zone) {
@@ -245,10 +268,10 @@ export class MusicDirector {
     this.track = { zone, song, gain, out, nodes, step, i: 0, next: c.currentTime + 0.08, loops: 0, fadingOut: false, fadeEnd: 0, then: null };
   }
 
-  fadeOut(then) {
+  fadeOut(then, len = FADE_OUT) {
     const tr = this.track, c = this.c, g = tr.gain.gain;
     tr.fadingOut = true;
-    tr.fadeEnd = c.currentTime + FADE_OUT;
+    tr.fadeEnd = c.currentTime + len;
     tr.then = then;
     g.cancelScheduledValues(c.currentTime);
     g.setValueAtTime(g.value, c.currentTime);
@@ -280,7 +303,9 @@ export class MusicDirector {
     let tr = this.track;
 
     // ¿hay que cambiar de zona?
-    if (this.zone !== tr.zone) {
+    const want = this.want;
+    if (tr.then === 'force') { /* cambiando a la canción elegida en la pausa */ }
+    else if (want !== tr.zone) {
       this.away += dt;
       if (this.away >= SETTLE && !tr.fadingOut) this.fadeOut('zone');
     } else {
@@ -294,8 +319,9 @@ export class MusicDirector {
     if (tr.fadingOut && now >= tr.fadeEnd) {
       const then = tr.then, oldZone = tr.zone;
       this.stopTrack();
-      if (then === 'next' && this.zone === oldZone) this.pickNext(oldZone);
-      this.start(this.zone);
+      // en modo prueba la canción elegida se repite; si no, pasa a otra de la zona
+      if (then === 'next' && want === oldZone && !this.forced) this.pickNext(oldZone);
+      this.start(this.want);
       tr = this.track;
     }
 

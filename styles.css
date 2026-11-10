@@ -423,3 +423,10 @@ body.touch .inv kbd { display: none; }
 #toasts { top: calc(118px + env(safe-area-inset-top)); width: 92vw; }
   .toast { font-size: 13px; }
 }
+
+/* menú de prueba de canciones */
+.songs { display: grid; gap: 4px; margin: 10px 0; text-align: left; }
+.songs h3 { margin: 8px 0 2px; font-size: 14px; color: var(--gold); text-shadow: 0 2px 0 var(--ink); }
+.songs .song-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.songs .song { flex: 1 1 140px; font-size: 13px; }
+.songs .song.sel { background: var(--pink); color: var(--ink); }
