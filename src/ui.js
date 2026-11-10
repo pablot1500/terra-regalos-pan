@@ -16,6 +16,7 @@ export class UI {
     document.querySelectorAll('img[data-icon]').forEach((img) => { img.src = ICON_URL[img.dataset.icon]; });
     document.querySelector('.shop-cat').src = charPortrait('carlos', 1).toDataURL(); // Carlos atiende el taller
     document.querySelector('.gift-img').src = ICON_URL.giftBig;
+    this.setupTitle();
 
     // marcas de regalos en el medidor de profundidad
     const gauge = $('gauge');
@@ -222,6 +223,43 @@ export class UI {
     }
   }
 
+  /** título: letras sueltas que caen y ondean, y regalitos que reaccionan al mouse */
+  setupTitle() {
+    const l1 = $('logo-l1');
+    let i = 0;
+    // cada palabra no se corta; cada letra es un span (para que caigan, ondeen y salten)
+    l1.innerHTML = l1.textContent.split(' ').map((w) => `<span class="w">${[...w].map((c) => `<span class="ch" style="--i:${i++}">${c}</span>`).join('')}</span>`).join('<span class="ch sp"> </span>');
+    // el 2 dibujado en pixeles (con las fuentes pixel parecía una S dada vuelta)
+    const TWO = ['.###.', '#...#', '....#', '...#.', '..#..', '.#...', '#####'];
+    const px = TWO.flatMap((row, y) => [...row].map((c, x) => (c === '#' ? `<rect x="${x}" y="${y}" width="1" height="1"/>` : ''))).join('');
+    document.querySelector('.logo .two').innerHTML = `<svg viewBox="-1 -1 7 9" aria-label="2"><g class="sh" transform="translate(0.5 0.6)">${px}</g><g class="fg">${px}</g></svg>`;
+    l1.querySelectorAll('.ch').forEach((el) => el.addEventListener('pointerenter', () => { if (this.g.audio.ctx) this.g.audio.play('talk'); }));
+    const box = document.querySelector('.logo-box');
+    document.querySelectorAll('.title-gift').forEach((img) => {
+      img.src = ICON_URL.giftBig;
+      const burst = () => {
+        img.classList.remove('pop'); void img.offsetWidth; img.classList.add('pop');
+        if (this.g.audio.ctx) this.g.audio.play('coin');
+        const bx = box.getBoundingClientRect(), r = img.getBoundingClientRect();
+        for (let i = 0; i < 6; i++) {
+          const s = document.createElement('span');
+          s.className = 'title-fx';
+          s.textContent = i % 2 ? '♥' : '✦';
+          s.style.left = (r.left - bx.left + r.width / 2 - 6) + 'px';
+          s.style.top = (r.top - bx.top + r.height / 2 - 8) + 'px';
+          const a = (i / 6) * Math.PI * 2;
+          s.style.setProperty('--dx', Math.round(Math.cos(a) * 36) + 'px');
+          s.style.setProperty('--dy', Math.round(Math.sin(a) * 30 - 18) + 'px');
+          if (i % 2 === 0) s.style.color = 'var(--gold)';
+          box.appendChild(s);
+          setTimeout(() => s.remove(), 950);
+        }
+      };
+      img.addEventListener('pointerenter', burst);
+      img.addEventListener('click', burst);
+    });
+  }
+
   updateTitle() {
     const has = !!this.g.savedData;
     $('btn-continue').classList.toggle('hidden', !has);
@@ -243,6 +281,8 @@ export class UI {
     this.show('touch', on && this.isTouch);
     this.show('screen-title', !on);
     if (on) this.show('screen-splash', false);
+    // el "golpe" del sello del título
+    else setTimeout(() => { if (this.g.state === 'title' && this.g.audio.ctx) { this.g.audio.play('land'); this.g.audio.play('dig'); } }, 1380);
   }
 
   // ---------- Intro ----------
