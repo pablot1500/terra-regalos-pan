@@ -79,7 +79,7 @@ button { font-family: var(--font); cursor: pointer; }
   text-shadow: 0 6px 0 var(--ink), 0 0 34px rgba(255,126,182,0.45);
   animation: logo-bob 3.2s ease-in-out infinite;
 }
-.logo .l2 { display: inline-flex; align-items: center; gap: 10px; margin-top: 12px; font-size: clamp(20px, min(3.8vw, 5vh), 34px); }
+.logo .l2 { position: relative; display: inline-flex; align-items: center; margin-top: 12px; font-size: clamp(20px, min(3.8vw, 5vh), 34px); }
 @keyframes logo-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 .menu .row { margin-top: 0; }
 #settings-ok, #controls-ok { margin-top: 14px; }
@@ -514,8 +514,8 @@ html, body, button { -webkit-tap-highlight-color: transparent; }
   /* cae como sello, queda 3 segundos y después se despega y se cae */
   animation: two-in 0.4s cubic-bezier(.5,0,.6,1.4) 2.5s both, two-pulse 1.55s ease-in-out 2.9s 2, two-peel 1.1s cubic-bezier(.5,0,.9,.6) 6s forwards;
 }
-/* lugar de los sellos: medio montado sobre el final de "regalos" */
-.logo .badge { position: relative; z-index: 1; display: inline-grid; place-items: center; margin-left: -0.4em; top: -0.7em; }
+/* lugar de los sellos: afuera del flujo (así el cartel queda centrado), montado sobre la punta derecha del cartel */
+.logo .badge { position: absolute; z-index: 1; display: grid; place-items: center; left: calc(100% - 0.25em); top: -0.6em; }
 @keyframes two-peel {
   0% { transform: rotate(10deg); }
   18% { transform: translate(3px, -5px) rotate(-12deg) scale(1.06); }
@@ -525,7 +525,7 @@ html, body, button { -webkit-tap-highlight-color: transparent; }
 /* sello grande: torta de cumple con ¡25! */
 .logo .cake {
   /* centrada justo donde estaba el 2, sin cambiar el lugar que ocupa */
-  position: absolute; left: 50%; top: 50%; width: 4.3em; height: 4.16em; margin: -2.3em 0 0 -1.75em; cursor: pointer;
+  position: absolute; left: 50%; top: 50%; width: 4.3em; height: 4.16em; margin: -2.3em 0 0 -1.15em; cursor: pointer;
   animation: cake-in 0.45s cubic-bezier(.5,0,.6,1.4) 7s both, cake-pulse 2s ease-in-out 7.6s infinite;
 }
 .logo .cake .hv {
@@ -563,7 +563,7 @@ html, body, button { -webkit-tap-highlight-color: transparent; }
   filter: drop-shadow(0 3px 0 rgba(29,20,32,0.7)); animation: gift-float 3s ease-in-out infinite;
 }
 .title-gift.g1 { left: -30px; top: 8%; animation-duration: 3.2s; }
-.title-gift.g2 { right: -34px; top: 34%; width: 42px; height: 42px; animation-duration: 2.7s; animation-delay: -1s; }
+.title-gift.g2 { left: -46px; top: 52%; width: 42px; height: 42px; animation-duration: 2.7s; animation-delay: -1s; }
 .title-gift.g3 { right: 16%; top: -22px; width: 26px; height: 26px; animation-duration: 3.6s; animation-delay: -2s; }
 @keyframes gift-float { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-10px) rotate(6deg); } }
 .title-gift.pop { animation: gift-pop 0.55s ease-out; }
