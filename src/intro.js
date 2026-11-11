@@ -32,6 +32,7 @@ export function* introScript(sc) {
   sc.actor('pancha', SPOT, FLOOR, { phase: 0, hidden: true });
   sc.actor('pablo', SPOT, FLOOR, { phase: 1.3, hidden: true });
   sc.fixed = { x: SPOT, y: FLOOR, k: 0.6 };
+  g.structs.trailerOpen = 0; // el taller arranca cerrado: Carlos aparece recién cuando hablan de las palas
   sc.ui.fade(false);
   yield sc.descend(7.5, 1.5);
   sc.caption('Hoy es el día del cumple de Panchi...');
@@ -166,6 +167,10 @@ export function* introScript(sc) {
   sc.fixed = { x: TRAILER_X + 34, y: FLOOR - TRAILER_H * 0.6 };
   sc.setZoom(1.8);
   yield sc.wait(2.2);
+  // sube la persiana de la ventanita y aparece Carlos
+  g.audio.play('shutter');
+  yield (() => { const t0 = sc.t; return () => (g.structs.trailerOpen = Math.min(1, (sc.t - t0) / 0.9)) === 1; })();
+  yield sc.wait(0.6);
   yield sc.say('pablo', '¿Carlos? ¿No vendían comida ahí?');
   yield sc.say('pancha', 'La crisis nos pega a todos, ya sabes.');
   // y vuelve a los dos

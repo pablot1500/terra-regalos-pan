@@ -257,7 +257,7 @@ class Game {
     this.ui.setIntro(true);
     this.state = 'intro';
     this.scene = new Scene(this, introScript, {
-      onSkip: () => { const tc = this.titleCam(); this.cam.x = tc.x; this.cam.y = tc.y; this.structs.gateOpen = 0; },
+      onSkip: () => { const tc = this.titleCam(); this.cam.x = tc.x; this.cam.y = tc.y; this.structs.gateOpen = 0; this.structs.trailerOpen = 1; },
       onEnd: () => this.endIntro(),
     });
   }
@@ -286,6 +286,7 @@ class Game {
 
   endIntro() {
     this.scene = null;
+    this.structs.trailerOpen = 1; this.structs.gateOpen = 0;
     this.ui.setIntro(false);
     this.state = 'title';
     this.ui.setPlaying(false);

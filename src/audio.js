@@ -121,6 +121,7 @@ export class Audio {
       case 'bossHit': [660, 440, 330].forEach((f, i) => this.tone(f, 0.1, { type: 'square', vol: 0.09, delay: i * 0.06 })); break;
       case 'gate': this.tone(180, 0.5, { type: 'sawtooth', vol: 0.05, slide: 260 }); this.tone(240, 0.35, { type: 'triangle', vol: 0.05, slide: 150, delay: 0.25 }); break;
       case 'gateShut': this.noise(0.14, { vol: 0.35, freq: 350 }); this.tone(95, 0.12, { type: 'triangle', vol: 0.2, slide: 60 }); this.tone(1400, 0.05, { type: 'square', vol: 0.03, delay: 0.05 }); break;
+      case 'shutter': for (let i = 0; i < 7; i++) this.noise(0.05, { vol: 0.16, freq: 2200, type: 'bandpass', delay: i * 0.12 }); this.tone(140, 0.8, { type: 'sawtooth', vol: 0.03, slide: 220 }); break;
       case 'rest': this.tone(880, 0.2, { type: 'sine', vol: 0.06 }); break;
     }
   }

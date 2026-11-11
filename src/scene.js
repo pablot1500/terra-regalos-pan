@@ -373,7 +373,17 @@ export class Scene {
   }
 }
 
-function drawArm(ctx, sx, sy, facing, bob, id, ang) {
+function drawArm(ctx, sx0, sy0, facing, bob, id, ang) {
+  // el cuerpo puede caer entre pixeles del arte (va de a pixel de pantalla): el brazo se dibuja
+  // en coordenadas enteras y se corre lo mismo que el cuerpo, así no se queda atrás
+  const sx = Math.round(sx0), sy = Math.round(sy0);
+  ctx.save();
+  ctx.translate(sx0 - sx, sy0 - sy);
+  drawArmAt(ctx, sx, sy, facing, bob, id, ang);
+  ctx.restore();
+}
+
+function drawArmAt(ctx, sx, sy, facing, bob, id, ang) {
   const pal = CHAR_PAL[id];
   const mx = (lx) => (facing > 0 ? sx + Math.round(lx) : sx + CHAR_W - 1 - Math.round(lx));
   const hx = 10 + Math.cos(ang) * 3, hy = 11 + bob + Math.sin(ang) * 3;

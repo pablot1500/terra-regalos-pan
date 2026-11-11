@@ -572,8 +572,9 @@ const CLOTHES = {
 export { paintTrailer };
 
 let trailerCache = null;
-/** Casa rodante con Carlos atendiendo detrás del mostrador. (x, y) = esquina sup. izq. */
-export function drawTrailer(ctx, x, y, t) {
+/** Casa rodante con Carlos atendiendo detrás del mostrador. (x, y) = esquina sup. izq.
+ *  `open`: 1 = ventanita abierta; menos de 1 = la persiana metálica tapa la ventanita (0 = cerrada del todo) */
+export function drawTrailer(ctx, x, y, t, open = 1) {
   const tr = trailerCache || (trailerCache = paintTrailer());
   ctx.drawImage(tr, x, y);
   // Carlos asoma por la ventanita mirando al patio; parpadea y se balancea un poquito
@@ -585,6 +586,24 @@ export function drawTrailer(ctx, x, y, t) {
   ctx.drawImage(blink ? f.blink : f.idle, x + 23, y + 24 + bob);
   ctx.restore();
   ctx.drawImage(tr.front, x, y);
+  if (open < 1) {
+    // persiana enrollable de chapa: baja desde arriba de la ventanita
+    const w = x1 - x0 + 1, full = y1 - y0 + 1;
+    const h = Math.round(full * (1 - open));
+    if (h > 0) {
+      const sx = x + x0, sy = y + y0;
+      ctx.fillStyle = '#c3cad2'; ctx.fillRect(sx, sy, w, h);
+      ctx.fillStyle = '#9aa3ad';
+      for (let r = 1; r < h - 2; r += 3) ctx.fillRect(sx, sy + r, w, 1);
+      ctx.fillStyle = '#dde2e7';
+      for (let r = 0; r < h - 2; r += 3) ctx.fillRect(sx, sy + r, w, 1);
+      // varilla de abajo con la manija
+      ctx.fillStyle = '#6b6f78'; ctx.fillRect(sx, sy + h - 2, w, 2);
+      ctx.fillStyle = '#3a3f45'; ctx.fillRect(sx + (w >> 1) - 2, sy + h - 1, 5, 1);
+    }
+    // el rollo arriba
+    ctx.fillStyle = '#8a929b'; ctx.fillRect(x + x0 - 1, y + y0 - 1, w + 2, 2);
+  }
 }
 
 // Portón de madera al fondo del patio, que da a la calle
@@ -619,6 +638,7 @@ export class Structures {
     this.brick = paintBrickWall(GATE_X - 216, 40);
     this.gate = paintGate();
     this.gateOpen = 0;   // 0 = cerrado, 1 = abierto del todo (lo usa la intro)
+    this.trailerOpen = 1; // ventanita del taller: 1 = abierta (en la intro arranca cerrada)
     this.tree = paintTree();
     this.hedgeL = paintHedge(16, 60, 5);
     this.bushes = [
@@ -690,7 +710,7 @@ export class Structures {
 
   drawBuildings(ctx, camX, camY, t) {
     ctx.drawImage(this.complex, 2 * TILE - camX, (S - 16) * TILE - camY);
-    drawTrailer(ctx, TRAILER_X - camX, S * TILE - TRAILER_H - camY, t);
+    drawTrailer(ctx, TRAILER_X - camX, S * TILE - TRAILER_H - camY, t, this.trailerOpen);
   }
 }
 
