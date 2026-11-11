@@ -3,6 +3,8 @@
 import { getCharFrames, CHAR_PAL, CHAR_W, CHAR_H, drawText, DOG, ICON_URL, charPortrait } from './sprites.js';
 import { drawAguilus, aguilusPortrait, AG_H } from './aguilus.js';
 import { clamp, pixelLine } from './util.js';
+import { TILE, SURFACE } from './config.js';
+import { T } from './tiles.js';
 
 let carlosFace = null;
 export const SPEAKERS = {
@@ -171,6 +173,9 @@ export class Scene {
     if (this.done) return;
     this.t += dt;
     for (const a of Object.values(this.actors)) {
+      if (a.alpha < 1) a.alpha = Math.min(1, a.alpha + dt * 2.5);
+      // `ground`: sube y baja los escalones de a poco (va siguiendo la altura del piso)
+      if (a.ground) a.y += (this.groundY(a.x) - a.y) * Math.min(1, dt * 16);
       if (a.target !== null) {
         const d = a.target - a.x, dir = Math.sign(d);
         if (!a.lockFacing && (!a.flying || Math.abs(d) > 1)) a.facing = dir || a.facing;
@@ -228,6 +233,14 @@ export class Scene {
       if (this.drop.t >= this.drop.dur) { this.g.zoom = this.drop.z1; this.drop = null; this.snapCam(); }
     }
     if (this.waitFn && this.waitFn()) { this.waitFn = null; this.step(); }
+  }
+
+  /** altura del piso bajo `x` cerca de la superficie (escalera, descanso, departamento o patio) */
+  groundY(x) {
+    const W = this.g.world, S = SURFACE;
+    const c = clamp(Math.floor(x / TILE), 3, 76);
+    for (let r = S - 8; r <= S + 1; r++) if (W.get(c, r) !== T.AIR) return r * TILE;
+    return S * TILE;
   }
 
   snapCam() {
@@ -295,14 +308,25 @@ export class Scene {
       ctx.fillRect(x - r, y - r, r * 2, r * 2);
       ctx.restore();
     }
-    for (const f of this.feathers) drawFeather(ctx, Math.round(f.x - camX + (f.landed ? 0 : Math.sin(f.t * 5) * 3)), Math.round(f.y - camY), f.landed);
+    // las posiciones se redondean en el mundo (de a pixel de pantalla), no después de restar la cámara:
+    // así, cuando la cámara se mueve, los personajes quedan clavados al piso en vez de ir saltando
+    const px = 1 / ((this.g.scale || 1) * (this.g.zoom || 1));
+    const snap = (v) => Math.round(v / px) * px;
+    for (const f of this.feathers) {
+      const fx = Math.round(f.x + (f.landed ? 0 : Math.sin(f.t * 5) * 3)), fy = Math.round(f.y);
+      drawFeather(ctx, fx - camX, fy - camY, f.landed);
+    }
     for (const a of Object.values(this.actors)) {
       if (a.hidden) continue;
+      ctx.globalAlpha = a.alpha ?? 1;
       let sx, sy, headY;
       if (a.id === 'aguilus') {
-        drawAguilus(ctx, a.x - camX, a.y - camY, a.facing, a.pose, this.t + a.phase);
-        sx = Math.round(a.x - CHAR_W / 2 - camX);
-        sy = Math.round(a.y - AG_H - camY) + (a.pose === 'weak' ? 6 : 0);
+        const ox = snap(a.x) - camX, oy = snap(a.y) - camY, rx = Math.round(ox), ry = Math.round(oy);
+        ctx.save(); ctx.translate(ox - rx, oy - ry);
+        drawAguilus(ctx, rx, ry, a.facing, a.pose, this.t + a.phase);
+        ctx.restore();
+        sx = snap(a.x - CHAR_W / 2) - camX;
+        sy = snap(a.y - AG_H) - camY + (a.pose === 'weak' ? 6 : 0);
         headY = sy;
       } else {
         const frames = getCharFrames(a.id)[a.facing > 0 ? 'right' : 'left'];
@@ -317,8 +341,8 @@ export class Scene {
           frame = tt % 3.4 > 3.25 ? 'blink' : tt % 1.6 > 1.0 ? 'idleB' : 'idle';
           bob = frame === 'idleB' ? 1 : 0;
         }
-        sx = Math.round(a.x - CHAR_W / 2 - camX);
-        sy = Math.round(a.y - CHAR_H - camY);
+        sx = snap(a.x - CHAR_W / 2) - camX;
+        sy = snap(a.y - CHAR_H) - camY;
         headY = sy;
         if (a.flying && moving) {
           const nx = a.facing > 0 ? sx + 1 : sx + CHAR_W - 3, len = 3 + Math.floor(Math.random() * 3);
@@ -345,6 +369,7 @@ export class Scene {
         ctx.fillStyle = '#fff4e0'; ctx.fillRect(sx + 7, by - 1, 3, 1); ctx.fillRect(sx + 8, by, 1, 1);
       }
     }
+    ctx.globalAlpha = 1;
   }
 }
 

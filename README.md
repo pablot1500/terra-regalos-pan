@@ -56,11 +56,11 @@ En iPhone/iPad conviene agregarlo a la pantalla de inicio (Compartir → Agregar
 ## Intro y pantalla de inicio
 
 - Al abrir el juego hay que tocar la pantalla una vez (el navegador no deja sonar audio sin un toque) y arranca la **intro**:
-  - El botón se desvanece y la cámara baja del cielo hasta el patio, con parallax (el cielo, las nubes, la costa, el barrio y la pared del fondo se mueven a distinto ritmo que el piso). Recién cuando llega, entran los personajes.
+  - El botón se desvanece y la cámara baja del cielo hasta el patio, con parallax (el cielo, las nubes, la costa, el barrio y la pared del fondo se mueven a distinto ritmo que el piso). Recién cuando llega, se abre el portón de la calle y entran los personajes por ahí.
   - Pablo y Panchi llegan al patio charlando sobre el cumple y lo que pasó el año pasado con los regalos, y Popi (que se coló en el auto) los saluda.
-  - Suben al departamento y Pablo busca los regalos debajo de la cama. En su lugar encuentra una nota firmada "A" (y una pluma sospechosa): los regalos están "bien, bien, bieeen abajo".
-  - Se miran, la cámara baja hasta la tierra y se dan cuenta: ¡abajo de ellos! Después la cámara va hasta el taller de Carlos, donde ahora venden palas.
-  - La cámara baja hasta el primer cofre, que brilla un rato, y vuelve a subir al cielo.
+  - Suben la escalera hasta el departamento 1B y Pablo busca los regalos debajo de la cama. En su lugar encuentra una nota firmada "A" (y una pluma sospechosa): los regalos están "bien, bien, bieeen abajo".
+  - "Mientras tanto, muy, muy abajo...": la cámara baja hasta el primer cofre, que brilla un rato, y vuelve al departamento.
+  - Se miran, la cámara baja hasta la tierra y se dan cuenta: ¡abajo de ellos! Después la cámara va hasta el taller de Carlos, donde ahora venden palas, y al final sube al cielo.
 - La intro tiene barras de cine, zoom de cámara, diálogos con retrato que se escriben letra por letra (click, Espacio o Enter para avanzar) y un botón para saltarla.
 - El guión está en [`src/intro.js`](src/intro.js), en la función `script()`. El texto de la nota es `NOTE_TEXT`.
 - La pantalla de inicio, **Cumple Panchita: Salven los regalos 2**, tiene de fondo el cielo del juego. Ahí se elige personaje y hay botones para Empezar (o Continuar), Configuración (sonido y volúmenes), Controles y para ver la intro otra vez.
@@ -68,7 +68,7 @@ En iPhone/iPad conviene agregarlo a la pantalla de inicio (Compartir → Agregar
 
 ## Cómo se juega
 
-- Arrancan en su departamento de **planta baja**, que da directo al patio, y cavan en el **cantero del medio** (las baldosas no se rompen).
+- Arrancan en el departamento **1B**, en el primer piso. Bajan por la escalera al patio y cavan en el **cantero del medio** (las baldosas no se rompen).
 - La tierra esconde monedas, billetes, lingotes y gemas. Todo va a una billetera compartida.
 - En el **Taller**, una casa rodante vintage estacionada a la derecha del patio, se compra por la ventanita-mostrador (hay que pararse frente a ella). Se venden mejoras, compartidas para los dos:
   - **Pala → Taladro**: más fuerza (desde el nivel 3 pasa a ser un taladro; el último es el Taladro cósmico). Cada capa (tierra, arcilla, piedra, granito, basalto, abismo, obsidiana) necesita una pala más fuerte.
@@ -131,7 +131,7 @@ src/
   config.js       todos los números y textos ajustables
   world.js        generación del mundo, cavado libre (terreno de 2 px), render por chunks
   tiles.js        tipos de bloque y texturas pixel art
-  structures.js   edificio, departamento, casa rodante del taller (con Carlos), paredón, portón y patio
+  structures.js   edificio, departamento, escalera, casa rodante del taller (con Carlos), paredón, portón y patio
   sprites.js      personajes, tesoros, cofre, perro, íconos, fuente pixel
   player.js       física, cavado, jetpack, energía, caídas, animación
   background.js   cielo, nubes, barrio, costa y mar

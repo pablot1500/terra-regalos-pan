@@ -146,7 +146,7 @@ class Game {
     this.freshGame();
     this.startPlaying();
     this.save();
-    this.pendingTip = ['start', '¡Salgan al patio y empiecen a cavar en el cantero!'];
+    this.pendingTip = ['start', '¡Bajen por la escalera al patio y empiecen a cavar en el cantero!'];
   }
 
   continueGame() {
@@ -257,7 +257,7 @@ class Game {
     this.ui.setIntro(true);
     this.state = 'intro';
     this.scene = new Scene(this, introScript, {
-      onSkip: () => { const tc = this.titleCam(); this.cam.x = tc.x; this.cam.y = tc.y; },
+      onSkip: () => { const tc = this.titleCam(); this.cam.x = tc.x; this.cam.y = tc.y; this.structs.gateOpen = 0; },
       onEnd: () => this.endIntro(),
     });
   }
@@ -976,7 +976,6 @@ class Game {
     this.structs.drawBackdrop(ctx, camX, camY, t, lift, 1 / S);
     this.structs.drawBuildings(ctx, camX, camY, t);
     this.world.draw(ctx, camX, camY, vw, vh);
-    this.structs.drawFloor(ctx, camX, camY);
     this.world.drawLava(ctx, camX, camY, vw, vh, t);
 
     // círculo de cavado: puntitos que se van cerrando a medida que avanza el palazo

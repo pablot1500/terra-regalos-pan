@@ -2,9 +2,10 @@
 // buscan los regalos debajo de la cama y encuentran una nota misteriosa.
 // Cada `yield` espera a que termine lo anterior (ver scene.js).
 import { TILE, SURFACE } from './config.js';
-import { DOG_POS, TRAILER_X, TRAILER_H } from './structures.js';
+import { DOG_POS, TRAILER_X, TRAILER_H, GATE_X } from './structures.js';
 
-const FLOOR = SURFACE * TILE;          // piso del patio y del departamento de planta baja
+const FLOOR = SURFACE * TILE;          // piso del patio
+const APT = (SURFACE - 6) * TILE;      // piso del departamento 1B (primer piso, subiendo la escalera)
 
 export const NOTE_TEXT = `Querida cumpleañera:
 
@@ -24,19 +25,31 @@ export function* introScript(sc) {
   const g = sc.g;
   const A = sc.actors;
   // la cámara arranca en el cielo (donde estaba el botón de empezar) y baja hasta el patio;
-  // recién cuando llega aparecen los dos, entrando caminando desde la derecha
-  const SPOT = 560;
+  // recién cuando llega se abre el portón de la calle y entran los dos por ahí
+  // encuadre del patio con el portón entero sobre el borde derecho (sea cual sea el ancho de la pantalla)
+  const viewAt = (z) => g.vw / (Math.max(1, Math.round((g.scale || 1) * z)) / (g.scale || 1));
+  const SPOT = Math.round(GATE_X + 34 - viewAt(1.5) / 2);
   sc.actor('pancha', SPOT, FLOOR, { phase: 0, hidden: true });
   sc.actor('pablo', SPOT, FLOOR, { phase: 1.3, hidden: true });
   sc.fixed = { x: SPOT, y: FLOOR, k: 0.6 };
   sc.ui.fade(false);
   yield sc.descend(7.5, 1.5);
   sc.caption('Hoy es el día del cumple de Panchi...');
-  yield sc.wait(0.5);
-  const edge = SPOT + sc.viewW() / 2;
-  Object.assign(A.pancha, { x: edge + 10, hidden: false });
-  Object.assign(A.pablo, { x: edge + 30, hidden: false });
-  sc.walk('pancha', 470, 42); sc.walk('pablo', 492, 42);
+  yield sc.wait(0.6);
+  // se abre el portón de la calle y entran por ahí
+  const S = g.structs, DOOR = GATE_X + 14;
+  const swing = (to, dur) => { const from = S.gateOpen, t0 = sc.t; return () => (S.gateOpen = from + (to - from) * Math.min(1, (sc.t - t0) / dur)) === to; };
+  g.audio.play('gate');
+  yield swing(1, 0.7);
+  Object.assign(A.pancha, { x: DOOR, hidden: false, alpha: 0, facing: -1 });
+  sc.walk('pancha', 470, 42);
+  yield sc.wait(0.45);
+  Object.assign(A.pablo, { x: DOOR, hidden: false, alpha: 0, facing: -1 });
+  sc.walk('pablo', 492, 42);
+  yield () => A.pablo.x < GATE_X - 6;
+  g.audio.play('gate');
+  yield swing(0, 0.5);
+  g.audio.play('gateShut');
   yield () => A.pancha.x < SPOT + 40;
   sc.fixed = null;
   sc.follow = ['pancha', 'pablo'];
@@ -56,22 +69,24 @@ export function* introScript(sc) {
   yield sc.say('pancha', '¡Popito! ¿Qué haces acá? ¿Te escapaste de casa?');
   yield sc.say('popi', 'Guau. (Traducción: me colé en el auto cuando no veían je.)');
 
-  sc.walk('pancha', 178); sc.walk('pablo', 198);
+  sc.walk('pancha', 214); sc.walk('pablo', 236);
   yield sc.say('pancha', '¿Che Pabli, te acordás de lo que pasó el año pasado con.. los regalos?');
   yield sc.say('pablo', 'Ni lo menciones. Todavía sueño con ese pajarraco.');
   yield sc.say('pablo', 'Igual tranqui: este año los escondí bien bien. No hay chance de que falle esta vez.');
   yield sc.say('pancha', 'Mmm... oki.');
   yield sc.arrive('pancha', 'pablo');
+  // suben la escalera hasta el 1B
+  A.pancha.ground = true; A.pablo.ground = true;
   sc.walk('pancha', 150); sc.walk('pablo', 166);
-  yield sc.wait(0.8);
+  yield sc.arrive('pancha', 'pablo');
 
   // ---- corte: adentro del departamento ----
   sc.ui.fade(true);
   yield sc.wait(0.7);
-  Object.assign(A.pablo, { x: 150, y: FLOOR, target: null, pose: 'idle' });
-  Object.assign(A.pancha, { x: 160, y: FLOOR, target: null, pose: 'idle' });
+  Object.assign(A.pablo, { x: 150, y: APT, ground: false, target: null, pose: 'idle' });
+  Object.assign(A.pancha, { x: 160, y: APT, ground: false, target: null, pose: 'idle' });
   sc.follow = null;
-  sc.fixed = { x: 128, y: FLOOR - 14 };
+  sc.fixed = { x: 128, y: APT - 14 };
   sc.setZoom(2.2);
   sc.snapCam();
   sc.walk('pablo', 116); sc.walk('pancha', 140);
@@ -87,7 +102,7 @@ export function* introScript(sc) {
   yield sc.say('pablo', 'Esperá...');
   A.pablo.pose = 'idle';
   sc.emote('pablo', '!');
-  sc.fixed = { x: 118, y: FLOOR - 12 };
+  sc.fixed = { x: 118, y: APT - 12 };
   sc.setZoom(2.8);
   g.audio.play('surprise');
   g.shake(1.5);
@@ -95,54 +110,17 @@ export function* introScript(sc) {
   sc.emote('pancha', '!');
   A.pancha.facing = -1;
   yield sc.say('pancha', '¿¡CÓMO QUE NO ESTÁN!?');
-  sc.fixed = { x: 128, y: FLOOR - 14 };
+  sc.fixed = { x: 128, y: APT - 14 };
   sc.setZoom(2.2);
   yield sc.say('pablo', 'Alguien se los volvió a llevar!! Dejaron una notita y una pluma.');
-  sc.feathers.push({ x: A.pablo.x - 6, y: FLOOR - 16, floor: FLOOR, vy: 6, t: 0, landed: false });
+  sc.feathers.push({ x: A.pablo.x - 6, y: APT - 16, floor: APT, vy: 6, t: 0, landed: false });
   g.audio.play('paper');
   yield sc.wait(0.6);
   yield sc.note(NOTE_TEXT);
   yield sc.say('pancha', '¿¡Otra vez!? ¿Y quién puede haber sido ahora?');
   yield sc.say('pablo', 'Alguna sospecha tengo... pero acá dice "muy abajo". Abajo de dónde?');
 
-  // ---- se miran... y se dan cuenta: ¡abajo de ellos! ----
-  A.pablo.facing = 1; A.pancha.facing = -1;
-  sc.emote('pablo', '?'); sc.emote('pancha', '?');
-  yield sc.wait(1.3);
-  // la cámara baja despacito por debajo del piso, hasta la tierra...
-  sc.camSpeed = 1.3;
-  sc.fixed = { x: 128, y: FLOOR + 46 };
-  yield sc.wait(1.9);
-  // ...y vuelve de golpe a ellos
-  sc.camSpeed = 5;
-  sc.fixed = { x: 128, y: FLOOR - 14 };
-  sc.setZoom(2.5);
-  yield sc.wait(0.45);
-  sc.camSpeed = null;
-  sc.emote('pablo', '!'); sc.emote('pancha', '!');
-  g.audio.play('surprise');
-  g.shake(1.2);
-  yield sc.say('pancha', '¡Abajo nuestro!!!');
-  sc.setZoom(2.2);
-  yield sc.say('pablo', 'No puedo creer que tengamos que hacer esto..');
-  yield sc.say('pancha', 'En el taller de la casa rodante venden palas.');
-
-  // ---- la cámara va hasta el taller de Carlos ----
-  sc.camSpeed = 1.6;
-  sc.fixed = { x: TRAILER_X + 34, y: FLOOR - TRAILER_H * 0.6 };
-  sc.setZoom(1.8);
-  yield sc.wait(2.2);
-  yield sc.say('pablo', '¿Carlos? ¿No vendían comida ahí?');
-  yield sc.say('pancha', 'La crisis nos pega a todos, ya sabes.');
-  // y vuelve a los dos
-  sc.fixed = { x: 128, y: FLOOR - 14 };
-  sc.setZoom(2.2);
-  yield sc.wait(1.9);
-  sc.camSpeed = null;
-  sc.emote('pancha', '♥');
-  yield sc.say('pancha', '¡Bueno, arranquemos! Este cumple no me lo arruina nadie.');
-
-  // ---- la cámara baja hasta el primer regalo ----
+  // ---- mientras tanto: la cámara baja hasta el primer regalo ----
   const ch = g.world.chests.filter((c) => !c.core).sort((a, b) => a.r - b.r)[0];
   sc.caption('Mientras tanto, muy, muy abajo...');
   sc.setZoom(1);
@@ -161,9 +139,55 @@ export function* introScript(sc) {
       yield sc.wait(0.12);
     }
     sc.shine = null;
-    sc.setZoom(1);
   }
+  // corte: de vuelta al departamento
+  sc.ui.fade(true);
+  yield sc.wait(0.7);
   sc.caption(null);
+  sc.fixed = { x: 128, y: APT - 14 };
+  sc.setZoom(2.2);
+  sc.snapCam();
+  sc.ui.fade(false);
+  yield sc.wait(0.6);
+
+  // ---- se miran... y se dan cuenta: ¡abajo de ellos! ----
+  A.pablo.facing = 1; A.pancha.facing = -1;
+  sc.emote('pablo', '?'); sc.emote('pancha', '?');
+  yield sc.wait(1.3);
+  // la cámara baja despacito por debajo del piso, hasta la tierra...
+  sc.camSpeed = 1.3;
+  sc.fixed = { x: 128, y: FLOOR + 40 };
+  yield sc.wait(2.6);
+  // ...y vuelve de golpe a ellos
+  sc.camSpeed = 5;
+  sc.fixed = { x: 128, y: APT - 14 };
+  sc.setZoom(2.5);
+  yield sc.wait(0.6);
+  sc.camSpeed = null;
+  sc.emote('pablo', '!'); sc.emote('pancha', '!');
+  g.audio.play('surprise');
+  g.shake(1.2);
+  yield sc.say('pancha', '¡Abajo nuestro!!!');
+  sc.setZoom(2.2);
+  yield sc.say('pablo', 'No puedo creer que tengamos que hacer esto..');
+  yield sc.say('pancha', 'En el taller de la casa rodante venden palas.');
+
+  // ---- la cámara va hasta el taller de Carlos ----
+  sc.camSpeed = 1.6;
+  sc.fixed = { x: TRAILER_X + 34, y: FLOOR - TRAILER_H * 0.6 };
+  sc.setZoom(1.8);
+  yield sc.wait(2.2);
+  yield sc.say('pablo', '¿Carlos? ¿No vendían comida ahí?');
+  yield sc.say('pancha', 'La crisis nos pega a todos, ya sabes.');
+  // y vuelve a los dos
+  sc.fixed = { x: 128, y: APT - 14 };
+  sc.setZoom(2.2);
+  yield sc.wait(1.9);
+  sc.camSpeed = null;
+  sc.emote('pancha', '♥');
+  yield sc.say('pancha', '¡Bueno, arranquemos! Este cumple no me lo arruina nadie.');
+
+  sc.setZoom(1);
   const tc = g.titleCam();
   yield sc.pan(tc.x, tc.y, 2.6);
 }
