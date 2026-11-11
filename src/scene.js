@@ -29,6 +29,7 @@ export class Scene {
     this.fixed = null;
     this.tween = null;
     this.drop = null;
+    this.shine = null;   // brillo dorado sobre algo (el cofre en la intro)
     this.zoomT = 1;
     this.line = null;
     this.noteOpen = false;
@@ -221,6 +222,7 @@ export class Scene {
       tw.t += dt;
       if (tw.t >= tw.dur) this.tween = null;
     }
+    if (this.shine) this.shine.t += dt;
     if (this.drop) {
       this.drop.t += dt;
       if (this.drop.t >= this.drop.dur) { this.g.zoom = this.drop.z1; this.drop = null; this.snapCam(); }
@@ -279,6 +281,20 @@ export class Scene {
   // ------------------------------------------------------------
   draw(ctx, camX, camY) {
     if (this.done) return;
+    if (this.shine) {
+      // halo dorado que late (se suma a la luz, así brilla aunque esté oscuro)
+      const sh = this.shine, k = Math.min(1, sh.t / 0.6) * (0.75 + Math.sin(sh.t * 5) * 0.25);
+      const x = sh.x - camX, y = sh.y - camY, r = 22 + Math.sin(sh.t * 5) * 3;
+      const gr = ctx.createRadialGradient(x, y, 0, x, y, r);
+      gr.addColorStop(0, `rgba(255,226,120,${0.55 * k})`);
+      gr.addColorStop(0.5, `rgba(255,190,90,${0.22 * k})`);
+      gr.addColorStop(1, 'rgba(255,190,90,0)');
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = gr;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      ctx.restore();
+    }
     for (const f of this.feathers) drawFeather(ctx, Math.round(f.x - camX + (f.landed ? 0 : Math.sin(f.t * 5) * 3)), Math.round(f.y - camY), f.landed);
     for (const a of Object.values(this.actors)) {
       if (a.hidden) continue;

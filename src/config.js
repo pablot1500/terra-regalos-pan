@@ -202,7 +202,7 @@ export const GIFTS = [
   },
 ];
 
-export const ENDING_TEXT = '¡Le ganaron a Aguilus, rescataron los regalos y hasta se hicieron amigos!\n¡Feliz cumple, Panchita! ♥\nGracias por jugar.';
+export const ENDING_TEXT = '¡Le ganamos a Aguilus y rescatamos los regalos!\n¡Feliz cumple, mi amor!!! ♥';
 
 // Pelea con Aguilus en el fondo del núcleo
 export const BOSS = {

@@ -619,7 +619,7 @@ export class Boss {
     this.flash = 0.3;
     g.sfx('bossHit');
     g.shakeAll(2.5);
-    g.addText(this.x, this.y - AG_H - 6, '¡AUCH!', '#ffd34d');
+    g.addText(this.x, this.y - AG_H - 6, '¡AIAA!', '#ffd34d');
     for (let i = 0; i < 6; i++) g.particles.add({ x: this.x + (Math.random() - 0.5) * 10, y: this.y - 20, vx: (Math.random() - 0.5) * 50, vy: -20 - Math.random() * 30, life: 0.8, max: 0.8, color: '#c9c0b0', size: 1, grav: 40 });
     g.ui.setBossBar(Math.max(0, this.hp) / BOSS.hp);
     if (!this.phase2 && this.hp <= BOSS.hp / 2) {
@@ -767,15 +767,16 @@ function* encounterScript(sc, B, p) {
   sc.setZoom(Math.abs(B.homeX - meX) > 170 ? 1 : 1.5);
   g.sfx('surprise');
   sc.emote(me, '!'); sc.emote(mate, '!');
-  yield sc.say('aguilus', '¡Vaya, vaya! Así que llegaron hasta el centro de la Tierra...');
+  yield sc.say('aguilus', '¡Mira vos! Así que llegaron hasta el centro de la Tierra...');
   sc.fixed = { x: B.homeX, y: FLOOR_Y - 18 };
   sc.setZoom(2.2);
-  yield sc.say('pancha', '¡¿Aguilus?! ¡Sabía que eras vos! ¡La pluma te delató!');
+  yield sc.say('pablo', '¡¿Aguilus?! ¡Sabía que eras vos! ¡La pluma te delató!');
+  yield sc.say('pancha', 'Pablo... lo sabíamos desde el principio.');
   yield sc.say('aguilus', 'Esta vez no voy a dejar que se los lleven. ¡Este año sí te arruino el cumple, Pancha!');
   sc.fixed = { x: mid, y: FLOOR_Y - 20 };
   sc.setZoom(1.5);
   yield sc.say('pablo', '¡Devolvé esos regalos, pajarraco!');
-  yield sc.say('aguilus', '¡Jamás! ¡Prepárense para la lluvia de magma!');
+  yield sc.say('aguilus', '¡Jamás! ¡Los voy a quemar con la lluvia de magma!');
   // se eleva
   sc.actors.aguilus.pose = 'fly';
   sc.fly('aguilus', B.homeX, SKY_Y, 45);
@@ -812,15 +813,15 @@ function* rematchScript(sc, B, p) {
   // las gastadas cambian según cuántas veces te ganó
   const pick = (arr) => arr[(n - 1) % arr.length];
   yield sc.say('aguilus', pick([
-    `¡Ja! ¿Ya te despertaste, ${name}? Pensé que te ibas a quedar durmiendo la siesta hasta el año que viene.`,
+    `¡Ja! ¿Ya te despertaste, ${name}? Pensé que te ibas a quedar durmiendo hasta el año que viene.`,
     `¡¿Otra vez vos?! Ya van ${n} veces... Te voy a empezar a cobrar la entrada.`,
     `${n} a 0, ${name}. ¿Querés que te preste mi báculo, a ver si así te va mejor?`,
   ]));
   sc.fixed = { x: mid, y: FLOOR_Y - 20 };
   sc.setZoom(1.5);
   yield sc.say(me, pick([
-    'Eso fue un calentamiento nomás.',
-    'Me resbalé. El piso está lleno de magma, ¿sabés?',
+    'Estábamos calentando nomás.',
+    'Me resbalé, nadie es perfecto, ya sabes..',
     'Te estaba estudiando los movimientos...',
   ]));
   sc.fixed = { x: B.homeX, y: FLOOR_Y - 18 };
@@ -828,7 +829,7 @@ function* rematchScript(sc, B, p) {
   yield sc.say('aguilus', pick([
     'Ajá. Y las estrellitas que veías, ¿también eran de calentamiento?',
     'Claro, claro. Y yo soy un pollito.',
-    '¿Y qué aprendiste? ¿Que las rocas de magma duelen? ¡Jiji!',
+    '¿Y qué aprendiste? ¿Que las rocas de magma duelen? ¡Jejee!',
   ]));
   sc.fixed = { x: mid, y: FLOOR_Y - 20 };
   sc.setZoom(1.5);
@@ -868,11 +869,11 @@ function* victoryScript(sc, B, p) {
   sc.setZoom(2.2);
   yield sc.arrive(me, mate);
   A[me].facing = 1; A[mate].facing = 1;
-  yield sc.say('aguilus', '¡Está bien, está bien! ¡Me rindo! ¡Auch, mis plumitas!');
-  yield sc.say('pancha', '¿Otra vez vos, Aguilus? ¡Todos los años lo mismo!');
-  yield sc.say('pablo', 'Ya nos tenés hartos con tus escondites.');
-  yield sc.say('aguilus', 'Es que... nadie me invita a los cumples... y los regalos brillan tanto...');
-  yield sc.say('pancha', 'Bueno. Nos llevamos mis regalos. Chau, Aguilus.');
+  yield sc.say('aguilus', '¡Bueno listo!! ¡Está bien, está bien! ¡Me rindo! Mis plumitas..');
+  yield sc.say('pancha', '¿Por qué siempre vos, Aguilus? ¡Todos los años lo mismo!');
+  yield sc.say('pablo', 'Ya nos tenés hartos con tus pavadas.');
+  yield sc.say('aguilus', 'Es que... nadie me invita a los cumples... y los regalos son tan lindos...');
+  yield sc.say('pancha', 'Bueno. Nos llevamos los regalos. Chau, Aguilus.');
   // hacen como que se van
   sc.walk(me, gx - 70, 34); sc.walk(mate, gx - 86, 34);
   sc.fixed = { x: gx - 40, y: FLOOR_Y - 14 };
@@ -880,7 +881,7 @@ function* victoryScript(sc, B, p) {
   yield sc.wait(1.3);
   ag.pose = 'idle';
   sc.emote('aguilus', '!');
-  yield sc.say('aguilus', '¡Esperen! ¿Me van a dejar acá abajo? ¡Esto es un horno!');
+  yield sc.say('aguilus', '¡Esperen! ¿Me van a dejar acá abajo? ¡No sean malos!!');
   yield sc.arrive(me, mate);
   A[me].facing = 1; A[mate].facing = 1;
   yield sc.say('pablo', '...');
@@ -893,7 +894,7 @@ function* victoryScript(sc, B, p) {
   A[mate].facing = -1; A[me].facing = 1;
   A[me].pose = 'hug'; A[mate].pose = 'hug';
   sc.emote(me, '♥'); sc.emote(mate, '♥'); sc.emote('aguilus', '♥');
-  yield sc.say('aguilus', '¡Snif! Ustedes sí que son buenos...');
+  yield sc.wait(1.6);
   // ¡arriba!
   for (const id of [me, mate, 'aguilus']) sc.fly(id, A[id].x, FLOOR_Y - 420, 170);
   ag.pose = 'fly';
@@ -962,11 +963,11 @@ function* victoryScript(sc, B, p) {
   sc.fixed = { x: TRAILER_X + 32, y: GY - TRAILER_H + 30 };
   sc.setZoom(2.4);
   yield sc.wait(0.6);
-  yield sc.say('carlos', '¡Ni se les ocurra!');
+  yield sc.say('carlos', '¡Ja, ni se les ocurra!');
   sc.fixed = { x: LAND_X, y: GY - 12 };
   sc.setZoom(2.2);
   yield sc.wait(0.5);
   sc.emote('pancha', '♥'); sc.emote('pablo', '♥');
-  yield sc.say('pancha', '¡Feliz cumple a mí!');
+  yield sc.say('pancha', '¡Feliz cumple para mí!');
   yield sc.wait(0.8);
 }

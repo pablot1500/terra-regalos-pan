@@ -819,6 +819,7 @@ class Game {
     const cx0 = this.cam.x / TILE - 12, cx1 = (this.cam.x + this.vw) / TILE + 12;
     const cy0 = this.cam.y / TILE - 12, cy1 = (this.cam.y + this.vh) / TILE + 12;
     if (this.popi) this.lights.push([this.popi.cx / TILE, this.popi.cy / TILE, 3.5, 0.85]);
+    if (this.scene && this.scene.shine) this.lights.push([this.scene.shine.x / TILE, this.scene.shine.y / TILE, 9, 1]);
     if (this.boss && this.boss.fighting) this.lights.push([this.boss.x / TILE, (this.boss.y - 20) / TILE, 6, 0.9]);
     // online: en las escenas que manda el anfitrión, los actores llevan su luz (tu personaje quedó en otro lado)
     if (this.state === 'remoteScene' && this.scene) for (const ac of Object.values(this.scene.actors)) this.lights.push([ac.x / TILE, (ac.y - 10) / TILE, 6, 0.95]);
