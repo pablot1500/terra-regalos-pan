@@ -45,7 +45,7 @@ export function* introScript(sc) {
   sc.camSpeed = null;
   A.pancha.speed = 30; A.pablo.speed = 30;
   sc.caption(null);
-  yield sc.say('pancha', '¡Por fin que llegamos!! ¡Qué lindo que festejemos mi cumple juntos otra vez!');
+  yield sc.say('pancha', '¡Qué bueno que llegamos!! ¡Qué lindo que festejemos mi cumple juntos otra vez!');
   yield sc.say('pablo', 'Obvio corazón, no me lo perdería jamás.');
   yield sc.arrive('pancha', 'pablo');
 
@@ -59,7 +59,7 @@ export function* introScript(sc) {
   sc.walk('pancha', 178); sc.walk('pablo', 198);
   yield sc.say('pancha', '¿Che Pabli, te acordás de lo que pasó el año pasado con.. los regalos?');
   yield sc.say('pablo', 'Ni lo menciones. Todavía sueño con ese pajarraco.');
-  yield sc.say('pablo', 'Igual tranqui: este año escondí bien bien. No hay chance de que falle esta vez.');
+  yield sc.say('pablo', 'Igual tranqui: este año los escondí bien bien. No hay chance de que falle esta vez.');
   yield sc.say('pancha', 'Mmm... oki.');
   yield sc.arrive('pancha', 'pablo');
   sc.walk('pancha', 150); sc.walk('pablo', 166);
