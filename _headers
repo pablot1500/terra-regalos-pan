@@ -1,0 +1,4 @@
+# Cloudflare Pages: que el navegador (sobre todo Safari) no guarde copias viejas del juego
+# y siempre baje la última versión publicada.
+/*
+  Cache-Control: no-store

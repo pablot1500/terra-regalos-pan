@@ -501,7 +501,7 @@ html, body, button { -webkit-tap-highlight-color: transparent; }
 .logo .stamp .hv.pop { animation: neon-flick 0.45s steps(1); }
 @keyframes neon-flick { 0%, 40%, 100% { opacity: 1; } 20%, 60% { opacity: 0.3; } }
 /* el sello del 2 sacude un poquito todo el título */
-.logo-box { animation: title-thump 0.35s ease-out 2.82s; }
+.logo-box { animation: title-thump 0.35s ease-out 2.82s, title-thump 0.4s ease-out 7.33s; }
 @keyframes title-thump { 20% { transform: translate(-3px, 3px); } 45% { transform: translate(3px, -2px); } 70% { transform: translate(-2px, 1px); } }
 /* el 2: un número bien legible en una medalla */
 .logo .two {
@@ -509,10 +509,42 @@ html, body, button { -webkit-tap-highlight-color: transparent; }
   display: inline-grid; place-items: center; width: 1.9em; height: 1.9em; font-size: 1.15em; line-height: 1;
   color: #fff4e0; background: var(--pink); border: 3px solid var(--ink); border-radius: 50%;
   box-shadow: inset -4px -4px 0 var(--pink-d), 0 4px 0 var(--ink); text-shadow: 0 3px 0 var(--ink);
-  animation: two-in 0.4s cubic-bezier(.5,0,.6,1.4) 2.5s both, two-pulse 1.8s ease-in-out 3.4s infinite;
-  /* medio montado sobre el final de "regalos" */
-  position: relative; z-index: 1; margin-left: -0.4em; top: -0.7em;
+  /* cae como sello, queda 3 segundos y después se despega y se cae */
+  animation: two-in 0.4s cubic-bezier(.5,0,.6,1.4) 2.5s both, two-pulse 1.55s ease-in-out 2.9s 2, two-peel 1.1s cubic-bezier(.5,0,.9,.6) 6s forwards;
 }
+/* lugar de los sellos: medio montado sobre el final de "regalos" */
+.logo .badge { position: relative; z-index: 1; display: inline-grid; place-items: center; margin-left: -0.4em; top: -0.7em; }
+@keyframes two-peel {
+  0% { transform: rotate(10deg); }
+  18% { transform: translate(3px, -5px) rotate(-12deg) scale(1.06); }
+  30% { transform: translate(5px, -2px) rotate(-4deg) scale(1.04); opacity: 1; }
+  100% { transform: translate(40px, 70vh) rotate(260deg) scale(0.9); opacity: 0; visibility: hidden; }
+}
+/* sello grande: torta de cumple con ¡25! */
+.logo .cake {
+  /* centrada justo donde estaba el 2, sin cambiar el lugar que ocupa */
+  position: absolute; left: 50%; top: 50%; width: 4.3em; height: 4.16em; margin: -2.3em 0 0 -1.75em; cursor: pointer;
+  animation: cake-in 0.45s cubic-bezier(.5,0,.6,1.4) 7s both, cake-pulse 2s ease-in-out 7.6s infinite;
+}
+.logo .cake .hv {
+  display: block; position: relative; width: 100%; height: 100%;
+  /* borde de sticker crema y sombrita */
+  filter: drop-shadow(2px 0 0 #fff4e0) drop-shadow(-2px 0 0 #fff4e0) drop-shadow(0 2px 0 #fff4e0) drop-shadow(0 -2px 0 #fff4e0) drop-shadow(0 4px 0 var(--ink));
+}
+.logo .cake svg { display: block; width: 100%; height: 100%; shape-rendering: crispEdges; }
+.logo .cake svg.num { position: absolute; left: 22%; width: 56%; top: 59%; height: auto; overflow: visible; }
+.logo .cake svg.num .fg { fill: #fff4e0; }
+.logo .cake svg.num .sh { fill: var(--ink); }
+.logo .cake .fl { animation: flame 0.5s steps(2) infinite; }
+@keyframes flame { 50% { opacity: 0.55; } }
+@keyframes cake-in {
+  0% { opacity: 0; transform: scale(3) rotate(-28deg); filter: blur(2px); }
+  70% { opacity: 1; transform: scale(0.88) rotate(-4deg); filter: none; }
+  100% { opacity: 1; transform: rotate(-8deg); }
+}
+@keyframes cake-pulse { 0%, 100% { transform: rotate(-8deg) scale(1); } 50% { transform: rotate(-4deg) scale(1.06); } }
+.logo .cake .hv.pop { animation: cake-wiggle 0.5s ease-in-out; }
+@keyframes cake-wiggle { 0%, 100% { transform: none; } 25% { transform: rotate(-10deg) scale(1.1); } 75% { transform: rotate(8deg) scale(1.1); } }
 .logo .two .hv { display: grid; place-items: center; width: 100%; height: 100%; }
 .logo .two .hv.pop { animation: two-spin 0.6s ease-in-out; }
 /* el 2 cae como un sello: grande y borroso desde arriba, golpea y queda torcidito */
@@ -543,7 +575,8 @@ html, body, button { -webkit-tap-highlight-color: transparent; }
 .spark.s5 { left: 46%; top: -12px; animation-delay: -1.4s; font-size: 9px; }
 @keyframes twinkle { 0%, 100% { opacity: 0.15; transform: scale(0.6) rotate(0deg); } 50% { opacity: 1; transform: scale(1.2) rotate(45deg); } }
 @media (prefers-reduced-motion: reduce) {
-  .logo .l1 .ch, .logo .hv, .logo .stamp, .logo .two, .title-gift, .logo-box, .logo-box .spark { animation: none !important; }
+  .logo .l1 .ch, .logo .hv, .logo .stamp, .logo .two, .logo .cake, .title-gift, .logo-box, .logo-box .spark { animation: none !important; }
+  .logo .two { display: none; }
 }
 
 .logo .l1 .w { display: inline-block; white-space: nowrap; }

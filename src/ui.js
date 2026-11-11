@@ -250,6 +250,44 @@ export class UI {
     l1.querySelectorAll('.ch:not(.sp)').forEach((el) => hover(el, 'talk'));
     hover(stamp, 'ui');
     hover(two, 'coin');
+    // el sello grande que reemplaza al 2: una torta de cumple con ¡25!
+    const cake = document.querySelector('.logo .cake');
+    const C = (x, y, w, h, c) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"/>`;
+    const INK = '#1d1420', CREAM = '#fff4e0';
+    const cakeSvg = [
+      // velitas con su llamita
+      C(10, 6, 4, 9, INK), C(17, 6, 4, 9, INK),
+      C(11, 7, 2, 7, '#7fd0ff'), C(11, 8, 2, 1, '#ffffff'), C(11, 11, 2, 1, '#ffffff'),
+      C(18, 7, 2, 7, '#ff9ad5'), C(18, 8, 2, 1, '#ffffff'), C(18, 11, 2, 1, '#ffffff'),
+      `<g class="fl">${C(11, 3, 2, 3, '#ffd34d')}${C(18, 3, 2, 3, '#ffd34d')}${C(12, 2, 1, 1, '#ff8a3d')}${C(19, 2, 1, 1, '#ff8a3d')}${C(11, 5, 1, 1, '#ff8a3d')}${C(18, 5, 1, 1, '#ff8a3d')}</g>`,
+      // plato
+      C(0, 26, 31, 4, INK), C(1, 26, 29, 2, '#d9dde1'), C(1, 26, 29, 1, '#ffffff'),
+      // bizcochuelo rosa
+      C(2, 13, 27, 14, INK), C(3, 15, 25, 11, '#f07aa6'), C(3, 24, 25, 2, '#d4608f'),
+      // crema de arriba que chorrea
+      C(3, 14, 25, 3, CREAM), C(5, 17, 2, 2, CREAM), C(9, 17, 2, 3, CREAM), C(14, 17, 3, 2, CREAM), C(20, 17, 2, 3, CREAM), C(24, 17, 2, 2, CREAM),
+      // granitos de colores
+      C(4, 21, 1, 1, '#ffd34d'), C(26, 20, 1, 1, '#7fd0ff'), C(5, 24, 1, 1, '#9fe870'), C(25, 23, 1, 1, '#ffd34d'),
+      C(7, 14, 1, 1, '#ff6b8a'), C(12, 15, 1, 1, '#7fd0ff'), C(17, 14, 1, 1, '#9fe870'), C(22, 15, 1, 1, '#ffd34d'),
+    ].join('');
+    // ¡25! dibujado en pixeles (la fuente pixel hace que el 2 parezca una S)
+    const GLYPHS = {
+      '¡': ['#', '.', '#', '#', '#', '#', '#'],
+      '2': TWO,
+      '5': ['#####', '#....', '####.', '....#', '....#', '#...#', '.###.'],
+      '!': ['#', '#', '#', '#', '#', '.', '#'],
+    };
+    let gx = 0;
+    const txt = [...'¡25!'].map((ch) => {
+      const g = GLYPHS[ch];
+      const out = g.flatMap((row, y) => [...row].map((c, x) => (c === '#' ? `<rect x="${gx + x}" y="${y}" width="1" height="1"/>` : ''))).join('');
+      gx += g[0].length + 1;
+      return out;
+    }).join('');
+    const tw = gx - 1;
+    cake.innerHTML = `<span class="hv"><svg viewBox="0 0 31 30" aria-hidden="true">${cakeSvg}</svg>`
+      + `<svg class="num" viewBox="-1 -1 ${tw + 2} 9"><g class="sh" transform="translate(0.5 0.6)">${txt}</g><g class="fg">${txt}</g></svg></span>`;
+    hover(cake, 'gem');
     const box = document.querySelector('.logo-box');
     document.querySelectorAll('.title-gift').forEach((img) => {
       img.src = ICON_URL.giftBig;
@@ -298,7 +336,13 @@ export class UI {
     this.show('screen-title', !on);
     if (on) this.show('screen-splash', false);
     // el "golpe" del sello del título
-    else setTimeout(() => { if (this.g.state === 'title' && this.g.audio.ctx) { this.g.audio.play('land'); this.g.audio.play('dig'); } }, 1380);
+    else {
+      // golpes de los sellos del título (el 2, que después se despega y se cae, y la torta del ¡25!)
+      const at = (ms, ...sfx) => setTimeout(() => { if (this.g.state === 'title' && this.g.audio.ctx) sfx.forEach((s) => this.g.audio.play(s)); }, ms);
+      at(2780, 'land', 'dig');
+      at(6100, 'swoosh');
+      at(7330, 'land', 'dig', 'gem');
+    }
   }
 
   // ---------- Intro ----------
