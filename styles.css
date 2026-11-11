@@ -476,25 +476,25 @@ html, body, button { -webkit-tap-highlight-color: transparent; }
 @keyframes ch-wave { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 @keyframes ch-pop { 0% { transform: none; } 35% { transform: translateY(-14px) scale(1.25) rotate(-8deg); } 70% { transform: translateY(2px) scale(0.95); } 100% { transform: none; } }
 .logo .l1 { animation: none; }
-/* "Salven los regalos": cartel de neón derecho, rectangular con bordes redondeados;
+/* "Salven los regalos": cartel de neón derecho: solo el tubo rectangular con bordes redondeados (sin caja atrás);
    al aparecer titila como un tubo que arranca y termina quedando prendido */
 .logo .stamp {
   --neon: #ff6fd0;
   display: inline-block; font-size: 1.45em; line-height: 1; padding: 0.22em 0.55em 0.28em;
-  color: #fff3c4; background: rgba(29,20,32,0.86);
+  color: #fff3c4; background: transparent;
   border: 3px solid #ffb3e6; border-radius: 0.5em;
-  text-shadow: 0 0 3px #ffd34d, 0 0 9px #ffb02e, 0 0 18px rgba(255,150,40,0.85);
-  box-shadow: 0 0 0 3px var(--ink), 0 0 8px 2px var(--neon), 0 0 22px 4px rgba(255,111,208,0.55), inset 0 0 10px rgba(255,111,208,0.55);
+  text-shadow: 0 2px 0 rgba(29,20,32,0.55), 0 0 3px #ffd34d, 0 0 9px #ffb02e, 0 0 18px rgba(255,150,40,0.85);
+  box-shadow: 0 0 8px 2px var(--neon), 0 0 22px 4px rgba(255,111,208,0.55), inset 0 0 10px rgba(255,111,208,0.55);
   animation: neon-on 1.5s steps(1, end) 0.95s both, neon-hum 7s steps(1, end) 3s infinite;
 }
 @keyframes neon-on {
-  0%, 9%, 14%, 27%, 31%, 52% { color: #6e5a4c; border-color: #5e3550; text-shadow: none; box-shadow: 0 0 0 3px var(--ink); }
+  0%, 9%, 14%, 27%, 31%, 52% { color: #b9a48a; border-color: #b98aa8; text-shadow: 0 2px 0 rgba(29,20,32,0.55); box-shadow: none; }
   8%, 13%, 24%, 30%, 46% { color: #fff3c4; border-color: #ffb3e6;
-    text-shadow: 0 0 3px #ffd34d, 0 0 9px #ffb02e, 0 0 18px rgba(255,150,40,0.85);
-    box-shadow: 0 0 0 3px var(--ink), 0 0 8px 2px var(--neon), 0 0 22px 4px rgba(255,111,208,0.55), inset 0 0 10px rgba(255,111,208,0.55); }
+    text-shadow: 0 2px 0 rgba(29,20,32,0.55), 0 0 3px #ffd34d, 0 0 9px #ffb02e, 0 0 18px rgba(255,150,40,0.85);
+    box-shadow: 0 0 8px 2px var(--neon), 0 0 22px 4px rgba(255,111,208,0.55), inset 0 0 10px rgba(255,111,208,0.55); }
   56%, 100% { color: #fff3c4; border-color: #ffb3e6;
-    text-shadow: 0 0 3px #ffd34d, 0 0 9px #ffb02e, 0 0 18px rgba(255,150,40,0.85);
-    box-shadow: 0 0 0 3px var(--ink), 0 0 8px 2px var(--neon), 0 0 22px 4px rgba(255,111,208,0.55), inset 0 0 10px rgba(255,111,208,0.55); }
+    text-shadow: 0 2px 0 rgba(29,20,32,0.55), 0 0 3px #ffd34d, 0 0 9px #ffb02e, 0 0 18px rgba(255,150,40,0.85);
+    box-shadow: 0 0 8px 2px var(--neon), 0 0 22px 4px rgba(255,111,208,0.55), inset 0 0 10px rgba(255,111,208,0.55); }
 }
 /* de vez en cuando el tubo hace un parpadeo cortito, como los neones de verdad */
 @keyframes neon-hum { 0%, 96%, 98%, 100% { opacity: 1; } 97% { opacity: 0.55; } }
