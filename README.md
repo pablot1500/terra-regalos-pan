@@ -60,7 +60,7 @@ En iPhone/iPad conviene agregarlo a la pantalla de inicio (Compartir → Agregar
   - Pablo y Panchi llegan al patio charlando sobre el cumple y lo que pasó el año pasado con los regalos, y Popi (que se coló en el auto) los saluda.
   - Suben la escalera hasta el departamento 1B y Pablo busca los regalos debajo de la cama. En su lugar encuentra una nota firmada "A" (y una pluma sospechosa): los regalos están "bien, bien, bieeen abajo".
   - "Mientras tanto, muy, muy abajo...": la cámara baja hasta el primer cofre, que brilla un rato, y vuelve al departamento.
-  - Se miran, la cámara baja hasta la tierra y se dan cuenta: ¡abajo de ellos! Después la cámara va hasta el taller de Carlos, donde ahora venden palas, y al final sube al cielo.
+  - Se miran con un "?" y se dan cuenta: ¡abajo de ellos! Después la cámara va hasta el taller de Carlos, donde ahora venden palas, y al final sube al cielo.
 - La intro tiene barras de cine, zoom de cámara, diálogos con retrato que se escriben letra por letra (click, Espacio o Enter para avanzar) y un botón para saltarla.
 - El guión está en [`src/intro.js`](src/intro.js), en la función `script()`. El texto de la nota es `NOTE_TEXT`.
 - La pantalla de inicio, **Cumple Panchita: Salven los regalos 2**, tiene de fondo el cielo del juego. Ahí se elige personaje y hay botones para Empezar (o Continuar), Configuración (sonido y volúmenes), Controles y para ver la intro otra vez.

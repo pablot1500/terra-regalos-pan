@@ -153,22 +153,11 @@ export function* introScript(sc) {
   // ---- se miran... y se dan cuenta: ¡abajo de ellos! ----
   A.pablo.facing = 1; A.pancha.facing = -1;
   sc.emote('pablo', '?'); sc.emote('pancha', '?');
-  yield sc.wait(1.3);
-  // la cámara baja despacito por debajo del piso, hasta la tierra...
-  sc.camSpeed = 1.3;
-  sc.fixed = { x: 128, y: FLOOR + 40 };
-  yield sc.wait(2.6);
-  // ...y vuelve de golpe a ellos
-  sc.camSpeed = 5;
-  sc.fixed = { x: 128, y: APT - 14 };
-  sc.setZoom(2.5);
-  yield sc.wait(0.6);
-  sc.camSpeed = null;
+  yield sc.wait(1.6);
   sc.emote('pablo', '!'); sc.emote('pancha', '!');
   g.audio.play('surprise');
   g.shake(1.2);
   yield sc.say('pancha', '¡Abajo nuestro!!!');
-  sc.setZoom(2.2);
   yield sc.say('pablo', 'No puedo creer que tengamos que hacer esto..');
   yield sc.say('pancha', 'En el taller de la casa rodante venden palas.');
 

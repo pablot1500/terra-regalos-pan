@@ -91,7 +91,7 @@ export class Scene {
   caption(text) { this.ui.introCaption(text); }
 
   say(who, text) {
-    this.line = { who, text, shown: 0, t: 0, hold: 1.8 + text.length * 0.045 };
+    this.line = { who, text, shown: 0, t: 0, hold: 2.8 + text.length * 0.045 };
     const sp = SPEAKERS[who];
     this.ui.introSay(sp.name, sp.icon(), '');
     return () => this.line === null;
