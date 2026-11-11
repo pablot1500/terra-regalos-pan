@@ -321,6 +321,47 @@ export function drawDrill(ctx, sx, sy, facing, bob, ang, level, charId, spin) {
   px(hx - ca * 0.5, hy - sa * 0.5, pal.s);
 }
 
+// súper pistolas de agua (pelea final): la de Pablo violeta con tanque naranja, la de Panchi rosa con tanque celeste
+const GUN_COLORS = {
+  pablo: { body: '#8a5cc9', dark: '#4e2f86', hi: '#c9a6ff', tank: '#ff9a3d', tankHi: '#ffd49a', tankDk: '#b85a14' },
+  pancha: { body: '#ff7ac8', dark: '#b0307a', hi: '#ffe1f3', tank: '#5fd0ff', tankHi: '#d8f6ff', tankDk: '#2c8db5' },
+};
+
+/** Súper pistola de agua en la mano, apuntando en `ang` (local, mirando a la derecha). `kick` = retroceso del disparo (0..1) */
+export function drawWaterGun(ctx, sx, sy, facing, bob, ang, charId, kick = 0) {
+  const pal = CHAR_PAL[charId] || CHAR_PAL.pablo;
+  const C = GUN_COLORS[charId] || GUN_COLORS.pablo;
+  const mx = (lx) => (facing > 0 ? sx + Math.round(lx) : sx + CHAR_W - 1 - Math.round(lx));
+  const my = (ly) => sy + Math.round(ly);
+  const px = (lx, ly, col) => { ctx.fillStyle = col; ctx.fillRect(mx(lx), my(ly), 1, 1); };
+  const shX = SHOULDER.x, shY = SHOULDER.y + bob;
+  const ca = Math.cos(ang), sa = Math.sin(ang);
+  const back = kick * 1.2;
+  const hx = shX + ca * (2.5 - back), hy = shY + sa * (2.5 - back);
+  const nx = -sa, ny = ca; // perpendicular (hacia "abajo" del caño)
+  // tanque redondo arriba del caño
+  for (let t = -1; t <= 2; t += 0.5) {
+    for (let w = -3; w <= -2; w++) {
+      const col = w === -3 ? (t < 0.5 ? C.tankHi : C.tank) : t > 1.5 ? C.tankDk : C.tank;
+      px(hx + ca * t + nx * w, hy + sa * t + ny * w, col);
+    }
+  }
+  // caño
+  for (let t = -1.5; t <= 5; t += 0.5) {
+    for (let w = -1; w <= 0; w++) px(hx + ca * t + nx * w, hy + sa * t + ny * w, w === -1 ? C.hi : C.body);
+    px(hx + ca * t + nx * 1, hy + sa * t + ny * 1, C.dark);
+  }
+  // boquilla amarilla
+  for (let t = 5.5; t <= 6.5; t += 0.5) for (let w = -1; w <= 0; w++) px(hx + ca * t + nx * w, hy + sa * t + ny * w, '#ffd34d');
+  // empuñadura y gatillo
+  px(hx + ca * -0.5 + nx * 2, hy + sa * -0.5 + ny * 2, C.dark);
+  px(hx + ca * -1 + nx * 2, hy + sa * -1 + ny * 2, C.dark);
+  px(hx + ca * 0.5 + nx * 2, hy + sa * 0.5 + ny * 2, '#3a3f45');
+  // brazo + mano
+  pixelLine(ctx, mx(shX), my(shY), mx(hx - ca), my(hy - sa), pal.C);
+  px(hx - ca * 0.5, hy - sa * 0.5, pal.s);
+}
+
 // ============================================================
 //  Tesoros
 // ============================================================

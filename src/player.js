@@ -1,6 +1,6 @@
 import { TILE, WORLD_W, EDGE, PHYS, DIG, CRYSTAL_DIG, BRUSH_R, HP_MAX, REST, HOVER, LAVA, BOSS } from './config.js';
 import { DEF, T, isDiggable, hardness } from './tiles.js';
-import { getCharFrames, drawArmShovel, drawDrill, CHAR_W, CHAR_H } from './sprites.js';
+import { getCharFrames, drawArmShovel, drawDrill, drawWaterGun, CHAR_W, CHAR_H } from './sprites.js';
 import { HOME_ZONE, SHOP_ZONE, SPAWN, inZone } from './structures.js';
 import { depthAtY, SUB } from './world.js';
 import { clamp } from './util.js';
@@ -60,8 +60,11 @@ export class Player {
     this.hovering = false;    // modo vuelo del jetpack (últimos niveles)
     this.burnT = 0;           // para mostrar de a ratos el daño de la lava
     this.burnAcc = 0;
-    this.heldRock = null;     // roca de magma atajada con el taladro (pelea con Aguilus)
     this.jetFuel = 0;         // en la pelea el jetpack dura poquito
+    this.firing = false;      // pelea con Aguilus: tirando agua con la súper pistola
+    this.gunCd = 0; this.gunKick = 0;
+    this.downed = false;      // pelea: se quedó sin vida y espera que el otro lo levante
+    this.revive = 0;          // barrita de revivir (0 a 1)
   }
 
   toggleHover() {
@@ -143,6 +146,50 @@ export class Player {
     return null;
   }
 
+  /** pelea final: hacia dónde apunta la súper pistola y si está tirando agua */
+  readGun(inp, ix) {
+    if (inp.aimOn) {
+      // joystick derecho (táctil o del control): apunta y, empujado, dispara
+      const d = Math.hypot(inp.ax, inp.ay);
+      if (d > 0.25) return { aim: { x: inp.ax / d, y: inp.ay / d }, fire: d > 0.45 || !!inp.fire, point: true };
+    }
+    if (inp.mouseDig) {
+      const dx = inp.mx - this.cx, dy = inp.my - (this.cy - 2), d = Math.hypot(dx, dy);
+      return { aim: d > 0.5 ? { x: dx / d, y: dy / d } : { x: this.facing, y: 0 }, fire: true, point: true };
+    }
+    if (inp.mouseAim) {
+      const dx = inp.mx - this.cx, dy = inp.my - (this.cy - 2), d = Math.hypot(dx, dy);
+      if (d > 0.5) return { aim: { x: dx / d, y: dy / d }, fire: !!inp.fire, point: true };
+    }
+    if (inp.dig || inp.fire) {
+      // J + dirección (o el gatillo del control con el stick izquierdo)
+      const iy = inp.up ? -1 : inp.down ? 1 : 0;
+      let x = ix, y = iy;
+      if (!x && !y) return { aim: this.lastAim || { x: this.facing, y: 0 }, fire: true, point: false };
+      const d = Math.hypot(x, y);
+      return { aim: { x: x / d, y: y / d }, fire: true, point: true };
+    }
+    return { aim: this.lastAim && Math.sign(this.lastAim.x) === this.facing ? this.lastAim : { x: this.facing, y: -0.15 }, fire: false, point: false };
+  }
+
+  /** un toque del otro para levantarlo */
+  reviveTap() {
+    if (!this.downed) return;
+    this.revive += BOSS.reviveTap;
+    if (this.revive >= 1) this.getUp();
+  }
+
+  getUp() {
+    const g = this.game;
+    this.downed = false; this.revive = 0;
+    this.hp = HP_MAX;
+    this.hurtT = 1.4; // un ratito invulnerable (titila)
+    this.vy = -120; this.onGround = false;
+    g.audio.play('buy');
+    g.addText(this.cx, this.y - 8, '¡ARRIBA!', '#9cf08a');
+    for (let i = 0; i < 10; i++) g.particles.add({ x: this.cx + (Math.random() - 0.5) * 10, y: this.cy, vx: (Math.random() - 0.5) * 30, vy: -20 - Math.random() * 30, life: 0.9, max: 0.9, heart: true, grav: 0 });
+  }
+
   /** Busca qué hay para cavar en la dirección `aim` */
   findTarget(aim) {
     const W = this.game.world;
@@ -168,17 +215,29 @@ export class Player {
     if (this.dead) return;
 
     const ix = (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
+    // en la pelea con Aguilus no se cava: se tira agua con la súper pistola
+    const arena = !!(g.boss && g.boss.fighting);
+    if (this.downed) { this.updateDowned(dt, arena); return; }
 
     // ---- apuntar ----
-    let aim = this.readAim(inp, ix);
-    if (aim) this.lastAim = aim;
-    if (aim && Math.abs(aim.x) > 0.2) this.facing = aim.x > 0 ? 1 : -1;
-    else if (ix) this.facing = ix;
+    let aim = null;
+    if (arena) {
+      const gun = this.readGun(inp, ix);
+      this.firing = gun.fire;
+      this.aim = gun.aim;
+      if (gun.aim) this.lastAim = gun.aim;
+      if (gun.point && Math.abs(gun.aim.x) > 0.15) this.facing = gun.aim.x > 0 ? 1 : -1;
+      else if (ix) this.facing = ix;
+    } else {
+      this.firing = false;
+      aim = this.readAim(inp, ix);
+      if (aim) this.lastAim = aim;
+      if (aim && Math.abs(aim.x) > 0.2) this.facing = aim.x > 0 ? 1 : -1;
+      else if (ix) this.facing = ix;
+    }
 
     let walkIx = ix;
     let target = null;
-    // en la pelea con Aguilus el taladro no cava: sirve para atajar las rocas
-    const arena = !!(g.boss && g.boss.fighting);
     if (aim && !arena) {
       target = this.findTarget(aim);
       if (!target) aim = null;
@@ -255,6 +314,12 @@ export class Player {
       if (this.vy < 0) this.vy = 0;
     }
     if (arena && this.y < g.boss.ceilY) { this.y = g.boss.ceilY; this.vy = Math.max(0, this.vy); }
+    // en la pelea no se puede salir de la plataforma (abajo hay un mar de lava)
+    if (arena) {
+      const x0 = g.boss.platX0 + 1, x1 = g.boss.platX1 - this.w - 1;
+      if (this.x < x0) { this.x = x0; this.vx = Math.max(0, this.vx); }
+      if (this.x > x1) { this.x = x1; this.vx = Math.min(0, this.vx); }
+    }
     this.onGround = this.vy >= 0 && this.collides(this.x, this.y + 1);
     if (arena && this.onGround) this.jetFuel = BOSS.jetTime;
     if (this.onGround) {
@@ -273,10 +338,9 @@ export class Player {
       g.particles.add({ x: this.cx - Math.sign(this.vx) * 3, y: this.y + this.h, vx: -Math.sign(this.vx) * (10 + Math.random() * 20), vy: -10 - Math.random() * 15, life: 0.35, max: 0.35, color: 'rgba(220,205,180,0.7)', size: 1, grav: 40 });
     }
 
-    // ---- cavar (o atajar rocas en la pelea) ----
+    // ---- cavar (en la pelea, la pistola dispara desde boss.js) ----
     if (arena) {
-      this.aim = aim; this.digging = !!aim; this.digPoint = null; this.digProg = 0; this.tooHard = false;
-      if (aim) this.digAnim += dt;
+      this.digging = false; this.digPoint = null; this.digProg = 0; this.tooHard = false;
     } else this.updateDig(dt, aim, target);
 
     // ---- zonas ----
@@ -311,6 +375,18 @@ export class Player {
       if (this.exhaustT > 0.1 && this.exhaustT - dt <= 0.1) this.note('¡Te quedaste sin energía!', 'noen');
       if (this.exhaustT > 2.5) g.faint(this, 'energy');
     } else this.exhaustT = 0;
+  }
+
+  /** tirado en el piso: no se mueve, y la barrita de revivir se descarga si nadie toca */
+  updateDowned(dt, arena) {
+    this.firing = false; this.digging = false; this.flying = false; this.hovering = false;
+    this.vx *= Math.max(0, 1 - dt * 8);
+    this.vy = Math.min(this.vy + PHYS.gravity * dt, PHYS.maxFall);
+    this.moveX(this.vx * dt);
+    if (this.moveY(this.vy * dt) && this.vy > 0) this.vy = 0;
+    this.onGround = this.collides(this.x, this.y + 1);
+    this.revive = Math.max(0, this.revive - BOSS.reviveDecay * dt);
+    if (!arena) { this.downed = false; this.revive = 0; } // terminó la pelea
   }
 
   /** fueguito y humo del jetpack */
@@ -353,15 +429,20 @@ export class Player {
   }
 
   hurt(dmg, reason = 'fall') {
-    const g = this.game;
-    if (this.bot) return; // el compañero bot no se lastima
+    const g = this.game, B = g.boss, arena = !!(B && B.fighting);
+    if (this.bot && !arena) return; // el compañero bot no se lastima (salvo en la pelea final)
+    if (this.downed) return;
     this.hp -= dmg;
     this.hurtT = 0.8;
     g.audio.play('hurt');
     g.addText(this.cx, this.y - 6, '-' + dmg, '#ff5d6c');
-    g.shake(Math.min(6, 2 + dmg / 12));
+    if (!this.bot) g.shake(Math.min(6, 2 + dmg / 12));
     for (let i = 0; i < 8; i++) g.particles.add({ x: this.cx, y: this.cy, vx: (Math.random() - 0.5) * 60, vy: -Math.random() * 60, life: 0.5, max: 0.5, color: '#ff5d6c', size: 1, grav: 200 });
-    if (this.hp <= 0) { this.hp = 0; g.faint(this, reason); }
+    if (this.hp <= 0) {
+      this.hp = 0;
+      if (arena) B.knockDown(this); // queda tirado: el otro lo puede levantar
+      else g.faint(this, reason);
+    }
   }
 
   updateDig(dt, aim, target) {
@@ -480,8 +561,9 @@ export class Player {
   // ------------------------------------------------------------
   draw(ctx, camX, camY) {
     if (this.dead) return;
-    if (this.hurtT > 0 && Math.floor(this.hurtT * 20) % 2 === 0) return;
     const frames = getCharFrames(this.char, this.game.upgrades.motor, this.game.upgrades.casco)[this.facing > 0 ? 'right' : 'left'];
+    if (this.downed) { this.drawDowned(ctx, camX, camY, frames); return; }
+    if (this.hurtT > 0 && Math.floor(this.hurtT * 20) % 2 === 0) return;
     let frame;
     if (!this.onGround) frame = 'air';
     else if (Math.abs(this.vx) > 5 && !this.digging) frame = ['walkA', 'walkB', 'walkC', 'walkB'][Math.floor(this.walkT * 9) % 4];
@@ -502,6 +584,14 @@ export class Player {
     }
 
     ctx.drawImage(frames[frame], sx, sy);
+
+    // pelea final: la súper pistola de agua apuntando
+    if (this.game.boss && this.game.boss.fighting) {
+      const a = this.aim || this.lastAim || { x: this.facing, y: 0 };
+      const ang = Math.atan2(a.y, Math.abs(a.x) < 0.05 ? 0.05 : a.x * this.facing);
+      drawWaterGun(ctx, sx, sy, this.facing, bob, ang, this.char, this.gunKick || 0);
+      return;
+    }
 
     // brazo + pala
     let arm, sh, len = 7;
@@ -529,6 +619,22 @@ export class Player {
     } else { arm = 1.0; sh = 1.05; len = 4; }
     if (drill) drawDrill(ctx, sx, sy, this.facing, bob, this.digging ? arm : 0.9, this.game.upgrades.pala, this.char, this.digging ? this.anim : 0);
     else drawArmShovel(ctx, sx, sy, this.facing, bob, arm, sh, this.game.upgrades.pala, this.char, len);
+  }
+
+  /** tirado en el piso de espaldas, con estrellitas dando vueltas */
+  drawDowned(ctx, camX, camY, frames) {
+    const fx = Math.round(this.cx - camX), fy = Math.round(this.y + this.h - camY);
+    ctx.save();
+    ctx.translate(fx, fy - 5);
+    ctx.rotate(-this.facing * Math.PI / 2);
+    ctx.drawImage(frames.blink, -CHAR_W / 2, -CHAR_H / 2);
+    ctx.restore();
+    const hx = fx - this.facing * 9, hy = fy - 7;
+    for (let i = 0; i < 3; i++) {
+      const a = this.anim * 4 + i * 2.1;
+      ctx.fillStyle = i % 2 ? '#ffd34d' : '#fff4e0';
+      ctx.fillRect(Math.round(hx + Math.cos(a) * 5), Math.round(hy - 2 + Math.sin(a) * 2), 1, 1);
+    }
   }
 }
 

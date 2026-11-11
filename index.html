@@ -18,6 +18,8 @@
 <body>
   <div id="app">
     <canvas id="game"></canvas>
+    <!-- recuerdo (escena de Carlos en la pelea final): bordes de sueño -->
+    <div id="flashback" class="hidden"></div>
 
     <!-- HUD -->
     <div id="hud" class="hidden">
@@ -58,6 +60,9 @@
       <button id="t-dig" class="tbtn dig">CAVAR</button>
       <button id="t-torch" class="tbtn mini torch" aria-label="Poner antorcha"><img class="ico" data-icon="torch" alt=""><span id="t-torch-n">0</span></button>
       <button id="t-jump" class="tbtn jump">SALTAR<small>mantené para volar</small></button>
+      <!-- pelea final: el pulgar derecho apunta y tira agua -->
+      <div id="aim-zone"></div>
+      <div id="aim-stick"><div id="aim-knob"></div><small>APUNTAR</small></div>
     </div>
 
     <!-- Arranque: hace falta un toque para que el navegador deje sonar el audio -->
@@ -159,7 +164,7 @@
       <div class="panel pause">
         <h2>Pausa</h2>
         <button class="btn" id="btn-resume">Seguir jugando</button>
-        <button class="btn small alt hidden" id="btn-rematch">Volver a pelear con Aguilus</button>
+        <button class="btn small alt hidden" id="btn-rematch">Pelear con Aguilus</button>
         <div class="row">
           <button class="btn small alt" id="p-settings">Configuración</button>
           <button class="btn small alt" id="p-controls">Controles</button>
@@ -181,7 +186,7 @@
         <h2>Canciones</h2>
         <p class="hint" id="songs-now"></p>
         <div id="songs-list" class="songs"></div>
-        <p class="hint">Tocá una para escucharla (se repite). Al volver al juego, la música vuelve a cambiar según la profundidad.</p>
+        <p class="hint">Tocá una para escucharla (se repite). Al volver al juego, la música vuelve a cambiar según la profundidad, con las canciones elegidas en Configuración.</p>
         <div class="row">
           <button class="btn small alt" id="songs-auto">Música normal</button>
           <button class="btn" id="songs-ok">Listo</button>
@@ -198,6 +203,11 @@
           <button class="btn small alt" id="btn-music">Música</button>
         </div>
         <button class="btn small alt" id="btn-duo">Compañero</button>
+        <div class="row">
+          <button class="btn small alt" id="btn-music-src">Canciones: originales</button>
+          <button class="btn small alt" id="s-songs">Escuchar canciones</button>
+        </div>
+        <p class="hint" id="music-src-hint">Originales: las programadas en el juego. Generadas: hechas con ElevenLabs.</p>
         <p class="hint">Con el compañero prendido, el otro personaje te acompaña, ayuda a cavar y charlan cada tanto.</p>
         <div class="vols">
           <label><span>Música</span><input type="range" id="vol-music" min="0" max="100" step="5"><output></output></label>

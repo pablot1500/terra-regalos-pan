@@ -40,6 +40,8 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 | Música / sonidos | M / N o los botones de arriba | Botones de arriba |
 | Pausa | Esc | Botón ❚❚ |
 
+**Con joystick** (Xbox, PlayStation o cualquier control estándar, en compu, celu o tablet): stick izquierdo o cruz para caminar (abajo cava para abajo), stick derecho para cavar hacia ese lado (y en la pelea, para apuntar y tirar agua), A saltar/volar, RT cavar o disparar, LT bajar despacio, X o B para la E (taller, Popi, vuelo, revivir), Y antorcha, LB cavado automático, Start pausa. En los menús, la cruz mueve, A aprieta y B vuelve; en las escenas, A pasa los diálogos y Start las salta.
+
 En iPhone/iPad conviene agregarlo a la pantalla de inicio (Compartir → Agregar a pantalla de inicio) para jugar en pantalla completa. En iPad los botones son más grandes.
 
 ## Jugar online de a dos
@@ -57,7 +59,7 @@ En iPhone/iPad conviene agregarlo a la pantalla de inicio (Compartir → Agregar
 
 - Al abrir el juego hay que tocar la pantalla una vez (el navegador no deja sonar audio sin un toque) y arranca la **intro**:
   - El botón se desvanece y la cámara baja del cielo hasta el patio, con parallax (el cielo, las nubes, la costa, el barrio y la pared del fondo se mueven a distinto ritmo que el piso). Recién cuando llega, se abre el portón de la calle y entran los personajes por ahí.
-  - Pablo y Panchi llegan al patio charlando sobre el cumple y lo que pasó el año pasado con los regalos, y Popi (que se coló en el auto) los saluda.
+  - Pablo y Panchi llegan al patio charlando sobre el cumple y lo que pasó el año pasado con los regalos. Al fondo del patio hay dos autos estacionados: un sedán rojo (de frente, en diagonal) y el Gol gris, donde está escondido Popi.
   - Suben la escalera hasta el departamento 1B y Pablo busca los regalos debajo de la cama. En su lugar encuentra una nota firmada "A" (y una pluma sospechosa): los regalos están "bien, bien, bieeen abajo".
   - "Mientras tanto, muy, muy abajo...": la cámara baja hasta el primer cofre, que brilla un rato, y vuelve al departamento.
   - Se miran con un "?" y se dan cuenta: ¡abajo de ellos! Después la cámara va hasta el taller de Carlos, donde ahora venden palas, y al final sube al cielo.
@@ -78,7 +80,7 @@ En iPhone/iPad conviene agregarlo a la pantalla de inicio (Compartir → Agregar
   - **Jetpack**: volar más rápido, gastar menos energía y bajar más despacio con S. El anteúltimo nivel trae **modo vuelo** (E): sin gravedad, se maneja fácil para arriba, abajo y a los costados; el último lo hace rapidísimo.
   - **Casco de minero**: la lámpara ilumina más lejos bajo tierra.
   - Cada mejora de la pala/taladro y de la pala ancha también suma un poco de alcance para cavar.
-- En el patio te espera **Popi**, el perro salchicha (acercate y apretá E para llevarlo, o desde el taller): con casquito y mini jetpack te sigue solo (camina, salta y vuela), te ayuda a cavar los bloques de al lado al 25% de tu ritmo, y no gasta energía ni se lastima.
+- **Popi**, el perro salchicha, se coló escondido en el Gol: la primera vez que bajan al patio jugando, ladra adentro del auto, se abre la puerta y sale (una mini escena), y se suma a la aventura. Después lo pueden dejar en el patio y volver a buscarlo (acercate y apretá E, o desde el taller): con casquito y mini jetpack te sigue solo (camina, salta y vuela), te ayuda a cavar los bloques de al lado al 25% de tu ritmo, y no gasta energía ni se lastima.
 - **Compañero:** si jugás con Pablo, Panchi te acompaña manejada por la compu (y al revés). Te sigue más o menos libre, vuela con vos, junta lo que encuentre y cava al costado de donde estás cavando; no se lastima ni gasta energía. Cada 120 m charlan con burbujitas de diálogo (sin frenar el juego). Se prende o apaga en Configuración. Está armado para que más adelante el compañero lo pueda manejar otra persona.
 - En el taller también se compran **antorchas** ($25): iluminan una zona grande y no se rompen al cavar.
 - Cavar y volar gastan energía. En el departamento se recargan la energía y la vida.
@@ -90,16 +92,18 @@ En iPhone/iPad conviene agregarlo a la pantalla de inicio (Compartir → Agregar
 ## Aguilus (el jefe)
 
 - Al pisar la plataforma del núcleo arranca una charla con **Aguilus**, el águila mago que escondió los regalos. Es más alto y estilizado que Pablo y Panchi, con túnica larga y báculo. La pareja cae detrás y da los consejos para la pelea.
-- **Pelea:** Aguilus vuela de un lado al otro cambiando de ritmo (lento, ráfagas rápidas, pausas) y alterna hechizos:
-  - **Rocas de magma** (piedras marrones irregulares con grietas encendidas; en el piso aparece un aviso de dónde caen). Manteniendo el taladro apuntado a una roca, se queda pegada en la punta; con **E** (o el botón LANZAR) se la devolvés. Va adonde apuntás (mouse o taladro), sin corrección: si Aguilus se mueve hay que adelantarse. Una línea de puntitos muestra el tiro.
-  - **Plumas-dardo** en abanico, **columnas de fuego** que salen del piso (titilan antes) y **picadas** contra el piso con ondas de choque que hay que saltar. Estos no se atajan: se esquivan.
-  - Tiene **10 de vida** (barra abajo en el centro). A la mitad se enoja y va más rápido.
-  - En la pelea el jetpack dura muy poquito y tiene poca fuerza, y hay un techo invisible: no se puede escapar volando.
-  - Si te noquean, te desmayás y aparecés en casa (con una pluma violeta en la almohada): hay que volver a bajar y Aguilus se recupera del todo. Cuando llegás de nuevo, te gasta con una charla distinta según cuántas veces te ganó.
-  - Después de ganarle, en la pausa aparece **Volver a pelear con Aguilus** para repetir la pelea.
+- **El interruptor secreto:** Aguilus se eleva riéndose ("¡con esos taladritos no me hacen ni cosquillas!") y Panchi se acuerda de lo que les dijo Carlos. Hay un recuerdo en sepia en el Taller (con Pablo durmiendo parado): "si las cosas se complican, toquen el interruptor secreto". Lo tocan, los taladros se transforman en **súper pistolas de agua** y hay una cinemática de pelea con primeros planos de los tres y "¡A PELEAR!".
+- **Pelea:** se apunta y se tira agua. En la compu, con el mouse (mantener el click); en el celu, con el joystick derecho (el izquierdo mueve y, para arriba, vuela); con joystick, stick derecho + RT. Cada gotita le saca 1 de vida a Aguilus (tiene **500**, barra abajo en el centro).
+  - Aguilus vuela de un lado al otro y alterna hechizos: **rocas de magma** (el agua las apaga y se vuelven piedras grises que no lastiman), **plumas-dardo**, **columnas de fuego**, **picadas** con ondas de choque que hay que saltar, y llama **aguilitas** (8 gotitas cada una) que revolotean y se tiran en picada. Mientras las llama tiene un escudo violeta donde el agua rebota. Las aguilitas, al caer, salen despedidas, rebotan en la plataforma, ruedan y se caen al mar de lava.
+  - Al 66% de vida se enoja (más rápido, más plumas y un **rayo violeta** que apunta con una línea de aviso) y al 33% se pone furioso (**lluvia de meteoritos** y más aguilitas).
+  - **Revivir:** si a alguien se le termina la vida queda tirado con estrellitas; el otro se acerca y aprieta E (o REVIVIR, o X) varias veces hasta llenar la barrita, y se levanta con la vida llena. Jugando solo, el compañero bot pelea al lado (aunque el modo de a dos esté apagado), esquiva, tira agua y te levanta; vos también lo podés levantar a él. Si caen los dos, se desmayan, aparecen en casa (con una pluma violeta en la almohada) y Aguilus se recupera.
+  - En la pelea el jetpack dura muy poquito, hay un techo invisible y no se puede salir de la plataforma.
+  - Cuando vuelven a bajar después de perder, Aguilus los gasta con una charla distinta según cuántas veces les ganó, y vuelven a tocar el interruptor.
+  - Para probar la pelea sin jugar todo: en la pausa está **Pelear con Aguilus**, que te deja en la plataforma del núcleo.
 - **Final:** Aguilus queda tirado, se rinde y les ruega que no lo dejen ahí abajo. Se abrazan los tres, salen volando por el pozo del cantero y aterrizan sobre las baldosas al lado del arbolito, donde Aguilus jadea, se recompone y se va volando. Termina con un chiste con Carlos y el cartel de fin.
 - Los guiones están en [`src/boss.js`](src/boss.js) (`encounterScript` y `victoryScript`); el sprite de Aguilus, en [`src/aguilus.js`](src/aguilus.js).
 - El medidor de la derecha marca la profundidad y dónde están los regalos.
+- **Canciones generadas (opcional):** en Configuración, **Canciones: originales / generadas** cambia entre las programadas y otras 12 hechas con ElevenLabs (3 por zona, del mismo largo que las originales). **Escuchar canciones** (también en la pausa) las muestra a todas para escucharlas una por una. Para generarlas: `ELEVENLABS_API_KEY=tu_clave node tools/generar-musica.mjs` (o la clave en un archivo `.env.local`, que no se sube); quedan en `music/gen/` con su `manifest.json`. Con un número (`node tools/generar-musica.mjs 4`) rehace solo esa, y `--todas` rehace todas. Los textos que se le piden a ElevenLabs están en el mismo script.
 - La música cambia con la profundidad: tres canciones para la superficie (hasta 300 m), tres para la zona media (300 a 800 m), tres para lo profundo (800 a 1500 m) y tres de combate final en el núcleo. Dentro de cada zona se alternan al azar, con fundidos entre una y otra. Cada vuelta de una canción suena distinta: la primera arranca sin batería, después entran una segunda voz que armoniza y los arpegios, hay redobles al final de cada vuelta y muchas suben un tono en la última. Hay varios instrumentos (cuadrada, campana, cuerda pulsada, coro, sierra épica) y ritmos (cumbia, latido, galope de batalla). Están escritas en texto en [`src/music.js`](src/music.js).
 - El progreso se guarda solo en el navegador (localStorage).
 

@@ -166,6 +166,21 @@ function compile(song) {
 }
 const COMPILED = SONGS.map((zone) => zone.map(compile));
 
+// ------------------------------------------------------------
+//  Canciones generadas con ElevenLabs (opcionales): music/gen/manifest.json
+//  (las arma tools/generar-musica.mjs). Suenan como archivos, de a una, con los mismos fundidos.
+// ------------------------------------------------------------
+export const GEN = { zones: [[], [], [], []], loaded: false };
+const GEN_GAIN = 0.9; // volumen de los mp3 al lado de las programadas
+export function loadGenerated() {
+  return fetch('music/gen/manifest.json', { cache: 'no-store' })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((m) => { if (m && Array.isArray(m.zones)) GEN.zones = [0, 1, 2, 3].map((z) => (Array.isArray(m.zones[z]) ? m.zones[z] : [])); })
+    .catch(() => { /* todavía no hay canciones generadas */ })
+    .finally(() => { GEN.loaded = true; });
+}
+export const hasGenerated = () => GEN.zones.some((z) => z.length > 0);
+
 /** nota del acorde que queda justo debajo de la melodía (una tercera o sexta abajo, más o menos) */
 function harmonize(f, chord) {
   let best = 0;
@@ -190,7 +205,8 @@ export class MusicDirector {
     this.zone = 0;          // zona en la que está el jugador
     this.away = 0;          // tiempo que lleva el jugador fuera de la zona de la canción
     this.songIdx = COMPILED.map((z) => Math.floor(Math.random() * z.length));
-    this.forced = null;     // canción elegida a mano desde la pausa (modo prueba): {zone, idx}
+    this.genIdx = [0, 1, 2, 3].map(() => Math.floor(Math.random() * 3));
+    this.forced = null;     // canción elegida a mano desde la pausa (modo prueba): {zone, idx, src}
     this.track = null;
     this.lastT = this.c.currentTime;
     this.start(0);
@@ -204,16 +220,25 @@ export class MusicDirector {
     this.zone = z;
   }
 
-  /** lista de canciones por zona (para el menú de prueba) */
-  static list() {
+  /** lista de canciones por zona (para el menú de prueba); `src`: 'orig' o 'gen' */
+  static list(src = 'orig') {
+    if (src === 'gen') return GEN.zones.map((z) => z.map((s) => s.name));
     return COMPILED.map((z) => z.map((s) => s.name));
   }
 
+  /** ¿suenan las generadas en esta zona? (si se eligieron y existen) */
+  useGen(zone) { return this.a.musicSrc === 'gen' && GEN.zones[zone].length > 0; }
+
   /** modo prueba: suena esta canción (en loop) sin importar la profundidad */
-  play(zone, idx) {
-    this.forced = { zone, idx };
-    this.songIdx[zone] = idx;
+  play(zone, idx, src = 'orig') {
+    this.forced = { zone, idx, src };
+    if (src === 'gen') this.genIdx[zone] = idx; else this.songIdx[zone] = idx;
     if (this.track) this.fadeOut('force', 0.35);
+  }
+
+  /** se cambió entre originales y generadas: pasa a la otra con un fundido */
+  sourceChanged() {
+    if (!this.forced && this.track && !this.track.fadingOut) this.fadeOut('force', 0.8);
   }
 
   /** sale del modo prueba: vuelve la música de la zona donde está el jugador */
@@ -228,11 +253,14 @@ export class MusicDirector {
 
   /** otra canción de la zona, distinta de la que acaba de sonar */
   pickNext(zone) {
-    const n = COMPILED[zone].length;
+    const gen = this.useGen(zone);
+    const arr = gen ? this.genIdx : this.songIdx;
+    const n = gen ? GEN.zones[zone].length : COMPILED[zone].length;
     if (n < 2) return;
-    let k = this.songIdx[zone];
-    while (k === this.songIdx[zone]) k = Math.floor(Math.random() * n);
-    this.songIdx[zone] = k;
+    let k = arr[zone] % n;
+    const was = k;
+    while (k === was) k = Math.floor(Math.random() * n);
+    arr[zone] = k;
   }
 
   /** paneo estéreo (si el navegador no lo tiene, pasa derecho) */
@@ -246,6 +274,37 @@ export class MusicDirector {
   }
 
   start(zone) {
+    const f = this.forced;
+    const pick = f ? (f.src === 'gen' ? GEN.zones[f.zone][f.idx] : null) : this.useGen(zone) ? GEN.zones[zone][this.genIdx[zone] % GEN.zones[zone].length] : null;
+    const gen = pick && !pick.broken; // si un mp3 no carga, suena la programada
+    if (gen) this.startGen(zone, f ? f.idx : this.genIdx[zone] % GEN.zones[zone].length);
+    else this.startSynth(zone);
+  }
+
+  /** canción generada: un mp3 que suena por el elemento de audio de la música */
+  startGen(zone, idx) {
+    const c = this.c, a = this.a, t = GEN.zones[zone][idx];
+    const el = a.genAudio();
+    const gain = a.genGain;
+    gain.gain.cancelScheduledValues(c.currentTime);
+    gain.gain.setValueAtTime(0, c.currentTime);
+    gain.gain.linearRampToValueAtTime(GEN_GAIN, c.currentTime + FADE_IN);
+    el.src = 'music/gen/' + t.file;
+    el.currentTime = 0;
+    const tr = { gen: true, zone, el, gain, nodes: [], song: { name: t.name, loops: 1 }, loops: 0, fadingOut: false, fadeEnd: 0, then: null, ended: false, full: GEN_GAIN };
+    el.onended = () => { tr.ended = true; };
+    el.onerror = () => { tr.ended = true; tr.failed = true; t.broken = true; };
+    if (!document.hidden) el.play().catch(() => { /* hasta el próximo toque */ });
+    this.track = tr;
+  }
+
+  /** al volver al juego (o después del primer toque): si la generada quedó pausada, sigue */
+  resumeGen() {
+    const tr = this.track;
+    if (tr && tr.gen && !tr.ended && tr.el.paused) tr.el.play().catch(() => {});
+  }
+
+  startSynth(zone) {
     const c = this.c;
     const song = COMPILED[zone][this.songIdx[zone] % COMPILED[zone].length];
     const gain = c.createGain();
@@ -284,11 +343,12 @@ export class MusicDirector {
     tr.then = null;
     g.cancelScheduledValues(c.currentTime);
     g.setValueAtTime(g.value, c.currentTime);
-    g.linearRampToValueAtTime(1, c.currentTime + 0.8);
+    g.linearRampToValueAtTime(tr.full || 1, c.currentTime + 0.8);
   }
 
   stopTrack() {
     const tr = this.track;
+    if (tr.gen) { tr.el.pause(); tr.el.onended = null; tr.el.onerror = null; this.track = null; return; }
     const nodes = tr.nodes;
     // se desconecta un poco después para que terminen las colas del eco
     setTimeout(() => nodes.forEach((n) => { try { n.disconnect(); } catch { /* nada */ } }), 1500);
@@ -313,7 +373,10 @@ export class MusicDirector {
       if (tr.fadingOut && tr.then === 'zone') this.cancelFade(); // volvió a tiempo: la canción sigue
     }
     // ¿terminó la canción? pasa a otra de la misma zona
-    if (!tr.fadingOut && tr.loops >= tr.song.loops) this.fadeOut('next');
+    if (tr.gen) {
+      const el = tr.el, left = el.duration ? el.duration - el.currentTime : Infinity;
+      if (!tr.fadingOut && (tr.ended || left < FADE_OUT)) this.fadeOut('next', tr.failed ? 0.05 : Math.max(0.05, Math.min(FADE_OUT, left)));
+    } else if (!tr.fadingOut && tr.loops >= tr.song.loops) this.fadeOut('next');
 
     // fin del fade: recién ahí arranca la canción nueva (nunca se superponen)
     if (tr.fadingOut && now >= tr.fadeEnd) {
@@ -325,8 +388,8 @@ export class MusicDirector {
       tr = this.track;
     }
 
-    // programar notas
-    if (!tr.fadingOut || now < tr.fadeEnd) {
+    // programar notas (las generadas suenan solas)
+    if (!tr.gen && (!tr.fadingOut || now < tr.fadeEnd)) {
       const loopSteps = tr.song.bars.length * 8;
       while (tr.next < now + 0.25) {
         this.schedStep(tr, tr.i, tr.next);

@@ -184,6 +184,7 @@ export class Net {
       x: r1(p.x), y: r1(p.y), vx: r1(p.vx), vy: r1(p.vy), f: p.facing,
       g: p.onGround ? 1 : 0, fl: p.flying ? 1 : 0, d: p.digging ? 1 : 0, th: p.tooHard ? 1 : 0, dead: p.dead ? 1 : 0,
       h: p.hurtT > 0 ? 1 : 0, hv: p.hovering ? 1 : 0, hp: Math.round(p.hp),
+      fi: p.firing ? 1 : 0, dn: p.downed ? 1 : 0, rv: r1(p.revive || 0),
       a: p.aim ? [r1(p.aim.x), r1(p.aim.y)] : null,
       dp: p.digPoint ? [r1(p.digPoint.cx), r1(p.digPoint.cy), p.digPoint.R] : null, pr: r1(p.digProg || 0),
     };
@@ -198,6 +199,7 @@ export class Net {
     if (s.h && !p.netHurt) p.hurtT = 0.8;
     p.netHurt = !!s.h;
     p.hp = s.hp;
+    p.firing = !!s.fi; p.downed = !!s.dn; p.revive = s.rv || 0;
     p.aim = s.a ? { x: s.a[0], y: s.a[1] } : null;
     if (p.aim) p.lastAim = p.aim;
     p.digPoint = s.dp ? { cx: s.dp[0], cy: s.dp[1], R: s.dp[2] } : null;
@@ -260,6 +262,7 @@ export class Net {
       pk: g.pickups.list.map((k) => [Math.round(k.x), Math.round(k.y), k.item]),
       po: g.popi ? [r1(g.popi.x), r1(g.popi.y), g.popi.facing, g.popi.onGround ? 1 : 0, g.popi.digging ? 1 : 0, g.popi.flying ? 1 : 0, g.popi.owner === g.players[0] ? 'h' : 'g'] : null,
       ch: g.chatter.netState(g.players[0]),
+      pm: g.popiMet ? 1 : 0,
       b: B ? this.bossState(B) : null,
     };
     if (this.sentTorchVer !== this.torchVer) {
@@ -270,14 +273,14 @@ export class Net {
   }
 
   bossState(B) {
-    const me = this.g.players[0];
     const b = { s: B.state, x: r1(B.x), y: r1(B.y), f: B.facing };
     if (B.state !== 'fight') return b;
     const a = B.attack;
     Object.assign(b, {
-      fl: r1(B.flash), p2: B.phase2 ? 1 : 0, hp: B.hp,
-      a: a ? { type: a.type, stage: a.stage, t: r1(a.t), wind: a.wind, tx: a.tx } : null,
-      r: B.rocks.map((r) => [r1(r.x), r1(r.y), r.k, r1(r.t), r.spin, r.rad, r.state, r.state === 'held' ? (r.by === me ? 'h' : 'g') : null]),
+      fl: r1(B.flash), ph: B.phase, hp: B.hp, sh: r1(B.shieldT),
+      a: a ? { type: a.type, stage: a.stage, t: r1(a.t), wind: a.wind, tx: a.tx, ang: a.ang } : null,
+      r: B.rocks.map((r) => [r1(r.x), r1(r.y), r.k, r1(r.t), r.spin, r.rad, r.state]),
+      mi: B.minions.map((m) => [r1(m.x), r1(m.y), m.state, m.facing, r1(m.t), r1(m.rot || 0), m.flash > 0 ? 1 : 0, m.id]),
       fe: B.feathers.map((f) => [r1(f.x), r1(f.y), r1(f.a)]),
       pi: B.pillars.map((c) => [r1(c.x), r1(c.t)]),
       w: B.waves.map((w) => [r1(w.x), w.dir]),
@@ -291,10 +294,11 @@ export class Net {
     return {
       st: r1(sc.t),
       a: Object.values(sc.actors).map((a) => ({
-        id: a.id, x: r1(a.x), y: r1(a.y), f: a.facing, po: a.pose, fl: a.flying ? 1 : 0, hi: a.hidden ? 1 : 0,
+        id: a.id, x: r1(a.x), y: r1(a.y), f: a.facing, po: a.pose, fl: a.flying ? 1 : 0, hi: a.hidden ? 1 : 0, tl: a.tool || null, ga: a.gunAng,
         e: a.emote, et: r1(a.emoteT), ph: r1(a.phase), wt: r1(a.walkT), mv: a.target !== null || a.ty !== null ? 1 : 0, fa: a.fallTo !== null ? 1 : 0,
       })),
       fe: sc.feathers.map((f) => ({ x: r1(f.x), y: r1(f.y), t: r1(f.t), landed: f.landed })),
+      fb: sc.flashback ? 1 : 0,
       l: L ? { w: L.who, x: L.text, s: Math.floor(L.shown) } : null,
       c: g.ui.captionText || null, fd: g.ui.fadeState || null,
       // el centro de la cámara (cada pantalla tiene su tamaño)
@@ -316,9 +320,8 @@ export class Net {
       case 'torch': g.addTorch(m.x, m.y, true); return;
       case 'popi': if (this.remote) g.setPopi(this.remote); return;
       case 'chest': { const ch = g.world.chests.find((c) => c.id === m.id); if (ch && this.remote) g.openChest(ch, this.remote); return; }
-      case 'throw': if (g.boss && this.remote) g.boss.throwRock(this.remote, m.aim || null); return;
-      case 'down': if (g.boss && g.boss.fighting) g.boss.playerDown(); return;
       case 'adv': if (g.state === 'scene' && g.scene) g.scene.advance(); return;
+      case 'rv': if (g.players[0].downed) g.players[0].reviveTap(); return;
       case 'skip': if (g.state === 'scene' && g.scene) g.scene.skip(); return;
 
       // ---- los recibe el invitado ----
@@ -371,7 +374,7 @@ export class Net {
     g.toast(`¡${name} se unió a la sala!`, null, 'good');
     g.audio.play('surprise');
     this.status(`Sala ${this.code}: jugando con ${name}`, 'ok');
-    g.ui.setNetBadge(`Sala ${this.code} · con ${name}`);
+    g.ui.setNetBadge(`Sala ${this.code} · con ${name}`, true);
   }
 
   // ---- invitado ----
@@ -386,7 +389,7 @@ export class Net {
     g.syncBuddy();
     const name = CHARACTERS[w.hostChar].name;
     this.status(`Conectado a la sala ${w.code}: jugando con ${name}`, 'ok');
-    g.ui.setNetBadge(`Sala ${w.code} · con ${name}`);
+    g.ui.setNetBadge(`Sala ${w.code} · con ${name}`, true);
     g.toast(`¡Entraste a la partida de ${name}!`, null, 'good');
   }
 
@@ -416,6 +419,7 @@ export class Net {
     } else g.popi = null;
     if (g.state === 'shop' && before !== g.popiState()) g.ui.renderShop();
     g.chatter.remoteState = s.ch;
+    g.popiMet = !!s.pm;
     if (s.b) this.applyBoss(s.b);
   }
 
@@ -424,26 +428,30 @@ export class Net {
     const wasFight = B.state === 'fight';
     B.state = b.s; B.x = b.x; B.y = b.y; B.facing = b.f;
     if (b.s !== 'fight') {
-      if (wasFight) { g.ui.setBossBar(null); B.clearHazards(); me.heldRock = null; }
+      if (wasFight) { g.ui.setBossBar(null); B.clearHazards(); me.downed = false; me.revive = 0; }
       return;
     }
-    B.flash = b.fl; B.phase2 = !!b.p2;
+    B.flash = b.fl; B.phase = b.ph || 1; B.shieldT = b.sh || 0;
     if (B.hp !== b.hp || !wasFight) g.ui.setBossBar(b.hp / BOSS.hp);
     B.hp = b.hp;
     B.attack = b.a;
-    B.partner = null;
-    B.rocks = b.r.map(([x, y, k, t, spin, rad, state, holder]) => ({ x, y, k, t, spin, rad, state, holder }));
+    B.rocks = b.r.map(([x, y, k, t, spin, rad, state]) => ({ x, y, k, t, spin, rad, state }));
+    // aguilitas: se deslizan hasta la última posición (las que caen siguen solas)
+    const old = new Map(B.minions.map((m) => [m.id, m]));
+    B.minions = b.mi.map(([x, y, state, facing, t, rot, fl, id]) => {
+      const m = old.get(id) || { x, y, ph: Math.random() * 6 };
+      return Object.assign(m, { nx: x, ny: y, state, facing, t, rot, flash: fl ? 0.05 : 0, id });
+    });
     B.feathers = b.fe.map(([x, y, a]) => ({ x, y, a }));
     B.pillars = b.pi.map(([x, t]) => ({ x, t }));
     B.waves = b.w.map(([x, dir]) => ({ x, dir }));
     B.marks = b.mk.map(([x, t]) => ({ x, t }));
-    me.heldRock = B.rocks.find((r) => r.holder === 'g') || null;
   }
 
   teleport(m) {
     const g = this.g, p = g.players[0];
     p.x = m.cx - p.w / 2; p.y = m.fy - p.h;
-    p.vx = 0; p.vy = 0; p.peakY = p.y; p.heldRock = null; p.hovering = false;
+    p.vx = 0; p.vy = 0; p.peakY = p.y; p.hovering = false; p.downed = false; p.revive = 0;
     if (m.f) p.facing = m.f;
     if (m.full) p.hp = HP_MAX;
     p.jetFuel = BOSS.jetTime;
@@ -453,7 +461,7 @@ export class Net {
   teamDown() {
     const g = this.g, p = g.players[0];
     g.state = 'faint';
-    p.dead = true; p.heldRock = null;
+    p.dead = true; p.downed = false; p.revive = 0;
     g.audio.jet(false);
     g.audio.play('faint');
     g.ui.setBossBar(null);
@@ -507,10 +515,11 @@ export class Net {
     for (const a of f.a) {
       actors[a.id] = {
         id: a.id, x: a.x, y: a.y, facing: a.f, pose: a.po, flying: !!a.fl, hidden: !!a.hi, emote: a.e, emoteT: a.et,
-        phase: a.ph, walkT: a.wt, target: a.mv ? a.x : null, ty: null, fallTo: a.fa ? 1 : null,
+        phase: a.ph, walkT: a.wt, target: a.mv ? a.x : null, ty: null, fallTo: a.fa ? 1 : null, tool: a.tl, gunAng: a.ga,
       };
     }
     sc.actors = actors;
+    if (!!f.fb !== sc.flashback) sc.flashback = !!f.fb;
     sc.feathers = f.fe;
     // diálogo
     if (f.l) {

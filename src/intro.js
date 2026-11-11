@@ -2,7 +2,7 @@
 // buscan los regalos debajo de la cama y encuentran una nota misteriosa.
 // Cada `yield` espera a que termine lo anterior (ver scene.js).
 import { TILE, SURFACE } from './config.js';
-import { DOG_POS, TRAILER_X, TRAILER_H, GATE_X } from './structures.js';
+import { TRAILER_X, TRAILER_H, GATE_X, GOL_X } from './structures.js';
 
 const FLOOR = SURFACE * TILE;          // piso del patio
 const APT = (SURFACE - 6) * TILE;      // piso del departamento 1B (primer piso, subiendo la escalera)
@@ -62,13 +62,6 @@ export function* introScript(sc) {
   yield sc.say('pancha', '¡Qué bueno que llegamos!! ¡Qué lindo que festejemos mi cumple juntos otra vez!');
   yield sc.say('pablo', 'Obvio corazón, no me lo perdería jamás.');
   yield sc.arrive('pancha', 'pablo');
-
-  // Popi los recibe en el patio
-  g.audio.play('bark');
-  g.addText(DOG_POS.x + 10, DOG_POS.y - 2, '¡GUAU!', '#fff4e0');
-  for (let i = 0; i < 3; i++) g.particles.add({ x: DOG_POS.x + 6 + i * 3, y: DOG_POS.y - 2, vx: (i - 1) * 6, vy: -14, life: 1.2, max: 1.2, heart: true, grav: 0 });
-  yield sc.say('pancha', '¡Popito! ¿Qué haces acá? ¿Te escapaste de casa?');
-  yield sc.say('popi', 'Guau. (Traducción: me colé en el auto cuando no veían je.)');
 
   sc.walk('pancha', 214); sc.walk('pablo', 236);
   yield sc.say('pancha', '¿Che Pabli, te acordás de lo que pasó el año pasado con.. los regalos?');
@@ -184,4 +177,64 @@ export function* introScript(sc) {
   sc.setZoom(1);
   const tc = g.titleCam();
   yield sc.pan(tc.x, tc.y, 2.6);
+}
+
+/**
+ * Mini escena la primera vez que bajan al patio jugando: algo ladra adentro del Gol,
+ * se abre la puerta... ¡y aparece Popi! Al final se lo llevan en la aventura.
+ */
+export function* popiScript(sc, p) {
+  const g = sc.g, A = sc.actors, S = g.structs;
+  const me = p.char, mate = me === 'pablo' ? 'pancha' : 'pablo';
+  const x0 = p.cx;
+  sc.actor(me, x0, FLOOR, { facing: 1 });
+  sc.actor(mate, x0 - 14, FLOOR, { facing: 1, alpha: 0 });
+  sc.fixed = { x: x0 + 30, y: FLOOR - 16 };
+  sc.setZoom(2);
+  sc.snapCam();
+  yield sc.wait(0.4);
+  // ladridos desde adentro del Gol
+  S.golShake = 1;
+  g.sfx('bark');
+  g.addText(GOL_X + 24, FLOOR - 28, '¡GUAU!', '#fff4e0');
+  sc.emote(me, '!'); sc.emote(mate, '!');
+  yield sc.wait(0.7);
+  S.golShake = 0;
+  yield sc.say('pancha', '¿Escucharon eso?');
+  yield sc.say('pablo', 'Viene del Gol...');
+  // se acercan al auto
+  sc.walk(me, GOL_X - 4, 55); sc.walk(mate, GOL_X - 18, 55);
+  sc.fixed = { x: GOL_X + 14, y: FLOOR - 16 };
+  sc.setZoom(2.4);
+  yield sc.arrive(me, mate);
+  A[me].facing = 1; A[mate].facing = 1;
+  S.golShake = 1;
+  g.sfx('bark');
+  yield sc.wait(0.45);
+  S.golShake = 0;
+  // se abre la puerta y asoma Popi
+  g.sfx('click');
+  const swing = (to, dur) => { const from = S.golDoor, t0 = sc.t; return () => (S.golDoor = from + (to - from) * Math.min(1, (sc.t - t0) / dur)) === to; };
+  yield swing(1, 0.5);
+  sc.actor('popi', GOL_X + 27, FLOOR - 9, { facing: -1, phase: 0 });
+  sc.emote('popi', '♥');
+  g.sfx('bark');
+  yield sc.wait(0.8);
+  // salta del auto y corre hasta ellos
+  sc.drop('popi', FLOOR);
+  A.popi.vy = -110;
+  sc.walk('popi', GOL_X + 12, 60);
+  yield sc.arrive('popi');
+  A.popi.facing = -1;
+  for (let i = 0; i < 4; i++) g.particles.add({ x: A.popi.x - 4 + i * 3, y: FLOOR - 12, vx: (i - 1.5) * 6, vy: -14, life: 1.2, max: 1.2, heart: true, grav: 0 });
+  yield sc.say('pancha', '¡Popito! ¿Qué hacés acá? ¿Cómo viniste?');
+  yield sc.say('popi', 'Guau. (Traducción: me colé en el auto cuando no estaban viendo, je.)');
+  yield sc.say('pablo', 'Con razón el auto olía a salchicha...');
+  yield sc.say('pancha', 'Bueno, ya que estás acá... ¿nos ayudás a buscar los regalos?');
+  yield sc.say('popi', '¡Guau, guau! (Traducción: ¡obvio! Traje casco y todo.)');
+  yield sc.say('pablo', '¡Listo! Aprovechamos y te llevamos en esta aventura, Popi.');
+  sc.emote('popi', '♥'); sc.emote(me, '♥'); sc.emote(mate, '♥');
+  g.audio.play('gateShut');
+  yield swing(0, 0.3);
+  yield sc.wait(0.9);
 }

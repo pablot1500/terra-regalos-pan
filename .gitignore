@@ -3,3 +3,4 @@ node_modules/
 *.log
 .netlify/
 artifact.html
+.env.local

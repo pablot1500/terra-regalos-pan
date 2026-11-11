@@ -43,6 +43,82 @@ export class BuddyAI {
     }
   }
 
+  /**
+   * pelea final: se mueve por la plataforma esquivando los avisos, tira agua a las aguilitas
+   * (o a Aguilus) y, si el otro cae, va corriendo a levantarlo
+   */
+  fightInput(dt, B) {
+    const p = this.p;
+    const inp = { left: false, right: false, jump: false, jumpPressed: false, glide: false, sprint: false, mouseDig: false, mouseAim: false, mx: 0, my: 0 };
+    if (p.downed) return inp;
+    const go = (x, dead = 4) => { const d = x - p.cx; if (d > dead) inp.right = true; else if (d < -dead) inp.left = true; };
+    const hop = () => { inp.jump = true; inp.jumpPressed = p.onGround; };
+    // ondas de choque que vienen para acá: saltar
+    for (const w of B.waves) if (Math.abs(w.x - p.cx) < 26 && Math.sign(p.cx - w.x) === w.dir) hop();
+
+    // ---- levantar al que se cayó ----
+    const down = B.fighters().find((f) => f !== p && f.downed);
+    if (down) {
+      if (Math.abs(down.cx - p.cx) > 7) { go(down.cx); inp.sprint = true; }
+      else {
+        this.tapT = (this.tapT || 0) - dt;
+        if (this.tapT <= 0) {
+          this.tapT = 0.15 + Math.random() * 0.08;
+          B.reviveTap(p, down);
+          if (Math.random() < 0.08) this.g.addText(p.cx, p.y - 8, '¡ARRIBA!', '#fff4e0');
+        }
+      }
+      return inp;
+    }
+
+    // ---- moverse: lejos de Aguilus y de los avisos ----
+    this.moveT = (this.moveT || 0) - dt;
+    const x0 = B.platX0 + 14, x1 = B.platX1 - 14;
+    if (this.moveT <= 0 || this.goalX === undefined) {
+      this.moveT = 1 + Math.random() * 1.6;
+      let gx = p.cx;
+      for (let i = 0; i < 8; i++) {
+        gx = x0 + Math.random() * (x1 - x0);
+        if (Math.abs(gx - B.x) > 45) break;
+      }
+      this.goalX = gx;
+    }
+    let goal = this.goalX, danger = false;
+    const away = (x, r) => { if (Math.abs(x - p.cx) < r) { goal = p.cx + (p.cx >= x ? 1 : -1) * (r + 18); danger = true; } };
+    for (const m of B.marks) if (m.t < 1) away(m.x, 14);
+    for (const c of B.pillars) if (c.t < 0.1) away(c.x, 13);
+    const a = B.attack;
+    if (a && a.type === 'dive' && a.stage === 'aim') away(a.tx, 22);
+    if (a && a.type === 'beam' && a.stage === 'aim' && a.t > 0.3) {
+      const o = B.orb(), dx = Math.cos(a.ang), dy = Math.sin(a.ang);
+      const rx = p.cx - o.x, ry = p.cy - o.y;
+      if (rx * dx + ry * dy > 0 && Math.abs(rx * dy - ry * dx) < 16) { goal = p.cx + (dx > 0 ? -1 : 1) * 40; danger = true; }
+    }
+    for (const r of B.rocks) if (r.state === 'fall' && Math.abs(r.x - p.cx) < 16 && r.y < p.y && r.vy > 0) away(r.x, 16);
+    if (danger) this.moveT = 0.4;
+    goal = Math.max(x0, Math.min(x1, goal));
+    go(goal, danger ? 2 : 6);
+    inp.sprint = danger;
+
+    // ---- apuntar y tirar agua: primero a las aguilitas cercanas, si no a Aguilus ----
+    let tgt = null, best = 150;
+    for (const m of B.minions) {
+      if (m.state === 'dead') continue;
+      const d = Math.hypot(m.x - p.cx, m.y - p.cy);
+      if (d < best) { best = d; tgt = { x: m.x + m.vx * 0.15, y: m.y + m.vy * 0.15 }; }
+    }
+    if (!tgt && B.shieldT <= 0) tgt = { x: B.x + B.vx * 0.25, y: B.y - 14 };
+    this.errT = (this.errT || 0) - dt;
+    if (this.errT <= 0) { this.errT = 0.35 + Math.random() * 0.3; this.errX = (Math.random() - 0.5) * 18; this.errY = (Math.random() - 0.5) * 14; }
+    this.burstT = (this.burstT || 0) - dt;
+    if (this.burstT <= 0) { this.bursting = !this.bursting; this.burstT = this.bursting ? 1.1 + Math.random() * 1.4 : 0.3 + Math.random() * 0.6; }
+    const aim = tgt || { x: B.x, y: B.y - 14 };
+    inp.mx = aim.x + this.errX; inp.my = aim.y + this.errY;
+    inp.mouseAim = true;
+    inp.mouseDig = !!tgt && this.bursting;
+    return inp;
+  }
+
   /** arma la entrada de este cuadro para seguir a `L` (el personaje que maneja la persona) */
   input(dt, L) {
     const g = this.g, p = this.p;

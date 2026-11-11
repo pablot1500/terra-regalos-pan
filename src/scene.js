@@ -1,6 +1,6 @@
 // Escenas con diálogos (la intro, el encuentro con Aguilus y el final): actores, cámara con zoom,
 // caja de diálogo y guión. El guión es una función generadora: cada `yield` espera a que termine lo anterior.
-import { getCharFrames, CHAR_PAL, CHAR_W, CHAR_H, drawText, DOG, ICON_URL, charPortrait } from './sprites.js';
+import { getCharFrames, CHAR_PAL, CHAR_W, CHAR_H, drawText, DOG, POPI, ICON_URL, charPortrait, drawDrill, drawWaterGun } from './sprites.js';
 import { drawAguilus, aguilusPortrait, AG_H } from './aguilus.js';
 import { clamp, pixelLine } from './util.js';
 import { TILE, SURFACE } from './config.js';
@@ -30,13 +30,14 @@ export class Scene {
     this.follow = null;
     this.fixed = null;
     this.tween = null;
-    this.drop = null;
+    this.camDrop = null;
     this.shine = null;   // brillo dorado sobre algo (el cofre en la intro)
     this.zoomT = 1;
     this.line = null;
     this.noteOpen = false;
     this.feathers = [];
     this.done = false;
+    this._fb = false;
     this.onEnd = onEnd;
     this.onSkip = onSkip;
     this.onKey = (e) => {
@@ -48,6 +49,10 @@ export class Scene {
     this.waitFn = null;
     this.step();
   }
+
+  /** modo "recuerdo": la imagen se pone sepia con bordes de sueño */
+  get flashback() { return this._fb; }
+  set flashback(v) { this._fb = !!v; this.ui.setFlashback(!!v); }
 
   // ------------------------------------------------------------
   //  Pasos del guión
@@ -116,8 +121,8 @@ export class Scene {
     const tg = this.camTarget();
     const cx1 = tg.x + this.viewW() / 2, cy1 = tg.y + this.viewH() / 2;
     g.zoom = z0;
-    this.drop = { t: 0, dur, z0, z1: this.zoomT, cx0: c.x + this.viewW() / 2, cy0: c.y + this.viewH() / 2, cx1, cy1 };
-    return () => this.drop === null;
+    this.camDrop = { t: 0, dur, z0, z1: this.zoomT, cx0: c.x + this.viewW() / 2, cy0: c.y + this.viewH() / 2, cx1, cy1 };
+    return () => this.camDrop === null;
   }
 
   pan(x, y, dur) {
@@ -162,6 +167,7 @@ export class Scene {
     this.ui.introCaption(null);
     this.ui.introNote(null);
     this.ui.fade(false);
+    this.ui.setFlashback(false);
     this.g.zoom = 1;
     if (this.onEnd) this.onEnd(skipped, this);
   }
@@ -228,9 +234,9 @@ export class Scene {
       if (tw.t >= tw.dur) this.tween = null;
     }
     if (this.shine) this.shine.t += dt;
-    if (this.drop) {
-      this.drop.t += dt;
-      if (this.drop.t >= this.drop.dur) { this.g.zoom = this.drop.z1; this.drop = null; this.snapCam(); }
+    if (this.camDrop) {
+      this.camDrop.t += dt;
+      if (this.camDrop.t >= this.camDrop.dur) { this.g.zoom = this.camDrop.z1; this.camDrop = null; this.snapCam(); }
     }
     if (this.waitFn && this.waitFn()) { this.waitFn = null; this.step(); }
   }
@@ -265,9 +271,9 @@ export class Scene {
   /** mueve la cámara del juego (la llama Game.updateCamera durante las escenas) */
   updateCam(dt) {
     const c = this.g.cam, g = this.g;
-    if (this.drop) {
+    if (this.camDrop) {
       // bajada del cielo: movimiento suave de punta a punta y el zoom que se acerca al final
-      const d = this.drop, u = clamp(d.t / d.dur, 0, 1), e = ease(u);
+      const d = this.camDrop, u = clamp(d.t / d.dur, 0, 1), e = ease(u);
       const uz = clamp((u - 0.45) / 0.55, 0, 1);
       g.zoom = d.z0 + (d.z1 - d.z0) * uz * uz * (3 - 2 * uz);
       c.x = d.cx0 + (d.cx1 - d.cx0) * e - g.vw / g.zoom / 2;
@@ -320,7 +326,18 @@ export class Scene {
       if (a.hidden) continue;
       ctx.globalAlpha = a.alpha ?? 1;
       let sx, sy, headY;
-      if (a.id === 'aguilus') {
+      if (a.id === 'popi') {
+        // Popi con su casquito: camina, salta o mueve la cola
+        const set = POPI[a.facing > 0 ? 'right' : 'left'];
+        const moving = a.target !== null || a.ty !== null;
+        const tt = this.t + a.phase;
+        const f = a.fallTo !== null ? set.air : moving ? (Math.floor(a.walkT * 10) % 2 ? set.walkA : set.walkB) : tt % 3.7 > 3.55 ? set.blink : Math.floor(tt * 3) % 2 ? set.idleA : set.idleB;
+        sx = snap(a.x - f.width / 2) - camX;
+        sy = snap(a.y + 1 - f.height) - camY;
+        ctx.drawImage(f, Math.round(sx), Math.round(sy));
+        headY = sy - 2;
+        sx -= CHAR_W / 2 - f.width / 2;
+      } else if (a.id === 'aguilus') {
         const ox = snap(a.x) - camX, oy = snap(a.y) - camY, rx = Math.round(ox), ry = Math.round(oy);
         ctx.save(); ctx.translate(ox - rx, oy - ry);
         drawAguilus(ctx, rx, ry, a.facing, a.pose, this.t + a.phase);
@@ -357,8 +374,11 @@ export class Scene {
           drawArm(ctx, sx, sy + 5, a.facing, 0, a.id, 0.4 + Math.sin(this.t * 18) * 0.5);
         } else {
           ctx.drawImage(frames[frame], sx, sy);
-          const ang = a.pose === 'hug' ? 0.1 : a.flying ? -0.6 : moving ? 1.1 + Math.sin(a.walkT * 9 * Math.PI / 2) * 0.35 : 1.25;
-          drawArm(ctx, sx, sy, a.facing, bob, a.id, ang);
+          if (a.tool && a.pose !== 'hug') drawTool(ctx, sx, sy, a, bob, this.g);
+          else {
+            const ang = a.pose === 'hug' ? 0.1 : a.flying ? -0.6 : moving ? 1.1 + Math.sin(a.walkT * 9 * Math.PI / 2) * 0.35 : 1.25;
+            drawArm(ctx, sx, sy, a.facing, bob, a.id, ang);
+          }
         }
       }
       const talking = this.line && this.line.who === a.id;
@@ -380,6 +400,16 @@ function drawArm(ctx, sx0, sy0, facing, bob, id, ang) {
   ctx.save();
   ctx.translate(sx0 - sx, sy0 - sy);
   drawArmAt(ctx, sx, sy, facing, bob, id, ang);
+  ctx.restore();
+}
+
+/** taladro o súper pistola de agua en la mano de un actor (en coordenadas enteras, como el brazo) */
+function drawTool(ctx, sx0, sy0, a, bob, g) {
+  const sx = Math.round(sx0), sy = Math.round(sy0);
+  ctx.save();
+  ctx.translate(sx0 - sx, sy0 - sy);
+  if (a.tool === 'water') drawWaterGun(ctx, sx, sy, a.facing, bob, a.gunAng ?? 0.3, a.id);
+  else drawDrill(ctx, sx, sy, a.facing, bob, 0.9, Math.max(3, g.upgrades.pala || 0), a.id, 0);
   ctx.restore();
 }
 

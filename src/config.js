@@ -204,16 +204,27 @@ export const GIFTS = [
 
 export const ENDING_TEXT = '¡Le ganamos a Aguilus y rescatamos los regalos!\n¡Feliz cumple, mi amor!!! ♥';
 
-// Pelea con Aguilus en el fondo del núcleo
+// Pelea con Aguilus en el fondo del núcleo (con las súper pistolas de agua)
 export const BOSS = {
-  hp: 10,            // rocas que hay que pegarle
-  rockDmg: 14,       // daño de cada roca de magma
-  featherDmg: 10,    // plumas-dardo (no se atajan)
+  hp: 500,           // vida de Aguilus: cada gotita de agua le saca 1
+  phases: [0.66, 0.33], // fracción de vida donde se enoja (fase 2) y se pone furioso (fase 3)
+  fireRate: 8,       // gotitas por segundo de cada pistola
+  waterSpeed: 270,
+  waterGrav: 90,
+  waterLife: 1.1,
+  rockDmg: 14,       // rocas de magma (se apagan con agua)
+  rockWater: 4,      // gotitas que hacen falta para apagar una roca
+  featherDmg: 10,    // plumas-dardo
   pillarDmg: 16,     // columnas de fuego que salen del piso
   diveDmg: 18,       // picada: chocarlo cuando se tira contra el piso
   waveDmg: 12,       // onda de choque de la picada (se salta)
-  catchR: 10,        // qué tan cerca de la punta del taladro tiene que pasar la roca para atajarla
-  throwSpeed: 300,
+  beamDmg: 20,       // rayo violeta (fase 2 en adelante)
+  minionHp: 8,       // aguilitas: gotitas para bajarlas
+  minionDmg: 8,
+  minionCap: [2, 3, 4], // cuántas aguilitas puede haber a la vez en cada fase
+  reviveTap: 0.12,   // cuánto carga cada toque de E al revivir al otro
+  reviveDecay: 0.16, // cuánto se descarga por segundo si dejás de tocar
+  reviveR: 18,       // qué tan cerca hay que estar para revivir
   jetTime: 0.6,      // en la pelea el jetpack dura poquito (se recarga al pisar)...
   jetSpeed: 100,     // ...y tiene menos fuerza
   ceiling: 150,      // techo invisible: no se puede escapar volando

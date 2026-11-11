@@ -1,4 +1,4 @@
-import { MusicDirector } from './music.js';
+import { MusicDirector, loadGenerated } from './music.js';
 
 // Sonidos chiptune generados con WebAudio (sin archivos).
 export class Audio {
@@ -8,17 +8,20 @@ export class Audio {
     this.musicOn = true;
     // volumen de cada canal, de 0 a 1 (los sliders del menú de pausa)
     this.vol = { music: 1, sfx: 1, jet: 0.7 };
+    this.musicSrc = 'orig';   // 'orig' = las canciones programadas; 'gen' = las generadas con ElevenLabs
     this.last = {};
+    loadGenerated();
     try {
       const s = JSON.parse(localStorage.getItem('terra-regalos-pan:audio') || '{}');
       if (s.sfx === false) this.sfxOn = false;
       if (s.music === false) this.musicOn = false;
+      if (s.src === 'gen') this.musicSrc = 'gen';
       for (const k in this.vol) if (Number.isFinite(s.vol?.[k])) this.vol[k] = Math.min(1, Math.max(0, s.vol[k]));
     } catch { /* nada */ }
   }
 
   savePrefs() {
-    try { localStorage.setItem('terra-regalos-pan:audio', JSON.stringify({ sfx: this.sfxOn, music: this.musicOn, vol: this.vol })); } catch { /* nada */ }
+    try { localStorage.setItem('terra-regalos-pan:audio', JSON.stringify({ sfx: this.sfxOn, music: this.musicOn, vol: this.vol, src: this.musicSrc })); } catch { /* nada */ }
   }
 
   applyVolumes() {
@@ -30,7 +33,53 @@ export class Audio {
 
   setVolume(k, v) { this.vol[k] = v; this.applyVolumes(); this.savePrefs(); }
 
+  /** originales (programadas) o generadas con ElevenLabs */
+  setMusicSrc(src) {
+    this.musicSrc = src === 'gen' ? 'gen' : 'orig';
+    this.savePrefs();
+    if (this.music) this.music.sourceChanged();
+  }
+
+  /** el elemento de audio por donde suenan las canciones generadas (uno solo, así iOS lo deja sonar) */
+  genAudio() {
+    if (!this.genEl) {
+      const el = document.createElement('audio');
+      el.setAttribute('playsinline', ''); el.preload = 'auto';
+      this.genEl = el;
+      this.genGain = this.ctx.createGain();
+      this.genGain.gain.value = 0;
+      this.genGain.connect(this.mus);
+      try { this.ctx.createMediaElementSource(el).connect(this.genGain); } catch { /* navegador viejo: suena directo */ }
+    }
+    return this.genEl;
+  }
+
+  /** En iPhone el WebAudio queda mudo con el celu en modo silencio (como un juego, no como un video).
+   * Pidiendo sesión de "reproducción" suena igual, como YouTube. iOS 16.4+ lo trae directo; en los más
+   * viejos el truco es tener sonando un <audio> en silencio, que pasa toda la página a ese modo. */
+  playbackSession() {
+    try {
+      if (navigator.audioSession) { navigator.audioSession.type = 'playback'; return; }
+    } catch { /* sigue con el truco */ }
+    if (!/iPad|iPhone|iPod/.test(navigator.userAgent) && !(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return;
+    if (!this.silentEl) {
+      const el = document.createElement('audio');
+      el.src = silentWavURL();
+      el.loop = true; el.setAttribute('playsinline', ''); el.preload = 'auto';
+      this.silentEl = el;
+    }
+    if (this.silentEl.paused && !document.hidden) this.silentEl.play().catch(() => {});
+  }
+
+  /** al irse a otra app se frena todo; al volver, el próximo toque lo prende de nuevo */
+  sleep(hidden) {
+    if (!this.ctx) return;
+    if (hidden) { this.ctx.suspend().catch(() => {}); this.silentEl?.pause(); this.genEl?.pause(); }
+    else this.unlock();
+  }
+
   unlock() {
+    this.playbackSession();
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
@@ -46,7 +95,14 @@ export class Audio {
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       this.startMusic();
     }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {}); // 'interrupted' en iOS tras una llamada o al volver
+    // iOS solo deja sonar un <audio> que arrancó con un toque: se "despierta" acá la primera vez
+    const el = this.genAudio();
+    if (!this.genPrimed && el.paused) {
+      this.genPrimed = true;
+      if (!el.src) { el.src = silentWavURL(); el.play().then(() => { if (el.src.startsWith('blob:')) el.pause(); }).catch(() => { this.genPrimed = false; }); }
+    }
+    if (this.music) this.music.resumeGen();
   }
 
   setSfx(on) { this.sfxOn = on; this.applyVolumes(); this.savePrefs(); }
@@ -122,6 +178,15 @@ export class Audio {
       case 'gate': this.tone(180, 0.5, { type: 'sawtooth', vol: 0.05, slide: 260 }); this.tone(240, 0.35, { type: 'triangle', vol: 0.05, slide: 150, delay: 0.25 }); break;
       case 'gateShut': this.noise(0.14, { vol: 0.35, freq: 350 }); this.tone(95, 0.12, { type: 'triangle', vol: 0.2, slide: 60 }); this.tone(1400, 0.05, { type: 'square', vol: 0.03, delay: 0.05 }); break;
       case 'shutter': for (let i = 0; i < 7; i++) this.noise(0.05, { vol: 0.16, freq: 2200, type: 'bandpass', delay: i * 0.12 }); this.tone(140, 0.8, { type: 'sawtooth', vol: 0.03, slide: 220 }); break;
+      case 'click': this.tone(1500, 0.03, { type: 'square', vol: 0.08 }); this.noise(0.03, { vol: 0.2, freq: 3000, type: 'highpass' }); break;
+      case 'magic': [784, 988, 1175, 1568, 1976, 2349].forEach((f, i) => this.tone(f, 0.25, { type: 'triangle', vol: 0.08, delay: i * 0.07 })); this.noise(0.8, { vol: 0.08, freq: 6000, type: 'highpass' }); break;
+      case 'splash': this.noise(0.35, { vol: 0.35, freq: 1800, type: 'bandpass' }); this.tone(500, 0.15, { type: 'sine', vol: 0.1, slide: 1200 }); break;
+      case 'squirt': this.noise(0.05, { vol: 0.12, freq: 2600 + Math.random() * 800, type: 'bandpass' }); break;
+      case 'steam': this.noise(0.45, { vol: 0.18, freq: 4500, type: 'highpass' }); break;
+      case 'beam': this.tone(180, 0.5, { type: 'sawtooth', vol: 0.08, slide: 90 }); this.tone(1200, 0.4, { type: 'square', vol: 0.04, slide: 600 }); this.noise(0.4, { vol: 0.2, freq: 900 }); break;
+      case 'peep': this.tone(1400, 0.07, { type: 'square', vol: 0.06, slide: 1900 }); this.tone(1200, 0.12, { type: 'square', vol: 0.05, slide: 500, delay: 0.08 }); break;
+      case 'laugh': [0, 1, 2, 3].forEach((i) => this.tone(330 - i * 25, 0.11, { type: 'square', vol: 0.06, slide: 420 - i * 25, delay: i * 0.15 })); break;
+      case 'pump': this.noise(0.08, { vol: 0.25, freq: 700 }); this.tone(260, 0.06, { type: 'triangle', vol: 0.12, delay: 0.1 }); this.noise(0.06, { vol: 0.2, freq: 1200, delay: 0.12 }); break;
       case 'rest': this.tone(880, 0.2, { type: 'sine', vol: 0.06 }); break;
     }
   }
@@ -156,4 +221,17 @@ export class Audio {
   setDepth(depth) {
     if (this.music) this.music.setDepth(depth);
   }
+}
+
+/** medio segundo de silencio en WAV (8 kHz, 8 bits), para los trucos de audio de iOS */
+let silentURL = null;
+function silentWavURL() {
+  if (silentURL) return silentURL;
+  const n = 4000, b = new Uint8Array(44 + n), v = new DataView(b.buffer);
+  const str = (o, s) => [...s].forEach((c, i) => (b[o + i] = c.charCodeAt(0)));
+  str(0, 'RIFF'); v.setUint32(4, 36 + n, true); str(8, 'WAVEfmt '); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 8000, true);
+  v.setUint16(32, 1, true); v.setUint16(34, 8, true); str(36, 'data'); v.setUint32(40, n, true);
+  b.fill(128, 44);
+  return (silentURL = URL.createObjectURL(new Blob([b], { type: 'audio/wav' })));
 }

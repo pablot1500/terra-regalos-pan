@@ -435,6 +435,8 @@ body.touch .inv kbd { display: none; }
 .songs .song-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .songs .song { flex: 1 1 140px; font-size: 13px; }
 .songs .song.sel { background: var(--pink); color: var(--ink); }
+.songs .song-src { margin: 2px 0 0; font-size: 11px; color: var(--muted); }
+.songs .song.gen { border-color: #4f9fd0; }
 
 /* joystick flotante: zona de la mitad izquierda donde aparece al apoyar el pulgar */
 #stick-zone { pointer-events: auto; position: absolute; left: 0; bottom: 0; width: 40%; height: 72%; touch-action: none; }
@@ -465,6 +467,8 @@ html, body, button { -webkit-tap-highlight-color: transparent; }
   position: absolute; left: 50%; top: calc(8px + env(safe-area-inset-top)); transform: translateX(-50%);
   background: rgba(43,31,51,0.85); border: 2px solid var(--ink); padding: 3px 10px; font-size: 13px; color: #9cf08a; white-space: nowrap; pointer-events: none;
 }
+/* ya conectados: el cartelito se desvanece para no tapar el HUD */
+#net-badge.gone { opacity: 0; transform: translate(-50%, -6px); transition: opacity 0.9s ease, transform 0.9s ease; }
 
 /* ---------- Título animado ---------- */
 .logo-box { position: relative; display: inline-block; padding: 6px 8px; }
@@ -585,3 +589,56 @@ html, body, button { -webkit-tap-highlight-color: transparent; }
 .logo .two svg { width: 58%; height: 58%; shape-rendering: crispEdges; overflow: visible; }
 .logo .two svg .fg { fill: #fff4e0; }
 .logo .two svg .sh { fill: var(--ink); }
+
+/* iPhone acostado (pantallas bajitas): el título arriba y abajo dos columnas, personajes a la izquierda y menú a la derecha */
+@media (max-height: 500px) and (orientation: landscape) {
+  #screen-title { overflow-y: auto; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  #screen-title .title-wrap {
+    margin: auto; max-width: none; padding: 10px 16px 8px;
+    display: grid; grid-template-columns: auto auto; column-gap: 34px; justify-content: center; align-items: center;
+  }
+  #screen-title .logo-box { grid-column: 1 / -1; justify-self: center; padding: 2px 8px; margin-bottom: 14px; }
+  #screen-title .logo .l1 { font-size: 34px; }
+  #screen-title .logo .l2 { font-size: 18px; margin-top: 8px; }
+  #screen-title .pick { grid-column: 1; grid-row: 2; margin: 0 0 4px; align-self: end; }
+  #screen-title .chars { grid-column: 1; grid-row: 3; margin: 0; gap: 10px; }
+  #screen-title .char { min-width: 92px; padding: 6px 10px 4px; font-size: 15px; }
+  #screen-title .char img { width: 48px; height: 64px; }
+  #screen-title .hint { grid-column: 1; grid-row: 4; margin: 6px 0 0; font-size: 12px; max-width: 230px; justify-self: center; align-self: start; }
+  #screen-title #ios-hint { grid-column: 1 / -1; grid-row: 5; max-width: none; }
+  #screen-title .menu { grid-column: 2; grid-row: 2 / 5; gap: 7px; }
+  #screen-title .btn.big { font-size: 17px; padding: 7px 16px; min-width: 210px; }
+  #screen-title .menu > .btn:not(.big) { font-size: 15px; padding: 6px 12px; }
+  #screen-title .btn.small { font-size: 13px; padding: 5px 9px; }
+  #screen-title .link-btn { font-size: 13px; }
+}
+
+/* ---------- Pelea final ---------- */
+/* recuerdo: la imagen en sepia y con los bordes como de sueño */
+body.flashback #game { filter: sepia(0.85) saturate(0.85) brightness(1.06) contrast(0.95); }
+#flashback { position: absolute; inset: 0; pointer-events: none; z-index: 14;
+  background: radial-gradient(ellipse at center, rgba(255,240,210,0) 55%, rgba(255,236,200,0.55) 80%, rgba(255,246,228,0.95) 100%);
+  animation: fb-breathe 3s ease-in-out infinite; }
+@keyframes fb-breathe { 50% { opacity: 0.85; } }
+
+/* segundo joystick (derecha): aparece en la pelea, donde apoyás el pulgar */
+#aim-zone, #aim-stick { display: none; }
+#touch.fight #aim-zone { display: block; pointer-events: auto; position: absolute; right: 0; bottom: 0; width: 46%; height: 72%; touch-action: none; }
+#touch.fight #aim-stick {
+  display: block; pointer-events: none; position: absolute;
+  right: calc(120px + env(safe-area-inset-right)); bottom: calc(24px + env(safe-area-inset-bottom));
+  width: 112px; height: 112px; border-radius: 50%;
+  background: rgba(20,40,60,0.35); border: 3px solid rgba(143,211,255,0.45);
+}
+#touch.fight #aim-stick.active { border-color: rgba(143,211,255,0.85); background: rgba(20,40,70,0.5); }
+#aim-knob { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: rgba(143,211,255,0.7); border: 3px solid rgba(18,12,22,0.6); }
+#aim-stick small { position: absolute; left: 0; right: 0; bottom: -16px; text-align: center; font-size: 10px; color: rgba(255,244,224,0.7); }
+#touch.fight #t-dig, #touch.fight #t-torch { display: none; }
+#touch.fight .tbtn.jump { z-index: 2; }
+#touch.fight .tbtn.act { z-index: 2; }
+@media (min-width: 900px) and (min-height: 600px) {
+  #touch.fight #aim-stick { width: 150px; height: 150px; right: calc(150px + env(safe-area-inset-right)); }
+}
+
+/* joystick: el botón elegido con la cruz */
+.pad-focus { outline: 3px solid var(--pink) !important; outline-offset: 3px; }

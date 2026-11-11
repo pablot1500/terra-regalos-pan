@@ -16,7 +16,7 @@ import { Particles, Pickups, FloatTexts } from './entities.js';
 import { Player } from './player.js';
 import { Popi } from './popi.js';
 import { Scene } from './scene.js';
-import { introScript } from './intro.js';
+import { introScript, popiScript } from './intro.js';
 import { Boss } from './boss.js';
 import { BuddyAI } from './buddy.js';
 import { Chatter } from './chatter.js';
@@ -97,7 +97,7 @@ class Game {
     this.cam.y -= SPLASH_UP; // arranca en la pantalla del botón, bien arriba en el cielo
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 200));
-    document.addEventListener('visibilitychange', () => { if (document.hidden) { this.save(); if (this.state === 'play') this.pause(); } });
+    document.addEventListener('visibilitychange', () => { this.audio.sleep(document.hidden); if (document.hidden) { this.save(); if (this.state === 'play') this.pause(); } });
     window.addEventListener('pagehide', () => this.save());
     store.load().then((d) => {
       this.savedData = d && (d.v === 1 || d.v === 2) ? d : null;
@@ -126,6 +126,7 @@ class Game {
     this.inv = { torch: 0 };
     this.torches = [];
     this.popi = null;
+    this.popiMet = false; // Popi viene escondido en el Gol: aparece la primera vez que bajan al patio
     this.players = [new Player(this, this.charId)];
     this.boss = new Boss(this, false);
     this.net.hookWorld(this.world);
@@ -169,6 +170,7 @@ class Game {
     this.chatter.idx = d.chatIdx || 0;
     this.inv = { torch: (d.inv && Number.isFinite(d.inv.torch)) ? d.inv.torch : 0 };
     this.popiWith = !!d.popi;
+    this.popiMet = !!d.popi || !!d.popiMet;
     this.boss = new Boss(this, !!d.bossDone, d.bossLosses || 0);
     this.torches = Array.isArray(d.torches)
       ? d.torches.filter((t) => t && Number.isFinite(t.x) && Number.isFinite(t.y)).map((t) => ({ x: t.x, y: t.y, seed: Number.isFinite(t.seed) ? t.seed : Math.random() * 10 }))
@@ -192,15 +194,19 @@ class Game {
     const p = this.players[0];
     this.players = [p];
     if (this.net.remote) this.players.push(this.net.remote); // online: el otro es una persona
-    else if (this.duo) {
-      const ai = new BuddyAI(this);
-      const b = new Player(this, p.char === 'pablo' ? 'pancha' : 'pablo', ai);
-      ai.p = b;
-      ai.place(p);
-      ai.active = true;
-      this.players.push(b);
-    }
+    else if (this.duo) this.players.push(this.makeBuddy());
     this.chatter.reset(p);
+  }
+
+  /** compañero manejado por la compu, al lado del personaje */
+  makeBuddy() {
+    const p = this.players[0];
+    const ai = new BuddyAI(this);
+    const b = new Player(this, p.char === 'pablo' ? 'pancha' : 'pablo', ai);
+    ai.p = b;
+    ai.place(p);
+    ai.active = true;
+    return b;
   }
 
   setDuo(on) {
@@ -284,6 +290,20 @@ class Game {
     });
   }
 
+  /** Popi sale del Gol (una sola vez por partida) y se suma a la aventura */
+  startPopiScene(p) {
+    this.popiMet = true;
+    p.vx = 0; p.digging = false;
+    this.startScene((sc) => popiScript(sc, p), {
+      onSkip: () => { this.structs.golDoor = 0; this.structs.golShake = 0; },
+      onEnd: () => {
+        this.structs.golDoor = 0; this.structs.golShake = 0;
+        if (!this.popi) this.setPopi(p);
+        this.save();
+      },
+    });
+  }
+
   endIntro() {
     this.scene = null;
     this.structs.trailerOpen = 1; this.structs.gateOpen = 0;
@@ -309,6 +329,7 @@ class Game {
       inv: this.inv,
       torches: this.torches.map((t) => ({ x: t.x, y: t.y, seed: t.seed })),
       popi: !!this.popi && this.popi.owner === this.players[0],
+      popiMet: !!this.popiMet,
       bossDone: !!(this.boss && this.boss.state === 'done'),
       bossLosses: this.boss ? this.boss.losses : 0,
       player: p ? { char: p.char, x: p.x, y: p.y, hp: p.hp, energy: p.energy } : null,
@@ -355,7 +376,7 @@ class Game {
     this.state = 'paused';
     this.audio.jet(false);
     this.ui.show('screen-pause', true);
-    this.ui.showRematch(!!this.boss && this.boss.state === 'done' && !this.net.isGuest);
+    this.ui.showRematch(!!this.boss && this.boss.state !== 'scene' && !this.boss.fighting && !this.net.isGuest); // también para probar la pelea sin jugar todo
     this.ui.show('btn-reset', !this.net.isGuest); // el invitado no toca su partida guardada
     this.save();
   }
@@ -370,10 +391,14 @@ class Game {
   rematchBoss() {
     const p = this.players[0];
     this.resume();
+    if (this.boss) this.boss.releaseBot();
     this.boss = new Boss(this, false);
     p.x = this.boss.homeX - 80 - p.w / 2; p.y = this.boss.floorY - p.h;
     p.vx = 0; p.vy = 0; p.peakY = p.y; p.hp = HP_MAX; p.dead = false;
-    p.heldRock = null; p.hovering = false; p.digging = false;
+    p.hovering = false; p.digging = false; p.downed = false;
+    // online: el otro también baja a la plataforma
+    if (this.net.remote) this.boss.place(this.net.remote, this.boss.homeX - 100, this.boss.floorY, 1, true);
+    if (this.players[1] && this.players[1].ai) this.players[1].ai.place(p);
     this.cam.x = p.cx - this.vw / 2; this.cam.y = p.cy - this.vh / 2;
     this.save();
   }
@@ -633,9 +658,8 @@ class Game {
   faint(player, reason) {
     if (this.state !== 'play') return;
     if (this.boss && this.boss.fighting) {
-      // online: si cae uno en la pelea, vuelven los dos (el anfitrión decide)
-      if (this.net.isGuest) { this.state = 'faint'; player.dead = true; this.audio.jet(false); this.net.send('down'); return; }
-      this.boss.playerDown(player);
+      // en la pelea nadie se desmaya solo: queda tirado hasta que el otro lo levante
+      this.boss.knockDown(player);
       return;
     }
     this.state = 'faint';
@@ -711,6 +735,7 @@ class Game {
     this.time += dt;
     const inp = this.input.read(this.cam.x, this.cam.y);
     const p = this.players[0];
+    if (this.input.pad.on) this.padUI(inp);
 
     // online: aunque el anfitrión esté en la pausa o en el Taller, el mundo compartido sigue andando para el otro
     if (this.net.isHost && (this.state === 'paused' || this.state === 'shop')) this.updateShared(dt);
@@ -728,11 +753,15 @@ class Game {
         this.particles.add({ x, y, vx: (Math.random() - 0.5) * 14, vy: -14 - Math.random() * 16, life: 0.9, max: 0.9, color: 'rgba(120,100,100,0.55)', size: 2, grav: -20, smoke: true });
         if (Math.random() < 0.3) this.particles.add({ x, y, vx: (Math.random() - 0.5) * 30, vy: -30, life: 0.4, max: 0.4, color: '#ffd34d', size: 1, grav: 60 });
       }
-      // el compañero bot se esconde durante las escenas y la pelea con Aguilus (ahí lo maneja la escena)
-      const busy = !!(this.boss && (this.boss.state === 'scene' || this.boss.fighting));
+      // el compañero bot se esconde durante las escenas; en la pelea con Aguilus pelea al lado
+      const fight = !!(this.boss && this.boss.fighting);
+      const busy = !!(this.boss && this.boss.state === 'scene');
+      this.input.fightMode = fight;
+      this.ui.setFightControls(fight && this.ui.isTouch);
       for (const pl of this.players) {
         if (pl.remote) { this.net.stepPuppet(pl, dt); continue; }
         if (!pl.ai) { pl.update(dt, inp); continue; }
+        if (fight && pl.ai.fighting) { pl.ai.active = true; pl.update(dt, pl.ai.fightInput(dt, this.boss)); continue; }
         const on = !busy && !p.dead;
         if (on && !pl.ai.active) pl.ai.place(p, true);
         pl.ai.active = on;
@@ -741,24 +770,25 @@ class Game {
       if (!guest) this.chatter.update(dt);
       if (this.popi) { if (guest) this.popi.anim += dt; else this.popi.update(dt); }
       // Popi espera en el patio: al acercarte te ladra y te lo podés llevar
-      const nearDog = !this.popi && Math.abs(p.cx - (DOG_POS.x + 10)) < 22 && Math.abs(p.y + p.h - (DOG_POS.y + 14)) < 12;
+      // la primera vez que pisan el patio, Popi sale del Gol
+      if (!this.popiMet && !guest && !p.dead && p.onGround && Math.abs(p.y + p.h - SURFACE * TILE) < 2 && p.cx > 26 * TILE && p.cx < 60 * TILE) this.startPopiScene(p);
+      const nearDog = this.popiMet && !this.popi && Math.abs(p.cx - (DOG_POS.x + 10)) < 22 && Math.abs(p.y + p.h - (DOG_POS.y + 14)) < 12;
       if (nearDog && !this.wasNearDog) {
         this.audio.play('bark');
         this.addText(DOG_POS.x + 10, DOG_POS.y - 2, '¡GUAU!', '#fff4e0');
       }
       this.wasNearDog = nearDog;
-      if (this.boss) { if (guest) this.boss.t += dt; else this.boss.update(dt); }
+      if (this.boss) { if (guest) this.boss.updateRemote(dt); else this.boss.update(dt); }
       const enteredShop = p.inShop && !nearDog && !this.wasInShop;
       this.wasInShop = p.inShop && !nearDog;
-      if (this.boss && this.boss.fighting) {
-        // pelea con Aguilus: E devuelve la roca atajada
-        const held = !!p.heldRock;
-        this.ui.setActButton(held ? 'LANZAR' : null);
-        this.ui.setPrompt(held && !this.ui.isTouch ? 'Presioná E para tirarle la roca a Aguilus' : null);
-        if (inp.interact && held) {
-          const aim = !this.ui.isTouch && this.input.mouseSeen ? { mx: inp.mx, my: inp.my } : null;
-          if (guest) { this.net.send('throw', { aim }); p.heldRock = null; } else this.boss.throwRock(p, aim);
-        }
+      if (fight) {
+        // pelea con Aguilus: al lado de alguien caído, E (varias veces) lo levanta
+        const fallen = !p.downed && this.boss.downedNear(p);
+        const mateName = CHARACTERS[p.char === 'pablo' ? 'pancha' : 'pablo'].name;
+        this.ui.setActButton(fallen ? 'REVIVIR' : null);
+        this.ui.setPrompt(p.downed ? `¡Caíste! Esperá que ${mateName} te levante`
+          : fallen ? (this.ui.isTouch ? 'Tocá REVIVIR varias veces' : this.input.lastDevice === 'pad' ? 'Apretá X varias veces para levantarl' + (fallen.char === 'pablo' ? 'o' : 'a') : 'Apretá E varias veces para levantarl' + (fallen.char === 'pablo' ? 'o' : 'a')) : null);
+        if (inp.interact && fallen) this.boss.reviveTap(p, fallen);
       } else if (nearDog) {
         this.ui.setPrompt(this.ui.isTouch ? null : 'Presioná E para llevar a Popi');
         this.ui.setActButton('POPI');
@@ -844,6 +874,48 @@ class Game {
     this.updateCamera(dt);
     if (this.shakeT > 0) { this.shakeT -= dt; if (this.shakeT <= 0) this.shakeA = 0; }
     this.input.endFrame();
+  }
+
+  /** joystick fuera del juego: A pasa los diálogos, Start salta la escena; en los menús la cruz mueve y A aprieta */
+  padUI(inp) {
+    const st = this.state;
+    if (['intro', 'scene', 'remoteScene'].includes(st) && this.scene) {
+      if (inp.padA) { if (this.scene.noteOpen) document.getElementById('intro-note-ok').click(); else this.scene.advance(); }
+      if (inp.padStart) this.scene.skip();
+      return;
+    }
+    if (st === 'play' || st === 'descend') return;
+    const screens = [...document.querySelectorAll('.screen:not(.hidden)')];
+    const top = screens[screens.length - 1];
+    if (!top) return;
+    const items = [...top.querySelectorAll('button, input[type=range], select')]
+      .filter((el) => el.offsetParent !== null && !el.disabled && !el.closest('.hidden'));
+    if (!items.length) return;
+    let i = items.indexOf(document.activeElement);
+    if (inp.padNav) { i = i < 0 ? 0 : (i + inp.padNav + items.length) % items.length; this.padFocus(items[i]); return; }
+    if (i < 0) { if (inp.padA || inp.padSide) this.padFocus(items[0]); return; }
+    const el = items[i];
+    if (inp.padSide) {
+      if (el.type === 'range') {
+        const step = +el.step || (+el.max - +el.min) / 10 || 1;
+        el.value = clamp(+el.value + inp.padSide * step, +el.min, +el.max);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      } else this.padFocus(items[(i + inp.padSide + items.length) % items.length]);
+    }
+    if (inp.padA && el.type !== 'range') el.click();
+    if (inp.padB) {
+      // B = atrás (igual que Escape)
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
+      window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Escape', key: 'Escape' }));
+    }
+  }
+
+  padFocus(el) {
+    for (const o of document.querySelectorAll('.pad-focus')) o.classList.remove('pad-focus');
+    el.classList.add('pad-focus');
+    el.focus({ preventScroll: true });
+    el.scrollIntoView({ block: 'nearest' });
   }
 
   /** lo compartido (lava, minerales, Popi, Aguilus, charlas) sin mover al personaje de esta pantalla */
@@ -954,7 +1026,7 @@ class Game {
   skyLift(camY, vh) {
     // va prendido desde la pantalla del botón y durante toda la bajada, siempre con la misma fuerza:
     // así cada capa se mueve siempre para el mismo lado y las lejanas más lento que las cercanas
-    const on = this.state === 'splash' || (this.state === 'intro' && this.scene && this.scene.drop);
+    const on = this.state === 'splash' || (this.state === 'intro' && this.scene && this.scene.camDrop);
     if (!on) return 0;
     return Math.max(0, SURFACE * TILE - vh * 0.6 - camY);
   }
@@ -991,8 +1063,15 @@ class Game {
         ctx.fillRect(Math.round(cx + Math.cos(a) * R - camX), Math.round(cy + Math.sin(a) * R - camY), 1, 1);
       }
     }
-    // mira del mouse
-    if (this.state === 'play' && !this.ui.isTouch && this.input.mouseSeen) {
+    // mira del mouse (en la pelea, una mira de agua más grande)
+    if (this.state === 'play' && this.boss && this.boss.fighting && !this.ui.isTouch && this.input.mouseSeen && this.input.lastDevice !== 'pad') {
+      const mx = Math.round(this.input.mouse.x), my = Math.round(this.input.mouse.y);
+      ctx.fillStyle = 'rgba(29,20,32,0.75)';
+      for (const [a, b, w, h] of [[-5, -1, 3, 3], [3, -1, 3, 3], [-1, -5, 3, 3], [-1, 3, 3, 3]]) ctx.fillRect(mx + a, my + b, w, h);
+      ctx.fillStyle = this.input.mouse.down ? '#ffffff' : '#7fd8ff';
+      ctx.fillRect(mx - 4, my, 2, 1); ctx.fillRect(mx + 3, my, 2, 1); ctx.fillRect(mx, my - 4, 1, 2); ctx.fillRect(mx, my + 3, 1, 2);
+      ctx.fillRect(mx, my, 1, 1);
+    } else if (this.state === 'play' && !this.ui.isTouch && this.input.mouseSeen && this.input.lastDevice !== 'pad') {
       const mx = Math.round(this.input.mouse.x), my = Math.round(this.input.mouse.y);
       ctx.fillStyle = 'rgba(29,20,32,0.7)';
       ctx.fillRect(mx - 3, my, 2, 1); ctx.fillRect(mx + 2, my, 2, 1); ctx.fillRect(mx, my - 3, 1, 2); ctx.fillRect(mx, my + 2, 1, 2);
@@ -1022,8 +1101,8 @@ class Game {
     const blink = (t % 4.3) > 4.15;
     const wag = Math.floor(t / (near ? 0.11 : 0.55)) % 2;
     const dogSpr = blink ? DOG.blink : near ? (wag ? DOG.happyB : DOG.happyA) : (wag ? DOG.b : DOG.a);
-    if (!this.popi) ctx.drawImage(dogSpr, DOG_POS.x - camX, DOG_POS.y - camY);
-    if (!this.popi && near && Math.random() < 0.02) {
+    if (!this.popi && this.popiMet && this.state !== 'intro') ctx.drawImage(dogSpr, DOG_POS.x - camX, DOG_POS.y - camY);
+    if (!this.popi && this.popiMet && near && Math.random() < 0.02) {
       this.particles.add({ x: DOG_POS.x + 5, y: DOG_POS.y - 2, vx: 0, vy: -12, life: 1, max: 1, heart: true, grav: 0 });
     }
 
@@ -1043,6 +1122,7 @@ class Game {
     this.lighting.draw(ctx, this, camX, camY, vw, vh, t);
     this.drawGlints(ctx, camX, camY, vw, vh, t);
     this.texts.draw(ctx, camX, camY);
+    if (this.boss && inGame) this.boss.drawOverlay(ctx, camX, camY);
     if (inGame) this.chatter.draw(ctx, camX, camY, vw);
 
     if (inGame) this.ui.updateHUD();
