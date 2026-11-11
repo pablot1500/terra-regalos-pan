@@ -18,7 +18,7 @@ Después abrí <http://localhost:5173>.
 
 Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http://IP-DE-TU-COMPU:5173`.
 
-> El sandbox de personajes está en `http://localhost:5173/?sandbox` (también hay un link en la pantalla de inicio): muestra cada personaje en grande, animado y cuadro por cuadro, con jetpack, casco, herramienta y fondo a elección.
+> El sandbox de personajes está en `http://localhost:5173/?sandbox`: muestra cada personaje en grande, animado y cuadro por cuadro, con jetpack, casco, herramienta y fondo a elección.
 
 > Tiene que abrirse a través del servidor: si abrís `index.html` con doble click, el navegador bloquea los módulos.
 

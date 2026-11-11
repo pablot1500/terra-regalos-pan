@@ -476,21 +476,32 @@ html, body, button { -webkit-tap-highlight-color: transparent; }
 @keyframes ch-wave { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 @keyframes ch-pop { 0% { transform: none; } 35% { transform: translateY(-14px) scale(1.25) rotate(-8deg); } 70% { transform: translateY(2px) scale(0.95); } 100% { transform: none; } }
 .logo .l1 { animation: none; }
-/* "Salven los regalos": estampado en diagonal como un sello (sin caja atrás) */
+/* "Salven los regalos": cartel de neón derecho, rectangular con bordes redondeados;
+   al aparecer titila como un tubo que arranca y termina quedando prendido */
 .logo .stamp {
-  display: inline-block; font-size: 1.3em; color: var(--gold);
-  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink), 0 0 18px rgba(255,211,77,0.35);
-  transform: rotate(-8deg); animation: stamp-in 0.5s cubic-bezier(.5,0,.6,1.4) 0.95s both;
+  --neon: #ff6fd0;
+  display: inline-block; font-size: 1.45em; line-height: 1; padding: 0.22em 0.55em 0.28em;
+  color: #fff3c4; background: rgba(29,20,32,0.86);
+  border: 3px solid #ffb3e6; border-radius: 0.5em;
+  text-shadow: 0 0 3px #ffd34d, 0 0 9px #ffb02e, 0 0 18px rgba(255,150,40,0.85);
+  box-shadow: 0 0 0 3px var(--ink), 0 0 8px 2px var(--neon), 0 0 22px 4px rgba(255,111,208,0.55), inset 0 0 10px rgba(255,111,208,0.55);
+  animation: neon-on 1.5s steps(1, end) 0.95s both, neon-hum 7s steps(1, end) 3s infinite;
 }
-@keyframes stamp-in {
-  0% { opacity: 0; transform: rotate(-24deg) scale(3.2); filter: blur(2px); }
-  70% { opacity: 1; transform: rotate(-6deg) scale(0.9); filter: none; }
-  100% { opacity: 1; transform: rotate(-8deg) scale(1); }
+@keyframes neon-on {
+  0%, 9%, 14%, 27%, 31%, 52% { color: #6e5a4c; border-color: #5e3550; text-shadow: none; box-shadow: 0 0 0 3px var(--ink); }
+  8%, 13%, 24%, 30%, 46% { color: #fff3c4; border-color: #ffb3e6;
+    text-shadow: 0 0 3px #ffd34d, 0 0 9px #ffb02e, 0 0 18px rgba(255,150,40,0.85);
+    box-shadow: 0 0 0 3px var(--ink), 0 0 8px 2px var(--neon), 0 0 22px 4px rgba(255,111,208,0.55), inset 0 0 10px rgba(255,111,208,0.55); }
+  56%, 100% { color: #fff3c4; border-color: #ffb3e6;
+    text-shadow: 0 0 3px #ffd34d, 0 0 9px #ffb02e, 0 0 18px rgba(255,150,40,0.85);
+    box-shadow: 0 0 0 3px var(--ink), 0 0 8px 2px var(--neon), 0 0 22px 4px rgba(255,111,208,0.55), inset 0 0 10px rgba(255,111,208,0.55); }
 }
-.logo .stamp .hv.pop { animation: stamp-wiggle 0.45s ease-in-out; }
-@keyframes stamp-wiggle { 0%, 100% { transform: none; } 25% { transform: rotate(-4deg) scale(1.06); } 75% { transform: rotate(4deg) scale(1.06); } }
-/* el golpe del sello sacude un poquito todo el título */
-.logo-box { animation: title-thump 0.35s ease-out 1.38s; }
+/* de vez en cuando el tubo hace un parpadeo cortito, como los neones de verdad */
+@keyframes neon-hum { 0%, 96%, 98%, 100% { opacity: 1; } 97% { opacity: 0.55; } }
+.logo .stamp .hv.pop { animation: neon-flick 0.45s steps(1); }
+@keyframes neon-flick { 0%, 40%, 100% { opacity: 1; } 20%, 60% { opacity: 0.3; } }
+/* el sello del 2 sacude un poquito todo el título */
+.logo-box { animation: title-thump 0.35s ease-out 2.82s; }
 @keyframes title-thump { 20% { transform: translate(-3px, 3px); } 45% { transform: translate(3px, -2px); } 70% { transform: translate(-2px, 1px); } }
 /* el 2: un número bien legible en una medalla */
 .logo .two {
@@ -498,13 +509,18 @@ html, body, button { -webkit-tap-highlight-color: transparent; }
   display: inline-grid; place-items: center; width: 1.9em; height: 1.9em; font-size: 1.15em; line-height: 1;
   color: #fff4e0; background: var(--pink); border: 3px solid var(--ink); border-radius: 50%;
   box-shadow: inset -4px -4px 0 var(--pink-d), 0 4px 0 var(--ink); text-shadow: 0 3px 0 var(--ink);
-  animation: two-in 0.45s cubic-bezier(.3,1.8,.5,1) 1.45s both, two-pulse 1.8s ease-in-out 2s infinite;
+  animation: two-in 0.4s cubic-bezier(.5,0,.6,1.4) 2.5s both, two-pulse 1.8s ease-in-out 3.4s infinite;
   /* medio montado sobre el final de "regalos" */
   position: relative; z-index: 1; margin-left: -0.4em; top: -0.7em;
 }
 .logo .two .hv { display: grid; place-items: center; width: 100%; height: 100%; }
 .logo .two .hv.pop { animation: two-spin 0.6s ease-in-out; }
-@keyframes two-in { from { opacity: 0; transform: scale(0) rotate(-180deg); } to { opacity: 1; transform: rotate(10deg); } }
+/* el 2 cae como un sello: grande y borroso desde arriba, golpea y queda torcidito */
+@keyframes two-in {
+  0% { opacity: 0; transform: scale(3.4) rotate(-30deg); filter: blur(2px); }
+  70% { opacity: 1; transform: scale(0.88) rotate(14deg); filter: none; }
+  100% { opacity: 1; transform: rotate(10deg); }
+}
 @keyframes two-pulse { 0%, 100% { transform: rotate(10deg) scale(1); } 50% { transform: rotate(4deg) scale(1.1); } }
 @keyframes two-spin { 0% { transform: none; } 70% { transform: rotate(330deg) scale(1.2); } 100% { transform: rotate(360deg); } }
 /* regalitos flotando alrededor del título */
