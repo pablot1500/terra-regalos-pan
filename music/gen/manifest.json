@@ -1,0 +1,85 @@
+{
+  "model": "music_v2_5",
+  "zones": [
+    [
+      {
+        "name": "Patio soleado",
+        "file": "01-patio-soleado.mp3",
+        "secs": 55,
+        "prompt": "Cheerful sunny backyard on a birthday morning. Bright square-wave lead, bouncy bass, light drums, catchy major-key melody, about 104 bpm."
+      },
+      {
+        "name": "Mate y pala",
+        "file": "02-mate-y-pala.mp3",
+        "secs": 48,
+        "prompt": "Playful, upbeat digging-with-a-shovel theme. Plucky chiptune lead, snappy drums, cheerful and fast, about 120 bpm."
+      },
+      {
+        "name": "Cumbia del cantero",
+        "file": "03-cumbia-del-cantero.mp3",
+        "secs": 77,
+        "prompt": "Argentine cumbia meets chiptune: güiro, cumbia drum groove, accordion-like synth lead, festive birthday party vibe, about 100 bpm."
+      }
+    ],
+    [
+      {
+        "name": "Cuevas de cristal",
+        "file": "04-cuevas-de-cristal.mp3",
+        "secs": 65,
+        "prompt": "Mysterious but cozy underground crystal cave exploration. Glassy chimes, soft arpeggios, echoing triangle-wave melody, about 88 bpm."
+      },
+      {
+        "name": "Eco del granito",
+        "file": "05-eco-del-granito.mp3",
+        "secs": 58,
+        "prompt": "Adventurous mining theme deeper underground. Steady drums, echoing synth melody, a little tension and a lot of wonder, about 100 bpm."
+      },
+      {
+        "name": "Minero de medianoche",
+        "file": "06-minero-de-medianoche.mp3",
+        "secs": 83,
+        "prompt": "Laid-back midnight miner groove. Plucked synth lead, warm round bass, relaxed lo-fi retro game feel, about 92 bpm."
+      }
+    ],
+    [
+      {
+        "name": "Abismo",
+        "file": "07-abismo.mp3",
+        "secs": 76,
+        "prompt": "Dark, vast abyss deep underground. Bell tones, deep sub bass, slow and eerie but still melodic, about 76 bpm."
+      },
+      {
+        "name": "Corazón de la tierra",
+        "file": "08-corazon-de-la-tierra.mp3",
+        "secs": 60,
+        "prompt": "Glowing lava caverns near the center of the Earth. Rising tension, triangle-wave arpeggios, mysterious melody, about 96 bpm."
+      },
+      {
+        "name": "Latido de magma",
+        "file": "09-latido-de-magma.mp3",
+        "secs": 91,
+        "prompt": "Magma chamber with a heartbeat drum pulse, ominous choir pads and a slow building tension, about 84 bpm."
+      }
+    ],
+    [
+      {
+        "name": "Combate final",
+        "file": "10-combate-final.mp3",
+        "secs": 51,
+        "prompt": "Epic final boss battle against a wizard eagle. Galloping drums, heroic synth-brass lead, very intense and fast, about 152 bpm."
+      },
+      {
+        "name": "Lluvia de magma",
+        "file": "11-lluvia-de-magma.mp3",
+        "secs": 48,
+        "prompt": "Frantic boss fight while fire rains from above. Driving drums, gritty saw-wave leads, heroic and urgent, about 160 bpm."
+      },
+      {
+        "name": "Furia de Aguilus",
+        "file": "12-furia-de-aguilus.mp3",
+        "secs": 53,
+        "prompt": "Dramatic, slightly comedic villain boss theme. Organ and choir over chiptune drums, epic and theatrical, about 144 bpm."
+      }
+    ]
+  ]
+}

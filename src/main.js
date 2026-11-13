@@ -770,7 +770,9 @@ class Game {
       if (!guest) this.chatter.update(dt);
       if (this.popi) { if (guest) this.popi.anim += dt; else this.popi.update(dt); }
       // Popi espera en el patio: al acercarte te ladra y te lo podés llevar
-      // la primera vez que pisan el patio, Popi sale del Gol
+      // la primera vez que pisan el patio, Popi sale del Gol. Si ya bajaron sin pasar por ahí
+      // (por ejemplo, con "Pelear con Aguilus" de la pausa), Popi ya los espera en el patio.
+      if (!this.popiMet && this.counters.best > 20) this.popiMet = true;
       if (!this.popiMet && !guest && !p.dead && p.onGround && Math.abs(p.y + p.h - SURFACE * TILE) < 2 && p.cx > 26 * TILE && p.cx < 60 * TILE) this.startPopiScene(p);
       const nearDog = this.popiMet && !this.popi && Math.abs(p.cx - (DOG_POS.x + 10)) < 22 && Math.abs(p.y + p.h - (DOG_POS.y + 14)) < 12;
       if (nearDog && !this.wasNearDog) {
@@ -1101,7 +1103,9 @@ class Game {
     const blink = (t % 4.3) > 4.15;
     const wag = Math.floor(t / (near ? 0.11 : 0.55)) % 2;
     const dogSpr = blink ? DOG.blink : near ? (wag ? DOG.happyB : DOG.happyA) : (wag ? DOG.b : DOG.a);
-    if (!this.popi && this.popiMet && this.state !== 'intro') ctx.drawImage(dogSpr, DOG_POS.x - camX, DOG_POS.y - camY);
+    // (mientras Popi es parte de una escena, el de la escena es el único)
+    const popiActing = !!(this.scene && this.scene.actors && this.scene.actors.popi);
+    if (!this.popi && this.popiMet && this.state !== 'intro' && !popiActing) ctx.drawImage(dogSpr, DOG_POS.x - camX, DOG_POS.y - camY);
     if (!this.popi && this.popiMet && near && Math.random() < 0.02) {
       this.particles.add({ x: DOG_POS.x + 5, y: DOG_POS.y - 2, vx: 0, vy: -12, life: 1, max: 1, heart: true, grav: 0 });
     }

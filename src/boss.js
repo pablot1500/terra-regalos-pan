@@ -268,6 +268,7 @@ export class Boss {
       const x = skipped || !a ? LAND_X + (f === this.local ? -10 : 10) : a.x;
       this.place(f, x, SURFACE * TILE, 1, true);
     }
+    g.popiMet = true; // después del final, Popi ya está en el patio (sin la escena del Gol)
     g.save();
     if (g.net.isHost) g.net.send('ending', { earned: Math.floor(g.counters.earned) });
     const mins = Math.floor(g.counters.playTime / 60);
@@ -1135,7 +1136,7 @@ function shaftX(g) {
 }
 
 // donde aterrizan al final: sobre las baldosas del patio, al lado del arbolito
-const LAND_X = 34 * TILE;
+const LAND_X = 32 * TILE;
 
 // ------------------------------------------------------------
 //  Guiones

@@ -16,9 +16,11 @@ export const GATE_X = 75 * TILE + 4;   // portón a la calle, al fondo del patio
 export const PATIO = { c0: 27, c1: 64 };
 export const DIG_ZONE = { c0: 41, c1: 50 }; // cantero del medio: lo único que se puede cavar desde arriba
 export const DOG_POS = { x: 54 * TILE, y: S * TILE - 14 }; // Popi espera en el patio, a la derecha del cantero
-export const GOL_X = 52 * TILE + 6;     // el Gol gris estacionado detrás del lugar de Popi (Popi viene escondido adentro)
-export const SEDAN_X = 44 * TILE + 4;   // el sedán rojo, al fondo detrás del cantero
-const GOL_DOOR = { x0: 21, x1: 32, y0: 4, y1: 17 }; // puerta de adelante del Gol (en el dibujo)
+export const GOL_X = 51 * TILE + 4;     // el Gol gris, justo a la derecha del cantero (Popi viene escondido adentro)
+export const GOL_H = 34;
+export const SEDAN_X = 34 * TILE - 2;   // el sedán rojo, entre el arbolito y el cantero (el cantero queda libre)
+export const TREE_X = 27 * TILE;      // el arbolito, al pie de la escalera
+export const GOL_DOOR = { x0: 30, x1: 43, y0: 5, y1: 23 }; // puerta de adelante del Gol (en el dibujo)
 
 export function placeStructures(world) {
   const set = (c, r, t) => world.setRaw(c, r, t);
@@ -520,65 +522,46 @@ function paintHedge(w, h, seed) {
   return cv;
 }
 
-// Volkswagen Gol Trend gris (2012) estacionado (solo decoración), mirando a la derecha
+// Volkswagen Gol Trend gris estacionado (de costado, mirando a la derecha). Popi viene escondido adentro.
+// Más grande que los personajes, como un auto de verdad al lado de ellos.
 function paintGol() {
-  const W = 47, H = 25;
+  const W = 62, H = 34;
   const [cv, x] = makeCanvas(W, H);
   const { R, P } = painter(x);
   const body = '#666b72', bodyD = '#4b4f55', bodyH = '#8c9299', edge = '#2e3136';
-  const glass = '#262c35', glassH = '#56657a', black = '#1c1d21', trim = '#2a2c31'; // vidrios polarizados
-  const WHEELS = [9, 36];
-  // silueta de hatchback: techo en arco, cola corta y redonda, trompa baja
-  const top = (u) => {
-    if (u < 12) return Math.round(2 + 10 * (1 - Math.sqrt(1 - ((12 - u) / 12) ** 2))); // cola redondeada
-    if (u <= 27) return Math.round(2 + ((u - 15) / 12) ** 2 * 1.4);
-    if (u <= 35) return Math.round(3 + ((u - 27) / 8) ** 1.2 * 7);
-    if (u <= 42) return Math.round(10 + (u - 36) * 0.3);
-    return [13, 14, 16][u - 43];
-  };
-  const bottom = (u) => (u === 0 ? 15 : u === 1 ? 16 : u < 4 || u > 42 ? 17 : 19);
-  const arch = (u, y) => WHEELS.some((cx) => (u - cx) ** 2 + (y - 20) ** 2 < 31);
-  const inside = (u, y) => u >= 0 && u <= 45 && y >= top(u) && y <= bottom(u) && !arch(u, y);
+  const glass = '#262c35', glassH = '#56657a', black = '#1c1d21', trim = '#2a2c31', chrome = '#c3cad2';
+  const WHEELS = [13, 48], WY = 27;
   // sombra en el piso
-  x.fillStyle = 'rgba(0,0,0,0.22)'; x.fillRect(2, H - 1, W - 4, 1); x.fillRect(5, H - 2, W - 10, 1);
-  for (let u = 0; u <= 45; u++) {
-    for (let y = top(u); y <= bottom(u); y++) {
-      if (!inside(u, y)) continue;
-      const border = !inside(u - 1, y) || !inside(u + 1, y) || !inside(u, y - 1) || !inside(u, y + 1);
-      let col = y >= 17 ? bodyD : y === 10 || y === top(u) + 1 ? bodyH : body;
-      // ventanillas: parante de atrás grueso y parante del medio
-      if (u >= 8 && u <= 33 && y >= top(u) + 2 && y <= 8 && inside(u + 1, y - 1) && u !== 19 && u !== 20) col = (u === 10 || u === 22) && y <= 5 ? glassH : glass;
-      P(u, y, border ? edge : col);
-    }
-  }
-  P(11, 6, glassH); P(23, 6, glassH);
-  R(19, 4, 2, 5, bodyD); // parante del medio
+  x.fillStyle = 'rgba(0,0,0,0.22)'; x.fillRect(3, H - 1, W - 6, 1); x.fillRect(6, H - 2, W - 12, 1);
+  // carrocería de hatchback: cola corta y redonda, techo largo, parabrisas inclinado y trompa baja
+  const outline = [[2, 27], [1, 19], [2, 12], [5, 6], [10, 3], [34, 3], [37, 4], [46, 13], [55, 15], [59, 17], [60, 21], [60, 27]];
+  fillPoly(x, outline, edge);
+  fillPoly(x, [[3, 26], [2, 19], [3, 12], [6, 7], [11, 4], [34, 4], [36, 5], [45, 14], [55, 16], [58, 18], [59, 21], [59, 26]], body);
+  // reflejo en la línea de cintura y la parte de abajo más oscura
+  R(3, 14, 55, 1, bodyH); R(3, 23, 56, 4, bodyD);
+  // vidrios polarizados: ventanilla de atrás, puerta de atrás y puerta de adelante
+  fillPoly(x, [[6, 13], [9, 8], [12, 6], [17, 6], [17, 13]], glass);
+  fillPoly(x, [[19, 13], [19, 6], [28, 6], [28, 13]], glass);
+  fillPoly(x, [[30, 13], [30, 6], [35, 6], [42, 13]], glass);
+  P(11, 8, glassH); P(10, 9, glassH); P(21, 7, glassH); P(22, 8, glassH); P(32, 7, glassH); P(33, 8, glassH);
   // puertas, manijas y espejo
-  R(7, 10, 1, 6, bodyD); R(20, 10, 1, 7, bodyD); R(32, 10, 1, 6, bodyD);
-  R(16, 12, 2, 1, trim); R(29, 12, 2, 1, trim);
-  R(33, 8, 2, 2, body); P(33, 8, edge);
-  R(2, 14, 41, 1, bodyD);
-  // faro redondeado, luces traseras verticales y la parte de abajo de los paragolpes negra
-  R(41, 11, 3, 2, '#fff3a8'); P(42, 11, '#ffffff'); P(43, 13, '#ffa13d');
-  R(1, 10, 2, 4, '#c83a3a'); P(1, 10, '#ff7a7a'); P(2, 14, '#ffa13d');
-  R(40, 17, 5, 1, trim); R(1, 17, 3, 1, trim);
-    // ruedas con tazas grises dentro de pasarruedas redondos
+  R(18, 14, 1, 10, bodyD); R(29, 6, 1, 18, bodyD); R(43, 14, 1, 9, bodyD);
+  R(24, 16, 3, 1, trim); R(38, 16, 3, 1, trim);
+  R(42, 11, 3, 2, body); P(42, 11, edge); P(44, 12, edge);
+  // faro, giros, luces de atrás y paragolpes negros
+  R(54, 16, 4, 3, '#fff3a8'); P(55, 16, '#ffffff'); P(57, 19, '#ffa13d');
+  R(2, 12, 2, 6, '#c83a3a'); P(2, 12, '#ff7a7a'); P(3, 18, '#ffa13d');
+  R(52, 23, 8, 2, trim); R(2, 23, 4, 2, trim);
+  R(56, 20, 3, 2, black); P(57, 20, chrome); // parrilla con el logo
+  R(58, 22, 2, 1, '#ffffff'); // patente
+  // pasarruedas y ruedas con llantas de aleación
   for (const cx of WHEELS) {
-    for (let j = -4; j <= 4; j++) {
-      const w = Math.round(Math.sqrt(18 - j * j));
-      R(cx - w, 20 + j, w * 2 + 1, 1, black);
-    }
-    // llantas de aleación plateadas con rayos
-    for (let j = -3; j <= 3; j++) {
-      const w = Math.round(Math.sqrt(10 - j * j));
-      R(cx - w, 20 + j, w * 2 + 1, 1, '#c3cad2');
-    }
-    P(cx, 18, '#5b636d'); P(cx - 2, 20, '#5b636d'); P(cx + 2, 20, '#5b636d'); P(cx - 1, 22, '#5b636d'); P(cx + 1, 22, '#5b636d');
-    P(cx - 1, 18, '#eef2f5'); P(cx, 20, '#3a3e44');
+    for (let j = -7; j <= 0; j++) { const w = Math.round(Math.sqrt(50 - j * j)); R(cx - w, WY + j, w * 2 + 1, 1, edge); }
+    for (let j = -6; j <= 6; j++) { const w = Math.round(Math.sqrt(36.5 - j * j)); R(cx - w, WY + j, w * 2 + 1, 1, black); }
+    for (let j = -4; j <= 4; j++) { const w = Math.round(Math.sqrt(16.5 - j * j)); R(cx - w, WY + j, w * 2 + 1, 1, chrome); }
+    for (const [dx, dy] of [[0, -3], [-3, -1], [3, -1], [-2, 3], [2, 3]]) P(cx + dx, WY + dy, '#5b636d');
+    P(cx - 1, WY - 3, '#eef2f5'); R(cx - 1, WY - 1, 3, 3, '#7d8796'); P(cx, WY, '#3a3e44');
   }
-  // patente
-  R(43, 15, 2, 1, '#ffffff');
-  R(43, 12, 2, 2, black); P(44, 12, '#c3cad2'); // parrilla negra con el logo
   return cv;
 }
 
@@ -765,7 +748,6 @@ export class Structures {
     this.hedgeL = paintHedge(16, 60, 5);
     this.bushes = [
       [27.4 * TILE, paintBush(18, 14, 3, ['#ff9ad5', '#ffffff'])],
-      [37.6 * TILE, paintBush(22, 16, 7, null)],
       [59.2 * TILE, paintBush(20, 15, 11, ['#ffd34d', '#ffffff'])],
     ];
     this.gol = paintGol();
@@ -774,7 +756,7 @@ export class Structures {
     this.golShake = 0; // el Gol se sacude (Popi ladrando adentro)
   }
 
-  /** Fondo del patio (pared, árbol, tendedero) — va detrás de todo */
+  /** Fondo del patio (pared, árbol, autos, arbustos) — va detrás de todo */
   drawBackdrop(ctx, camX, camY, t, lift = 0, px = 1) {
     this.ctx = ctx;
     const g0 = S * TILE - camY;
@@ -788,20 +770,21 @@ export class Structures {
     stand(this.brick, 216 - camX, gy - 40);
     stand(this.hedgeL, 0 - camX, gy - 60);
     this.drawGate(GATE_X - camX, gy - 44, l);
-    stand(this.tree, 30 * TILE - camX, gy - 72);
+    // lo que está apoyado en el patio (árbol, autos, arbustos) va pegado al piso, sin parallax:
+    // así en la bajada de la intro no parece que flota
+    ctx.drawImage(this.tree, TREE_X - camX, g0 - 72);
     // autos estacionados al fondo: el sedán rojo (de frente, en diagonal) y el Gol gris
-    stand(this.sedan, SEDAN_X - camX, gy - this.sedan.height + 1);
-    this.drawGol(GOL_X - camX, gy - this.gol.height + 1, t, l);
+    ctx.drawImage(this.sedan, SEDAN_X - camX, g0 - this.sedan.height + 1);
+    this.drawGol(GOL_X - camX, g0 - this.gol.height + 1, t);
     // arbustos contra la medianera
-    for (const [bx, spr] of this.bushes) stand(spr, Math.round(bx) - camX, gy - spr.height);
+    for (const [bx, spr] of this.bushes) ctx.drawImage(spr, Math.round(bx) - camX, g0 - spr.height);
   }
 
   /** el Gol: se sacude si Popi ladra adentro y la puerta de adelante se abre para que salga */
-  drawGol(x, y, t, l) {
+  drawGol(x, y, t) {
     const ctx = this.ctx, img = this.gol;
     const dx = this.golShake > 0 ? Math.round(Math.sin(t * 60) * this.golShake) : 0;
     ctx.drawImage(img, x + dx, y);
-    if (l > 0) ctx.drawImage(img, 0, img.height - 1, img.width, 1, x + dx, y + img.height, img.width, l);
     const o = this.golDoor;
     if (o <= 0) return;
     // hueco de la puerta (oscuro, con el asiento) y la puerta abierta hacia nosotros, cada vez más angosta

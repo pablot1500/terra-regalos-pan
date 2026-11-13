@@ -171,7 +171,7 @@ const COMPILED = SONGS.map((zone) => zone.map(compile));
 //  (las arma tools/generar-musica.mjs). Suenan como archivos, de a una, con los mismos fundidos.
 // ------------------------------------------------------------
 export const GEN = { zones: [[], [], [], []], loaded: false };
-const GEN_GAIN = 0.9; // volumen de los mp3 al lado de las programadas
+const GEN_GAIN = 0.36; // volumen de los mp3, emparejado con las programadas (medido: sin esto sonaban casi 3 veces más fuerte)
 export function loadGenerated() {
   return fetch('music/gen/manifest.json', { cache: 'no-store' })
     .then((r) => (r.ok ? r.json() : null))

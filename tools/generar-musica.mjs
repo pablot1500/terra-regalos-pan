@@ -77,7 +77,7 @@ async function main() {
     const file = `${String(i + 1).padStart(2, '0')}-${slug(name)}.mp3`;
     const dest = path.join(OUT, file);
     const want = only.length ? only.includes(i + 1) : all || !fs.existsSync(dest);
-    if (!want) { console.log(`· ${i + 1}. ${name}: ya estaba`); continue; }
+    if (!want) { console.log(`· ${i + 1}. ${name}: ${fs.existsSync(dest) ? 'ya estaba' : 'pendiente'}`); continue; }
     const prompt = `${STYLE} ${desc}`;
     process.stdout.write(`♪ ${i + 1}. ${name} (${secs} s)... `);
     let mp3;

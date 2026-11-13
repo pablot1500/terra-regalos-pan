@@ -2,7 +2,7 @@
 // buscan los regalos debajo de la cama y encuentran una nota misteriosa.
 // Cada `yield` espera a que termine lo anterior (ver scene.js).
 import { TILE, SURFACE } from './config.js';
-import { TRAILER_X, TRAILER_H, GATE_X, GOL_X } from './structures.js';
+import { TRAILER_X, TRAILER_H, GATE_X, GOL_X, GOL_H, GOL_DOOR } from './structures.js';
 
 const FLOOR = SURFACE * TILE;          // piso del patio
 const APT = (SURFACE - 6) * TILE;      // piso del departamento 1B (primer piso, subiendo la escalera)
@@ -196,7 +196,7 @@ export function* popiScript(sc, p) {
   // ladridos desde adentro del Gol
   S.golShake = 1;
   g.sfx('bark');
-  g.addText(GOL_X + 24, FLOOR - 28, '¡GUAU!', '#fff4e0');
+  g.addText(GOL_X + 31, FLOOR - GOL_H - 2, '¡GUAU!', '#fff4e0');
   sc.emote(me, '!'); sc.emote(mate, '!');
   yield sc.wait(0.7);
   S.golShake = 0;
@@ -204,7 +204,7 @@ export function* popiScript(sc, p) {
   yield sc.say('pablo', 'Viene del Gol...');
   // se acercan al auto
   sc.walk(me, GOL_X - 4, 55); sc.walk(mate, GOL_X - 18, 55);
-  sc.fixed = { x: GOL_X + 14, y: FLOOR - 16 };
+  sc.fixed = { x: GOL_X + 20, y: FLOOR - 18 };
   sc.setZoom(2.4);
   yield sc.arrive(me, mate);
   A[me].facing = 1; A[mate].facing = 1;
@@ -216,7 +216,9 @@ export function* popiScript(sc, p) {
   g.sfx('click');
   const swing = (to, dur) => { const from = S.golDoor, t0 = sc.t; return () => (S.golDoor = from + (to - from) * Math.min(1, (sc.t - t0) / dur)) === to; };
   yield swing(1, 0.5);
-  sc.actor('popi', GOL_X + 27, FLOOR - 9, { facing: -1, phase: 0 });
+  // sentado en el asiento de adelante, en el hueco de la puerta
+  const seatY = FLOOR - GOL_H + 1 + GOL_DOOR.y1 - 2;
+  sc.actor('popi', GOL_X + (GOL_DOOR.x0 + GOL_DOOR.x1) / 2, seatY, { facing: -1, phase: 0 });
   sc.emote('popi', '♥');
   g.sfx('bark');
   yield sc.wait(0.8);
