@@ -167,13 +167,14 @@ function compile(song) {
 const COMPILED = SONGS.map((zone) => zone.map(compile));
 
 // ------------------------------------------------------------
-//  Canciones generadas con ElevenLabs (opcionales): music/gen/manifest.json
+//  Canciones generadas con ElevenLabs (opcionales): src/music/gen/manifest.json
+//  (van dentro de src/ porque Cloudflare publica solo index.html, styles.css y src/)
 //  (las arma tools/generar-musica.mjs). Suenan como archivos, de a una, con los mismos fundidos.
 // ------------------------------------------------------------
 export const GEN = { zones: [[], [], [], []], loaded: false };
 const GEN_GAIN = 0.36; // volumen de los mp3, emparejado con las programadas (medido: sin esto sonaban casi 3 veces más fuerte)
 export function loadGenerated() {
-  return fetch('music/gen/manifest.json', { cache: 'no-store' })
+  return fetch('src/music/gen/manifest.json', { cache: 'no-store' })
     .then((r) => (r.ok ? r.json() : null))
     .then((m) => { if (m && Array.isArray(m.zones)) GEN.zones = [0, 1, 2, 3].map((z) => (Array.isArray(m.zones[z]) ? m.zones[z] : [])); })
     .catch(() => { /* todavía no hay canciones generadas */ })
@@ -289,7 +290,7 @@ export class MusicDirector {
     gain.gain.cancelScheduledValues(c.currentTime);
     gain.gain.setValueAtTime(0, c.currentTime);
     gain.gain.linearRampToValueAtTime(GEN_GAIN, c.currentTime + FADE_IN);
-    el.src = 'music/gen/' + t.file;
+    el.src = 'src/music/gen/' + t.file;
     el.currentTime = 0;
     const tr = { gen: true, zone, el, gain, nodes: [], song: { name: t.name, loops: 1 }, loops: 0, fadingOut: false, fadeEnd: 0, then: null, ended: false, full: GEN_GAIN };
     el.onended = () => { tr.ended = true; };

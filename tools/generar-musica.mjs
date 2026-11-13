@@ -1,6 +1,6 @@
 // Genera con ElevenLabs (música) las canciones alternativas del juego: 3 por zona, cada una
-// del mismo largo que la canción programada que reemplaza. Quedan en music/gen/ junto con
-// music/gen/manifest.json, que es lo que lee el juego.
+// del mismo largo que la canción programada que reemplaza. Quedan en src/music/gen/ junto con
+// src/music/gen/manifest.json, que es lo que lee el juego (dentro de src/ para que Cloudflare las publique).
 //
 // Uso (necesita Node 18 o más nuevo):
 //   ELEVENLABS_API_KEY=tu_clave node tools/generar-musica.mjs          → genera las que falten
@@ -12,7 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = path.join(ROOT, 'music', 'gen');
+const OUT = path.join(ROOT, 'src', 'music', 'gen');
 
 // mismo estilo para todas: instrumental, de videojuego, que se pueda repetir en loop
 const STYLE = 'Instrumental video game soundtrack for a cute pixel-art digging adventure about rescuing birthday presents. Retro 16-bit / chiptune-inspired sound with modern warmth, no vocals, loops smoothly.';
