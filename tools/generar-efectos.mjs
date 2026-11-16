@@ -6,6 +6,7 @@
 //   ELEVENLABS_API_KEY=tu_clave node tools/generar-efectos.mjs            → genera los que falten
 //   ELEVENLABS_API_KEY=tu_clave node tools/generar-efectos.mjs thunder    → rehace solo ese
 //   ELEVENLABS_API_KEY=tu_clave node tools/generar-efectos.mjs --todos    → rehace todos
+// Antes de rehacer uno, conviene mover el mp3 viejo a src/sfx/gen/respaldo/ (no se usa en el juego).
 // La clave también se puede poner en un archivo .env.local (ELEVENLABS_API_KEY=...), que no se sube a git.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -33,19 +34,21 @@ const EFFECTS = [
   ['ui', 0.6, 0.7, 'A clear, crisp and clearly audible bubbly pop click of a game menu button, cute and bright.'],                                                     // 19
   ['bark', 0.7, 0.6, 'A small happy dachshund dog barking twice, short and cute.'],                                                    // 21
   ['surprise', 0.8, 0.5, 'A cartoon surprise sting: short quick rising ding, like an exclamation mark, video game sound effect.'],     // 22
-  ['gate', 1.5, 0.6, 'An old wooden garden gate creaking open slowly.'],                                                               // 24
+  ['gate', 1.5, 0.7, 'An old wooden garden gate made of wooden planks slowly creaking open on old hinges: a dry, hollow wooden creak, no metal sounds.'],                                                               // 24
   ['gateShut', 0.8, 0.6, 'A wooden gate closing with a solid thud and a metal latch click.'],                                          // 25
   ['boom', 2, 0.5, 'A big cartoon explosion: punchy boom with a rumble and falling debris, video game sound effect.'],                 // 29
   ['magic', 1.5, 0.5, 'A magical transformation: shimmering chimes, sparkles and a whoosh, fantasy video game power-up sound.'],       // 30
   ['squirt', 0.5, 0.6, 'A short squirt of a toy water pistol, quick spray of water.'],                                                // 32
-  ['laugh', 1.5, 0.5, 'A cartoon villain bird laughing: evil, theatrical cackle of a wizard eagle.'],                                  // 35
+  ['laugh', 1.5, 0.6, 'A cartoon villain eagle laughing: a squawky, bird-like, mischievous cackle, theatrical and funny rather than scary.'],                                  // 35
   ['peep', 0.7, 0.6, 'Small baby eagle chicks chirping peep peep, cartoon.'],                                                         // 36
   ['beam', 1.5, 0.5, 'A purple magic laser beam firing: sci-fi energy zap with crackle, video game sound effect.'],                    // 40
   ['flame', 1.5, 0.5, 'A burst of fire: big whoosh of a fireball blast, video game sound effect.'],                                    // 42
   ['bossHit', 0.6, 0.5, 'A boss enemy gets hit: punchy cartoon impact bonk, video game sound effect, no words.'],                       // 43
 ];
-// los que ya reemplazan al de código en el juego (el resto queda para comparar en el menú)
-const USE = new Set(['thunder']);
+// los que ya reemplazan al de código en el juego (el resto queda de respaldo, para comparar en el menú)
+const USE = new Set(['dig', 'clink', 'bill', 'gem', 'buy', 'deny', 'ui', 'bark', 'surprise', 'gateShut', 'boom', 'beam', 'flame', 'bossHit']);
+// volumen extra de cada grabado (1 = el nivelado automático)
+const VOL = { dig: 0.7, clink: 0.85, deny: 0.7, beam: 0.85, flame: 0.85, bossHit: 0.85 };
 
 function apiKey() {
   if (process.env.ELEVENLABS_API_KEY) return process.env.ELEVENLABS_API_KEY.trim();
@@ -96,7 +99,7 @@ async function main() {
   }
   const effects = {};
   for (const [id, dur, influence, text] of EFFECTS) {
-    if (fs.existsSync(path.join(OUT, `${id}.mp3`))) effects[id] = { file: `${id}.mp3`, use: USE.has(id), prompt: text };
+    if (fs.existsSync(path.join(OUT, `${id}.mp3`))) effects[id] = { file: `${id}.mp3`, use: USE.has(id), vol: VOL[id] ?? 1, prompt: text };
   }
   fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify({ model: 'eleven_text_to_sound_v2', effects }, null, 2) + '\n');
   console.log(`\nmanifest.json actualizado (${Object.keys(effects).length} efectos).`);

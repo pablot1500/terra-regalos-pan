@@ -327,7 +327,7 @@ export class Audio {
           fetch('src/sfx/gen/' + e.file)
             .then((r) => r.arrayBuffer())
             .then((b) => this.ctx.decodeAudioData(b))
-            .then((buf) => { this.genSfx[id] = { buffer: buf, gain: levelGain(buf, id === 'thunder' ? 0.3 : 0.16) }; })
+            .then((buf) => { this.genSfx[id] = { buffer: buf, gain: levelGain(buf, id === 'thunder' ? 0.3 : 0.16) * (e.vol ?? 1) }; })
             .catch(() => { /* queda el de código */ });
         }
       })

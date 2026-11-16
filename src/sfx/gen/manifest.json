@@ -3,127 +3,152 @@
   "effects": {
     "thunder": {
       "file": "thunder.mp3",
-      "use": true,
+      "use": false,
+      "vol": 1,
       "prompt": "A loud, dramatic thunder crack followed by a deep rolling rumble, like a dramatic reveal in a cartoon. No rain."
     },
     "dig": {
       "file": "dig.mp3",
-      "use": false,
+      "use": true,
+      "vol": 0.7,
       "prompt": "A single short crunchy scoop of a shovel digging into soft dirt, cartoon video game sound effect."
     },
     "break": {
       "file": "break.mp3",
       "use": false,
+      "vol": 1,
       "prompt": "A small block of packed earth and pebbles breaking apart, short crumbly crunch, video game sound effect."
     },
     "clink": {
       "file": "clink.mp3",
-      "use": false,
+      "use": true,
+      "vol": 0.85,
       "prompt": "A loud, clear metallic clang of a steel shovel striking hard stone, bright ringing clink, video game sound effect."
     },
     "drill": {
       "file": "drill.mp3",
       "use": false,
+      "vol": 1,
       "prompt": "A short burst of a small electric power drill grinding into rock, video game sound effect."
     },
     "bill": {
       "file": "bill.mp3",
-      "use": false,
+      "use": true,
+      "vol": 1,
       "prompt": "Picking up paper money: a quick crisp banknote rustle with a tiny happy chime, video game pickup sound."
     },
     "gold": {
       "file": "gold.mp3",
       "use": false,
+      "vol": 1,
       "prompt": "Collecting a gold nugget: bright sparkly ascending chime with a little coin jingle, video game pickup sound."
     },
     "gem": {
       "file": "gem.mp3",
-      "use": false,
+      "use": true,
+      "vol": 1,
       "prompt": "Collecting a precious gem: magical crystal shimmer and sparkle, video game pickup sound."
     },
     "jump": {
       "file": "jump.mp3",
       "use": false,
+      "vol": 1,
       "prompt": "A cartoon jump: short springy whoosh, cute platformer video game sound effect."
     },
     "hurt": {
       "file": "hurt.mp3",
       "use": false,
+      "vol": 1,
       "prompt": "A cartoon character gets hurt: short soft thud with a little bonk, video game damage sound, no voice."
     },
     "buy": {
       "file": "buy.mp3",
-      "use": false,
+      "use": true,
+      "vol": 1,
       "prompt": "A successful purchase in a shop: cash register ding with a happy coin jingle, video game sound."
     },
     "deny": {
       "file": "deny.mp3",
-      "use": false,
+      "use": true,
+      "vol": 0.7,
       "prompt": "Error, not enough money: short low double buzz, cute video game menu denial sound."
     },
     "ui": {
       "file": "ui.mp3",
-      "use": false,
+      "use": true,
+      "vol": 1,
       "prompt": "A clear, crisp and clearly audible bubbly pop click of a game menu button, cute and bright."
     },
     "bark": {
       "file": "bark.mp3",
-      "use": false,
+      "use": true,
+      "vol": 1,
       "prompt": "A small happy dachshund dog barking twice, short and cute."
     },
     "surprise": {
       "file": "surprise.mp3",
-      "use": false,
+      "use": true,
+      "vol": 1,
       "prompt": "A cartoon surprise sting: short quick rising ding, like an exclamation mark, video game sound effect."
     },
     "gate": {
       "file": "gate.mp3",
       "use": false,
-      "prompt": "An old wooden garden gate creaking open slowly."
+      "vol": 1,
+      "prompt": "An old wooden garden gate made of wooden planks slowly creaking open on old hinges: a dry, hollow wooden creak, no metal sounds."
     },
     "gateShut": {
       "file": "gateShut.mp3",
-      "use": false,
+      "use": true,
+      "vol": 1,
       "prompt": "A wooden gate closing with a solid thud and a metal latch click."
     },
     "boom": {
       "file": "boom.mp3",
-      "use": false,
+      "use": true,
+      "vol": 1,
       "prompt": "A big cartoon explosion: punchy boom with a rumble and falling debris, video game sound effect."
     },
     "magic": {
       "file": "magic.mp3",
       "use": false,
+      "vol": 1,
       "prompt": "A magical transformation: shimmering chimes, sparkles and a whoosh, fantasy video game power-up sound."
     },
     "squirt": {
       "file": "squirt.mp3",
       "use": false,
+      "vol": 1,
       "prompt": "A short squirt of a toy water pistol, quick spray of water."
     },
     "laugh": {
       "file": "laugh.mp3",
       "use": false,
-      "prompt": "A cartoon villain bird laughing: evil, theatrical cackle of a wizard eagle."
+      "vol": 1,
+      "prompt": "A cartoon villain eagle laughing: a squawky, bird-like, mischievous cackle, theatrical and funny rather than scary."
     },
     "peep": {
       "file": "peep.mp3",
       "use": false,
+      "vol": 1,
       "prompt": "Small baby eagle chicks chirping peep peep, cartoon."
     },
     "beam": {
       "file": "beam.mp3",
-      "use": false,
+      "use": true,
+      "vol": 0.85,
       "prompt": "A purple magic laser beam firing: sci-fi energy zap with crackle, video game sound effect."
     },
     "flame": {
       "file": "flame.mp3",
-      "use": false,
+      "use": true,
+      "vol": 0.85,
       "prompt": "A burst of fire: big whoosh of a fireball blast, video game sound effect."
     },
     "bossHit": {
       "file": "bossHit.mp3",
-      "use": false,
+      "use": true,
+      "vol": 0.85,
       "prompt": "A boss enemy gets hit: punchy cartoon impact bonk, video game sound effect, no words."
     }
   }
