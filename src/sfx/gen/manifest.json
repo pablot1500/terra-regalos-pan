@@ -93,8 +93,8 @@
     },
     "gate": {
       "file": "gate.mp3",
-      "use": false,
-      "vol": 1,
+      "use": true,
+      "vol": 0.85,
       "prompt": "An old wooden garden gate made of wooden planks slowly creaking open on old hinges: a dry, hollow wooden creak, no metal sounds."
     },
     "gateShut": {
@@ -123,8 +123,8 @@
     },
     "laugh": {
       "file": "laugh.mp3",
-      "use": false,
-      "vol": 1,
+      "use": true,
+      "vol": 0.85,
       "prompt": "A cartoon villain eagle laughing: a squawky, bird-like, mischievous cackle, theatrical and funny rather than scary."
     },
     "peep": {
