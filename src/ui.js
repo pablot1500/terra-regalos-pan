@@ -128,12 +128,12 @@ export class UI {
   refreshSongs() {
     const a = this.g.audio, m = a.music;
     const list = $('songs-list');
-    const ZONES = ['Superficie (hasta 300 m)', 'Zona media (300 a 800 m)', 'Profundo (800 a 1500 m)', 'Núcleo (combate final)', 'Intro (hasta que aparece el título)'];
+    const ZONES = ['Superficie (hasta 300 m)', 'Zona media (300 a 800 m)', 'Profundo (800 a 1500 m)', 'Núcleo (combate final)', 'Intro (hasta que no aparecen los regalos)', 'Intro: ¡a buscar! (hasta el final de la intro)', 'Menú (pantalla del título)'];
     list.innerHTML = '';
     const gen = MusicDirector.list('gen');
     const isOn = (z, i) => m && m.forced && m.forced.zone === z && m.forced.idx === i && m.forced.src === 'gen';
-    // la intro va primero
-    [4, 0, 1, 2, 3].forEach((z) => {
+    // primero la del menú y las de la intro, después las del juego
+    [6, 4, 5, 0, 1, 2, 3].forEach((z) => {
       const names = gen[z] || [];
       const h = document.createElement('h3');
       h.textContent = ZONES[z] + (names.length ? '' : ': todavía no hay');

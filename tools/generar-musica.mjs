@@ -17,9 +17,11 @@ const OUT = path.join(ROOT, 'src', 'music', 'gen');
 // mismo estilo para todas: instrumental, de videojuego, que se pueda repetir en loop
 const STYLE = 'Instrumental video game soundtrack for a cute pixel-art digging adventure about rescuing birthday presents. Retro 16-bit / chiptune-inspired sound with modern warmth, no vocals, loops smoothly.';
 
-// [zona, nombre, segundos (como la original), descripción]
+// [zona, nombre, segundos, descripción]
+// zonas: 0 superficie, 1 media, 2 profundo, 3 núcleo, 4 intro (hasta que no están los regalos),
+// 5 intro de acción (hasta el final de la intro), 6 menú del título; -1 = de respaldo (no se usa)
 const TRACKS = [
-  [0, 'Patio soleado', 55, 'Cheerful sunny backyard on a birthday morning. Bright square-wave lead, bouncy bass, light drums, catchy major-key melody, about 104 bpm.'],
+  [6, 'Patio soleado', 55, 'Cheerful sunny backyard on a birthday morning. Bright square-wave lead, bouncy bass, light drums, catchy major-key melody, about 104 bpm.'],
   [0, 'Mate y pala', 48, 'Playful, upbeat digging-with-a-shovel theme. Plucky chiptune lead, snappy drums, cheerful and fast, about 120 bpm.'],
   [0, 'Cumbia del cantero', 77, 'Argentine cumbia meets chiptune: güiro, cumbia drum groove, accordion-like synth lead, festive birthday party vibe, about 100 bpm.'],
   [1, 'Cuevas de cristal', 65, 'Mysterious but cozy underground crystal cave exploration. Glassy chimes, soft arpeggios, echoing triangle-wave melody, about 88 bpm.'],
@@ -31,10 +33,12 @@ const TRACKS = [
   [3, 'Combate final', 72, 'Epic final boss battle against a wizard eagle that keeps evolving: a big opening hit, galloping drums and a heroic synth-brass lead with a catchy main theme; then a contrasting section with choir and a key change, call-and-response between the lead and fast arpeggios, a short breakdown and a build to a huge climax. Very dynamic and varied, never monotonous or repetitive, about 150 bpm.'],
   [3, 'Lluvia de magma', 48, 'Frantic boss fight while fire rains from above. Driving drums, gritty saw-wave leads, heroic and urgent, about 160 bpm.'],
   [3, 'Furia de Aguilus', 53, 'Dramatic, slightly comedic villain boss theme. Organ and choir over chiptune drums, epic and theatrical, about 144 bpm.'],
-  // zona 4: solo para la intro (al aparecer el título ya suenan las de superficie)
-  [4, 'Cumple en el barrio', 70, 'Warm, gentle opening theme for a birthday morning in a sunny Buenos Aires neighborhood: music box and soft chiptune lead, light acoustic guitar and soft percussion, nostalgic, sweet and cozy, about 90 bpm.'],
+  // intro: arranca con Nota misteriosa; cuando no aparecen los regalos, pasa a la de acción
+  [-1, 'Cumple en el barrio', 70, 'Warm, gentle opening theme for a birthday morning in a sunny Buenos Aires neighborhood: music box and soft chiptune lead, light acoustic guitar and soft percussion, nostalgic, sweet and cozy, about 90 bpm.'],
   [4, 'Nota misteriosa', 65, 'Storybook intro with a playful mystery twist: pizzicato strings, soft bells and a curious chiptune melody, light tiptoeing percussion, whimsical and a little suspenseful, about 96 bpm.'],
-  [4, 'Rumbo a los regalos', 70, 'Hopeful adventure-begins theme: bright chiptune melody over soft strings and gentle drums, steadily building warmth and excitement, cheerful and cinematic, about 100 bpm.'],
+  [-1, 'Rumbo a los regalos', 70, 'Hopeful adventure-begins theme: bright chiptune melody over soft strings and gentle drums, steadily building warmth and excitement, cheerful and cinematic, about 100 bpm.'],
+  [5, 'A buscar los regalos', 90, 'Tense but upbeat get-ready-for-action theme: driving staccato strings and punchy drums, bold heroic brass-like synth hits and a determined chiptune melody, rising energy like heroes preparing for a mission. Exciting and adventurous, never dark, scary or gloomy, about 128 bpm.'],
+  [0, 'Globos y confites', 60, 'Happy, bouncy birthday-party digging tune: cheerful chiptune lead with a whistle-like melody, hand claps, bright marimba and a bouncy bass, sunny and carefree, about 112 bpm.'],
 ];
 
 function apiKey() {
@@ -99,12 +103,12 @@ async function main() {
   }
 
   // el manifiesto: lo que el juego sabe que existe
-  const zones = [[], [], [], [], []]; // superficie, media, profundo, núcleo, intro
+  const zones = [[], [], [], [], [], [], []], backup = []; // ver la lista de zonas arriba de TRACKS
   TRACKS.forEach(([zone, name, secs, desc], i) => {
     const file = `${String(i + 1).padStart(2, '0')}-${slug(name)}.mp3`;
-    if (fs.existsSync(path.join(OUT, file))) zones[zone].push({ name, file, secs, prompt: desc });
+    if (fs.existsSync(path.join(OUT, file))) (zone < 0 ? backup : zones[zone]).push({ name, file, secs, prompt: desc });
   });
-  fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify({ model, zones }, null, 2) + '\n');
+  fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify({ model, zones, backup }, null, 2) + '\n');
   console.log(`\nmanifest.json actualizado (${zones.flat().length} canciones).`);
 }
 

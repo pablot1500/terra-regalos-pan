@@ -23,6 +23,7 @@ import { Chatter } from './chatter.js';
 import { Net } from './net.js';
 import { Input } from './input.js';
 import { Audio } from './audio.js';
+import { INTRO_ZONE, MENU_ZONE } from './music.js';
 import { UI } from './ui.js';
 import { store } from './save.js';
 import { fmtMoney, clamp } from './util.js';
@@ -254,7 +255,8 @@ class Game {
 
   startIntro() {
     if (this.state !== 'splash') return;
-    this.audio.setIntro(true); // antes de prender el audio, así arranca directo con la de la intro
+    this.introMusic = INTRO_ZONE;
+    this.audio.setScene(INTRO_ZONE); // antes de prender el audio, así arranca directo con la de la intro
     this.audio.unlock();
     // el botón se desvanece mientras la cámara empieza a bajar
     const sp = document.getElementById('screen-splash');
@@ -308,7 +310,7 @@ class Game {
 
   endIntro() {
     this.scene = null;
-    this.audio.setIntro(false); // con el cartel del título empiezan las de superficie
+    this.audio.setScene(MENU_ZONE); // con el cartel del título suena la del menú (Patio soleado)
     this.structs.trailerOpen = 1; this.structs.gateOpen = 0;
     this.ui.setIntro(false);
     this.state = 'title';
@@ -739,6 +741,8 @@ class Game {
     const inp = this.input.read(this.cam.x, this.cam.y);
     const p = this.players[0];
     if (this.input.pad.on) this.padUI(inp);
+    // música: la de la intro (y su parte de acción), la del menú en el título, y en el juego según la profundidad
+    this.audio.setScene(this.state === 'intro' ? this.introMusic : this.state === 'title' ? MENU_ZONE : null);
 
     // online: aunque el anfitrión esté en la pausa o en el Taller, el mundo compartido sigue andando para el otro
     if (this.net.isHost && (this.state === 'paused' || this.state === 'shop')) this.updateShared(dt);

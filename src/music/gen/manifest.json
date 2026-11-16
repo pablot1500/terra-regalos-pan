@@ -3,12 +3,6 @@
   "zones": [
     [
       {
-        "name": "Patio soleado",
-        "file": "01-patio-soleado.mp3",
-        "secs": 55,
-        "prompt": "Cheerful sunny backyard on a birthday morning. Bright square-wave lead, bouncy bass, light drums, catchy major-key melody, about 104 bpm."
-      },
-      {
         "name": "Mate y pala",
         "file": "02-mate-y-pala.mp3",
         "secs": 48,
@@ -19,6 +13,12 @@
         "file": "03-cumbia-del-cantero.mp3",
         "secs": 77,
         "prompt": "Argentine cumbia meets chiptune: güiro, cumbia drum groove, accordion-like synth lead, festive birthday party vibe, about 100 bpm."
+      },
+      {
+        "name": "Globos y confites",
+        "file": "17-globos-y-confites.mp3",
+        "secs": 60,
+        "prompt": "Happy, bouncy birthday-party digging tune: cheerful chiptune lead with a whistle-like melody, hand claps, bright marimba and a bouncy bass, sunny and carefree, about 112 bpm."
       }
     ],
     [
@@ -83,23 +83,41 @@
     ],
     [
       {
-        "name": "Cumple en el barrio",
-        "file": "13-cumple-en-el-barrio.mp3",
-        "secs": 70,
-        "prompt": "Warm, gentle opening theme for a birthday morning in a sunny Buenos Aires neighborhood: music box and soft chiptune lead, light acoustic guitar and soft percussion, nostalgic, sweet and cozy, about 90 bpm."
-      },
-      {
         "name": "Nota misteriosa",
         "file": "14-nota-misteriosa.mp3",
         "secs": 65,
         "prompt": "Storybook intro with a playful mystery twist: pizzicato strings, soft bells and a curious chiptune melody, light tiptoeing percussion, whimsical and a little suspenseful, about 96 bpm."
-      },
+      }
+    ],
+    [
       {
-        "name": "Rumbo a los regalos",
-        "file": "15-rumbo-a-los-regalos.mp3",
-        "secs": 70,
-        "prompt": "Hopeful adventure-begins theme: bright chiptune melody over soft strings and gentle drums, steadily building warmth and excitement, cheerful and cinematic, about 100 bpm."
+        "name": "A buscar los regalos",
+        "file": "16-a-buscar-los-regalos.mp3",
+        "secs": 90,
+        "prompt": "Tense but upbeat get-ready-for-action theme: driving staccato strings and punchy drums, bold heroic brass-like synth hits and a determined chiptune melody, rising energy like heroes preparing for a mission. Exciting and adventurous, never dark, scary or gloomy, about 128 bpm."
+      }
+    ],
+    [
+      {
+        "name": "Patio soleado",
+        "file": "01-patio-soleado.mp3",
+        "secs": 55,
+        "prompt": "Cheerful sunny backyard on a birthday morning. Bright square-wave lead, bouncy bass, light drums, catchy major-key melody, about 104 bpm."
       }
     ]
+  ],
+  "backup": [
+    {
+      "name": "Cumple en el barrio",
+      "file": "13-cumple-en-el-barrio.mp3",
+      "secs": 70,
+      "prompt": "Warm, gentle opening theme for a birthday morning in a sunny Buenos Aires neighborhood: music box and soft chiptune lead, light acoustic guitar and soft percussion, nostalgic, sweet and cozy, about 90 bpm."
+    },
+    {
+      "name": "Rumbo a los regalos",
+      "file": "15-rumbo-a-los-regalos.mp3",
+      "secs": 70,
+      "prompt": "Hopeful adventure-begins theme: bright chiptune melody over soft strings and gentle drums, steadily building warmth and excitement, cheerful and cinematic, about 100 bpm."
+    }
   ]
 }

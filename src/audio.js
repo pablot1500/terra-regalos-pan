@@ -26,6 +26,7 @@ export const SFX_LIST = [
   ['talk', 'Voz de los diálogos'],
   ['bark', 'Ladrido de Popi'],
   ['surprise', 'Sorpresa (se dan cuenta de algo)'],
+  ['thunder', 'Trueno: los regalos no están (grabado con ElevenLabs)'],
   ['paper', 'La nota de papel'],
   ['gate', 'Se abre el portón'],
   ['gateShut', 'Se cierra el portón / la puerta del Gol'],
@@ -58,7 +59,8 @@ export class Audio {
     // siempre suenan las canciones generadas con ElevenLabs; las programadas (music.js) quedan de
     // respaldo y solo suenan si un mp3 no carga
     this.musicSrc = 'gen';
-    this.introMode = false;   // durante la intro suenan las canciones de la intro
+    this.sceneZone = null;    // intro, acción de la intro o menú: la música que suena sin importar la profundidad
+    this.genSfx = {};         // efectos grabados con ElevenLabs ya listos para sonar (src/sfx/gen)
     this.last = {};
     loadGenerated();
     try {
@@ -135,6 +137,7 @@ export class Audio {
       this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
       const d = this.noiseBuf.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      this.loadGenSfx();
       this.startMusic();
     }
     if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {}); // 'interrupted' en iOS tras una llamada o al volver
@@ -179,6 +182,14 @@ export class Audio {
     const minGap = { coin: 40, dig: 60, drill: 60, clink: 80, land: 80, fuse: 70 }[name] || 0;
     if (minGap && now - (this.last[name] || 0) < minGap) return;
     this.last[name] = now;
+    const rec = this.genSfx[name];
+    if (rec) {
+      const src = this.ctx.createBufferSource();
+      src.buffer = rec;
+      src.connect(this.sfx);
+      src.start();
+      return;
+    }
     switch (name) {
       case 'dig': this.noise(0.09, { vol: 0.35, freq: 700 }); this.tone(110, 0.06, { type: 'triangle', vol: 0.25, slide: 60 }); break;
       case 'break': this.noise(0.16, { vol: 0.4, freq: 1100 }); this.tone(160, 0.1, { type: 'triangle', vol: 0.25, slide: 70 }); break;
@@ -230,6 +241,11 @@ export class Audio {
       case 'laugh': [0, 1, 2, 3].forEach((i) => this.tone(330 - i * 25, 0.11, { type: 'square', vol: 0.06, slide: 420 - i * 25, delay: i * 0.15 })); break;
       case 'pump': this.noise(0.08, { vol: 0.25, freq: 700 }); this.tone(260, 0.06, { type: 'triangle', vol: 0.12, delay: 0.1 }); this.noise(0.06, { vol: 0.2, freq: 1200, delay: 0.12 }); break;
       case 'rest': this.tone(880, 0.2, { type: 'sine', vol: 0.06 }); break;
+      case 'thunder':
+        this.noise(0.25, { vol: 0.7, freq: 2600, type: 'highpass' });
+        this.noise(1.8, { vol: 0.9, freq: 260 });
+        this.tone(70, 1.5, { type: 'triangle', vol: 0.45, slide: 35 });
+        break;
     }
   }
 
@@ -267,10 +283,27 @@ export class Audio {
     this.music = new MusicDirector(this);
   }
 
-  /** intro sí o no: en la intro suenan sus canciones; con el título vuelven las de superficie */
-  setIntro(on) {
-    this.introMode = on;
-    if (this.music) this.music.setIntro(on);
+  /** música de la intro, de la parte de acción de la intro, del menú, o null (según la profundidad) */
+  setScene(zone) {
+    if (zone === this.sceneZone) return;
+    this.sceneZone = zone;
+    if (this.music) this.music.setSpecial(zone);
+  }
+
+  /** efectos grabados con ElevenLabs (tools/generar-efectos.mjs): si alguno no carga, suena el de código */
+  loadGenSfx() {
+    fetch('src/sfx/gen/manifest.json', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((m) => {
+        for (const [id, e] of Object.entries((m && m.effects) || {})) {
+          fetch('src/sfx/gen/' + e.file)
+            .then((r) => r.arrayBuffer())
+            .then((b) => this.ctx.decodeAudioData(b))
+            .then((buf) => { this.genSfx[id] = buf; })
+            .catch(() => { /* queda el de código */ });
+        }
+      })
+      .catch(() => { /* todavía no hay efectos grabados */ });
   }
 
   /** la música cambia según la profundidad del jugador */

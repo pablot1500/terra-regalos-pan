@@ -2,6 +2,7 @@
 // buscan los regalos debajo de la cama y encuentran una nota misteriosa.
 // Cada `yield` espera a que termine lo anterior (ver scene.js).
 import { TILE, SURFACE } from './config.js';
+import { ACTION_ZONE } from './music.js';
 import { TRAILER_X, TRAILER_H, GATE_X, GOL_X, GOL_H, GOL_DOOR } from './structures.js';
 
 const FLOOR = SURFACE * TILE;          // piso del patio
@@ -94,12 +95,16 @@ export function* introScript(sc) {
   sc.emote('pablo', '?');
   yield sc.wait(1.0);
   yield sc.say('pablo', 'Esperá...');
+  // escarba otra vez, más fuerte... y nada: ¡trueno! y la música pasa a la de acción
+  for (let i = 0; i < 3; i++) { g.audio.play('dig'); yield sc.wait(0.18); }
   A.pablo.pose = 'idle';
   sc.emote('pablo', '!');
   sc.fixed = { x: 118, y: APT - 12 };
   sc.setZoom(2.8);
-  g.audio.play('surprise');
-  g.shake(1.5);
+  g.audio.play('thunder');
+  g.introMusic = ACTION_ZONE;
+  g.audio.setScene(ACTION_ZONE);
+  g.shake(2.2);
   yield sc.say('pablo', '¡LOS REGALOS NO ESTÁN!');
   sc.emote('pancha', '!');
   A.pancha.facing = -1;

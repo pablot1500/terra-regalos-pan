@@ -1,0 +1,9 @@
+{
+  "model": "eleven_text_to_sound_v2",
+  "effects": {
+    "thunder": {
+      "file": "thunder.mp3",
+      "prompt": "A loud, dramatic thunder crack followed by a deep rolling rumble, like a dramatic reveal in a cartoon. No rain."
+    }
+  }
+}
