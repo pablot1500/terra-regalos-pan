@@ -422,11 +422,10 @@ export class UI {
     if (on) this.show('screen-splash', false);
     // el "golpe" del sello del título
     else {
-      // golpes de los sellos del título (el 2, que después se despega y se cae, y la torta del ¡25!)
+      // golpe del sello del 2 y el swoosh cuando se despega y se cae (la torta del ¡25! entra en silencio)
       const at = (ms, ...sfx) => setTimeout(() => { if (this.g.state === 'title' && this.g.audio.ctx) sfx.forEach((s) => this.g.audio.play(s)); }, ms);
       at(2780, 'land', 'dig');
       at(6100, 'swoosh');
-      at(7330, 'land', 'dig', 'gem');
     }
   }
 
