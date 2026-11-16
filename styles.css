@@ -642,3 +642,8 @@ body.flashback #game { filter: sepia(0.85) saturate(0.85) brightness(1.06) contr
 
 /* joystick: el botón elegido con la cruz */
 .pad-focus { outline: 3px solid var(--pink) !important; outline-offset: 3px; }
+
+/* menú de efectos de sonido: botones numerados en dos columnas */
+.sfx-list { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.sfx-list .sfx { text-align: left; font-size: 13px; padding: 6px 8px; }
+.sfx-list .sfx b { color: #0e2a40; margin-right: 2px; }

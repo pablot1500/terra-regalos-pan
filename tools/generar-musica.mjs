@@ -1,5 +1,5 @@
-// Genera con ElevenLabs (música) las canciones alternativas del juego: 3 por zona, cada una
-// del mismo largo que la canción programada que reemplaza. Quedan en src/music/gen/ junto con
+// Genera con ElevenLabs (música) las canciones alternativas del juego: 3 por zona (más 3 para la
+// intro), más o menos del largo de la canción programada que reemplazan. Quedan en src/music/gen/ junto con
 // src/music/gen/manifest.json, que es lo que lee el juego (dentro de src/ para que Cloudflare las publique).
 //
 // Uso (necesita Node 18 o más nuevo):
@@ -25,12 +25,16 @@ const TRACKS = [
   [1, 'Cuevas de cristal', 65, 'Mysterious but cozy underground crystal cave exploration. Glassy chimes, soft arpeggios, echoing triangle-wave melody, about 88 bpm.'],
   [1, 'Eco del granito', 58, 'Adventurous mining theme deeper underground. Steady drums, echoing synth melody, a little tension and a lot of wonder, about 100 bpm.'],
   [1, 'Minero de medianoche', 83, 'Laid-back midnight miner groove. Plucked synth lead, warm round bass, relaxed lo-fi retro game feel, about 92 bpm.'],
-  [2, 'Abismo', 76, 'Dark, vast abyss deep underground. Bell tones, deep sub bass, slow and eerie but still melodic, about 76 bpm.'],
+  [2, 'Abismo', 76, 'Deep underground abyss theme with a clear, memorable melody right up front: bright bell-like lead and warm synth pads over a steady mid-tempo beat and a deep, punchy bass. Mysterious and vast but full, loud and present the whole time, never quiet, sparse or ambient, about 92 bpm.'],
   [2, 'Corazón de la tierra', 60, 'Glowing lava caverns near the center of the Earth. Rising tension, triangle-wave arpeggios, mysterious melody, about 96 bpm.'],
   [2, 'Latido de magma', 91, 'Magma chamber with a heartbeat drum pulse, ominous choir pads and a slow building tension, about 84 bpm.'],
-  [3, 'Combate final', 51, 'Epic final boss battle against a wizard eagle. Galloping drums, heroic synth-brass lead, very intense and fast, about 152 bpm.'],
+  [3, 'Combate final', 72, 'Epic final boss battle against a wizard eagle that keeps evolving: a big opening hit, galloping drums and a heroic synth-brass lead with a catchy main theme; then a contrasting section with choir and a key change, call-and-response between the lead and fast arpeggios, a short breakdown and a build to a huge climax. Very dynamic and varied, never monotonous or repetitive, about 150 bpm.'],
   [3, 'Lluvia de magma', 48, 'Frantic boss fight while fire rains from above. Driving drums, gritty saw-wave leads, heroic and urgent, about 160 bpm.'],
   [3, 'Furia de Aguilus', 53, 'Dramatic, slightly comedic villain boss theme. Organ and choir over chiptune drums, epic and theatrical, about 144 bpm.'],
+  // zona 4: solo para la intro (al aparecer el título ya suenan las de superficie)
+  [4, 'Cumple en el barrio', 70, 'Warm, gentle opening theme for a birthday morning in a sunny Buenos Aires neighborhood: music box and soft chiptune lead, light acoustic guitar and soft percussion, nostalgic, sweet and cozy, about 90 bpm.'],
+  [4, 'Nota misteriosa', 65, 'Storybook intro with a playful mystery twist: pizzicato strings, soft bells and a curious chiptune melody, light tiptoeing percussion, whimsical and a little suspenseful, about 96 bpm.'],
+  [4, 'Rumbo a los regalos', 70, 'Hopeful adventure-begins theme: bright chiptune melody over soft strings and gentle drums, steadily building warmth and excitement, cheerful and cinematic, about 100 bpm.'],
 ];
 
 function apiKey() {
@@ -95,7 +99,7 @@ async function main() {
   }
 
   // el manifiesto: lo que el juego sabe que existe
-  const zones = [[], [], [], []];
+  const zones = [[], [], [], [], []]; // superficie, media, profundo, núcleo, intro
   TRACKS.forEach(([zone, name, secs, desc], i) => {
     const file = `${String(i + 1).padStart(2, '0')}-${slug(name)}.mp3`;
     if (fs.existsSync(path.join(OUT, file))) zones[zone].push({ name, file, secs, prompt: desc });

@@ -1,6 +1,53 @@
 import { MusicDirector, loadGenerated } from './music.js';
 
 // Sonidos chiptune generados con WebAudio (sin archivos).
+
+/** todos los efectos de sonido, con dónde suenan (para el menú "Efectos de sonido") */
+export const SFX_LIST = [
+  ['dig', 'Cavar tierra con la pala'],
+  ['break', 'Romper un bloque'],
+  ['clink', 'Pala contra piedra o cristal'],
+  ['drill', 'Taladro cavando'],
+  ['coin', 'Juntar una moneda'],
+  ['bill', 'Juntar billetes'],
+  ['gold', 'Encontrar oro'],
+  ['gem', 'Encontrar una gema'],
+  ['chest', 'Abrir un cofre con regalo'],
+  ['jump', 'Saltar'],
+  ['land', 'Caer al piso'],
+  ['jet', 'Jetpack volando'],
+  ['hurt', 'Lastimarse'],
+  ['faint', 'Desmayarse'],
+  ['rest', 'Descansar en el departamento'],
+  ['torch', 'Poner una antorcha'],
+  ['buy', 'Comprar en el taller'],
+  ['deny', 'No se puede comprar'],
+  ['ui', 'Botones de los menús'],
+  ['talk', 'Voz de los diálogos'],
+  ['bark', 'Ladrido de Popi'],
+  ['surprise', 'Sorpresa (se dan cuenta de algo)'],
+  ['paper', 'La nota de papel'],
+  ['gate', 'Se abre el portón'],
+  ['gateShut', 'Se cierra el portón / la puerta del Gol'],
+  ['shutter', 'Persiana del taller de Carlos'],
+  ['click', 'Click (puerta del Gol, interruptor)'],
+  ['fuse', 'Mecha encendida'],
+  ['boom', 'Explosión'],
+  ['magic', 'Magia (las pistolas de agua)'],
+  ['pump', 'Bombear la pistola de agua'],
+  ['squirt', 'Chorro de agua'],
+  ['splash', 'Salpicón de agua'],
+  ['steam', 'Vapor (el agua apaga la lava)'],
+  ['laugh', 'Risa de Aguilus'],
+  ['peep', 'Aguilitas'],
+  ['charge', 'Aguilus carga un ataque'],
+  ['swoosh', 'Aguilus se tira en picada'],
+  ['throw', 'Aguilus tira algo'],
+  ['beam', 'Rayo violeta de Aguilus'],
+  ['magma', 'Meteorito de magma'],
+  ['flame', 'Llamarada'],
+  ['bossHit', 'Le pegan a Aguilus'],
+];
 export class Audio {
   constructor() {
     this.ctx = null;
@@ -8,20 +55,22 @@ export class Audio {
     this.musicOn = true;
     // volumen de cada canal, de 0 a 1 (los sliders del menú de pausa)
     this.vol = { music: 1, sfx: 1, jet: 0.7 };
-    this.musicSrc = 'orig';   // 'orig' = las canciones programadas; 'gen' = las generadas con ElevenLabs
+    // siempre suenan las canciones generadas con ElevenLabs; las programadas (music.js) quedan de
+    // respaldo y solo suenan si un mp3 no carga
+    this.musicSrc = 'gen';
+    this.introMode = false;   // durante la intro suenan las canciones de la intro
     this.last = {};
     loadGenerated();
     try {
       const s = JSON.parse(localStorage.getItem('terra-regalos-pan:audio') || '{}');
       if (s.sfx === false) this.sfxOn = false;
       if (s.music === false) this.musicOn = false;
-      if (s.src === 'gen') this.musicSrc = 'gen';
       for (const k in this.vol) if (Number.isFinite(s.vol?.[k])) this.vol[k] = Math.min(1, Math.max(0, s.vol[k]));
     } catch { /* nada */ }
   }
 
   savePrefs() {
-    try { localStorage.setItem('terra-regalos-pan:audio', JSON.stringify({ sfx: this.sfxOn, music: this.musicOn, vol: this.vol, src: this.musicSrc })); } catch { /* nada */ }
+    try { localStorage.setItem('terra-regalos-pan:audio', JSON.stringify({ sfx: this.sfxOn, music: this.musicOn, vol: this.vol })); } catch { /* nada */ }
   }
 
   applyVolumes() {
@@ -32,13 +81,6 @@ export class Audio {
   }
 
   setVolume(k, v) { this.vol[k] = v; this.applyVolumes(); this.savePrefs(); }
-
-  /** originales (programadas) o generadas con ElevenLabs */
-  setMusicSrc(src) {
-    this.musicSrc = src === 'gen' ? 'gen' : 'orig';
-    this.savePrefs();
-    if (this.music) this.music.sourceChanged();
-  }
 
   /** el elemento de audio por donde suenan las canciones generadas (uno solo, así iOS lo deja sonar) */
   genAudio() {
@@ -191,6 +233,14 @@ export class Audio {
     }
   }
 
+  /** prueba un efecto desde el menú (el jetpack suena un segundo) */
+  preview(name) {
+    if (name !== 'jet') { this.play(name); return; }
+    this.jet(true);
+    clearTimeout(this.jetPreviewT);
+    this.jetPreviewT = setTimeout(() => this.jet(false), 1100);
+  }
+
   jet(on) {
     if (!this.ctx) return;
     if (on && this.sfxOn) {
@@ -215,6 +265,12 @@ export class Audio {
 
   startMusic() {
     this.music = new MusicDirector(this);
+  }
+
+  /** intro sí o no: en la intro suenan sus canciones; con el título vuelven las de superficie */
+  setIntro(on) {
+    this.introMode = on;
+    if (this.music) this.music.setIntro(on);
   }
 
   /** la música cambia según la profundidad del jugador */

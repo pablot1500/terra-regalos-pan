@@ -189,11 +189,21 @@
         <h2>Canciones</h2>
         <p class="hint" id="songs-now"></p>
         <div id="songs-list" class="songs"></div>
-        <p class="hint">Tocá una para escucharla (se repite). Al volver al juego, la música vuelve a cambiar según la profundidad, con las canciones elegidas en Configuración.</p>
+        <p class="hint">Tocá una para escucharla (se repite). Con "Música normal" vuelve a cambiar según la profundidad.</p>
         <div class="row">
           <button class="btn small alt" id="songs-auto">Música normal</button>
           <button class="btn" id="songs-ok">Listo</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Efectos de sonido (para escucharlos uno por uno) -->
+    <div id="screen-sfx" class="screen modal hidden">
+      <div class="panel pause">
+        <h2>Efectos de sonido</h2>
+        <p class="hint">Tocá uno para escucharlo. Están numerados para decir cuáles rehacer.</p>
+        <div id="sfx-list" class="songs sfx-list"></div>
+        <button class="btn" id="sfx-ok">Listo</button>
       </div>
     </div>
 
@@ -207,10 +217,9 @@
         </div>
         <button class="btn small alt" id="btn-duo">Compañero</button>
         <div class="row">
-          <button class="btn small alt" id="btn-music-src">Canciones: originales</button>
           <button class="btn small alt" id="s-songs">Escuchar canciones</button>
+          <button class="btn small alt" id="s-sfx">Efectos de sonido</button>
         </div>
-        <p class="hint" id="music-src-hint">Originales: las programadas en el juego. Generadas: hechas con ElevenLabs.</p>
         <p class="hint">Con el compañero prendido, el otro personaje te acompaña, ayuda a cavar y charlan cada tanto.</p>
         <div class="vols">
           <label><span>Música</span><input type="range" id="vol-music" min="0" max="100" step="5"><output></output></label>

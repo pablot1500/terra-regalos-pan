@@ -46,7 +46,7 @@
         "name": "Abismo",
         "file": "07-abismo.mp3",
         "secs": 76,
-        "prompt": "Dark, vast abyss deep underground. Bell tones, deep sub bass, slow and eerie but still melodic, about 76 bpm."
+        "prompt": "Deep underground abyss theme with a clear, memorable melody right up front: bright bell-like lead and warm synth pads over a steady mid-tempo beat and a deep, punchy bass. Mysterious and vast but full, loud and present the whole time, never quiet, sparse or ambient, about 92 bpm."
       },
       {
         "name": "Corazón de la tierra",
@@ -65,8 +65,8 @@
       {
         "name": "Combate final",
         "file": "10-combate-final.mp3",
-        "secs": 51,
-        "prompt": "Epic final boss battle against a wizard eagle. Galloping drums, heroic synth-brass lead, very intense and fast, about 152 bpm."
+        "secs": 72,
+        "prompt": "Epic final boss battle against a wizard eagle that keeps evolving: a big opening hit, galloping drums and a heroic synth-brass lead with a catchy main theme; then a contrasting section with choir and a key change, call-and-response between the lead and fast arpeggios, a short breakdown and a build to a huge climax. Very dynamic and varied, never monotonous or repetitive, about 150 bpm."
       },
       {
         "name": "Lluvia de magma",
@@ -79,6 +79,26 @@
         "file": "12-furia-de-aguilus.mp3",
         "secs": 53,
         "prompt": "Dramatic, slightly comedic villain boss theme. Organ and choir over chiptune drums, epic and theatrical, about 144 bpm."
+      }
+    ],
+    [
+      {
+        "name": "Cumple en el barrio",
+        "file": "13-cumple-en-el-barrio.mp3",
+        "secs": 70,
+        "prompt": "Warm, gentle opening theme for a birthday morning in a sunny Buenos Aires neighborhood: music box and soft chiptune lead, light acoustic guitar and soft percussion, nostalgic, sweet and cozy, about 90 bpm."
+      },
+      {
+        "name": "Nota misteriosa",
+        "file": "14-nota-misteriosa.mp3",
+        "secs": 65,
+        "prompt": "Storybook intro with a playful mystery twist: pizzicato strings, soft bells and a curious chiptune melody, light tiptoeing percussion, whimsical and a little suspenseful, about 96 bpm."
+      },
+      {
+        "name": "Rumbo a los regalos",
+        "file": "15-rumbo-a-los-regalos.mp3",
+        "secs": 70,
+        "prompt": "Hopeful adventure-begins theme: bright chiptune melody over soft strings and gentle drums, steadily building warmth and excitement, cheerful and cinematic, about 100 bpm."
       }
     ]
   ]

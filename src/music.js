@@ -171,16 +171,19 @@ const COMPILED = SONGS.map((zone) => zone.map(compile));
 //  (van dentro de src/ porque Cloudflare publica solo index.html, styles.css y src/)
 //  (las arma tools/generar-musica.mjs). Suenan como archivos, de a una, con los mismos fundidos.
 // ------------------------------------------------------------
-export const GEN = { zones: [[], [], [], []], loaded: false };
+// zonas: 0 superficie, 1 media, 2 profundo, 3 núcleo (combate final) y 4 intro (solo generadas)
+export const INTRO_ZONE = 4;
+export const GEN = { zones: [[], [], [], [], []], loaded: false };
+// la primera canción que suena en cada zona (si no, una al azar)
+const FIRST_GEN = { 0: 'Patio soleado', 3: 'Lluvia de magma' };
 const GEN_GAIN = 0.36; // volumen de los mp3, emparejado con las programadas (medido: sin esto sonaban casi 3 veces más fuerte)
 export function loadGenerated() {
   return fetch('src/music/gen/manifest.json', { cache: 'no-store' })
     .then((r) => (r.ok ? r.json() : null))
-    .then((m) => { if (m && Array.isArray(m.zones)) GEN.zones = [0, 1, 2, 3].map((z) => (Array.isArray(m.zones[z]) ? m.zones[z] : [])); })
+    .then((m) => { if (m && Array.isArray(m.zones)) GEN.zones = [0, 1, 2, 3, 4].map((z) => (Array.isArray(m.zones[z]) ? m.zones[z] : [])); })
     .catch(() => { /* todavía no hay canciones generadas */ })
     .finally(() => { GEN.loaded = true; });
 }
-export const hasGenerated = () => GEN.zones.some((z) => z.length > 0);
 
 /** nota del acorde que queda justo debajo de la melodía (una tercera o sexta abajo, más o menos) */
 function harmonize(f, chord) {
@@ -206,11 +209,13 @@ export class MusicDirector {
     this.zone = 0;          // zona en la que está el jugador
     this.away = 0;          // tiempo que lleva el jugador fuera de la zona de la canción
     this.songIdx = COMPILED.map((z) => Math.floor(Math.random() * z.length));
-    this.genIdx = [0, 1, 2, 3].map(() => Math.floor(Math.random() * 3));
+    this.genIdx = [0, 1, 2, 3, 4].map(() => Math.floor(Math.random() * 3));
+    this.genSeen = new Set(); // zonas que ya sonaron con generadas (para arrancar con FIRST_GEN)
+    this.intro = !!audio.introMode; // durante la intro suenan las canciones de la intro
     this.forced = null;     // canción elegida a mano desde la pausa (modo prueba): {zone, idx, src}
     this.track = null;
     this.lastT = this.c.currentTime;
-    this.start(0);
+    this.start(this.want);
     this.timer = setInterval(() => this.tick(), 50);
   }
 
@@ -221,6 +226,13 @@ export class MusicDirector {
     this.zone = z;
   }
 
+  /** empieza o termina la intro: con el título ya pasa a las canciones de superficie */
+  setIntro(on) {
+    this.intro = on;
+    const tr = this.track;
+    if (tr && !this.forced && tr.zone !== this.want && tr.then !== 'force') this.fadeOut('zone', on ? 0.6 : 1.2);
+  }
+
   /** lista de canciones por zona (para el menú de prueba); `src`: 'orig' o 'gen' */
   static list(src = 'orig') {
     if (src === 'gen') return GEN.zones.map((z) => z.map((s) => s.name));
@@ -228,18 +240,13 @@ export class MusicDirector {
   }
 
   /** ¿suenan las generadas en esta zona? (si se eligieron y existen) */
-  useGen(zone) { return this.a.musicSrc === 'gen' && GEN.zones[zone].length > 0; }
+  useGen(zone) { return this.a.musicSrc === 'gen' && GEN.zones[zone].some((t) => !t.broken); }
 
   /** modo prueba: suena esta canción (en loop) sin importar la profundidad */
   play(zone, idx, src = 'orig') {
     this.forced = { zone, idx, src };
     if (src === 'gen') this.genIdx[zone] = idx; else this.songIdx[zone] = idx;
     if (this.track) this.fadeOut('force', 0.35);
-  }
-
-  /** se cambió entre originales y generadas: pasa a la otra con un fundido */
-  sourceChanged() {
-    if (!this.forced && this.track && !this.track.fadingOut) this.fadeOut('force', 0.8);
   }
 
   /** sale del modo prueba: vuelve la música de la zona donde está el jugador */
@@ -250,7 +257,7 @@ export class MusicDirector {
   }
 
   /** zona que tiene que sonar: la elegida a mano o la de la profundidad */
-  get want() { return this.forced ? this.forced.zone : this.zone; }
+  get want() { return this.forced ? this.forced.zone : this.intro && this.useGen(INTRO_ZONE) ? INTRO_ZONE : this.zone; }
 
   /** otra canción de la zona, distinta de la que acaba de sonar */
   pickNext(zone) {
@@ -276,10 +283,21 @@ export class MusicDirector {
 
   start(zone) {
     const f = this.forced;
+    // la primera vez que suena una zona con generadas, arranca con la elegida (Patio soleado, Lluvia de magma)
+    if (!f && this.useGen(zone) && !this.genSeen.has(zone)) {
+      this.genSeen.add(zone);
+      const k = GEN.zones[zone].findIndex((s) => s.name === FIRST_GEN[zone]);
+      if (k >= 0) this.genIdx[zone] = k;
+    }
+    // si la que tocaba no carga, salta a otra de la zona que sí
+    if (!f && this.useGen(zone)) {
+      const n = GEN.zones[zone].length;
+      for (let k = 0; k < n && GEN.zones[zone][this.genIdx[zone] % n].broken; k++) this.genIdx[zone]++;
+    }
     const pick = f ? (f.src === 'gen' ? GEN.zones[f.zone][f.idx] : null) : this.useGen(zone) ? GEN.zones[zone][this.genIdx[zone] % GEN.zones[zone].length] : null;
     const gen = pick && !pick.broken; // si un mp3 no carga, suena la programada
     if (gen) this.startGen(zone, f ? f.idx : this.genIdx[zone] % GEN.zones[zone].length);
-    else this.startSynth(zone);
+    else this.startSynth(zone < COMPILED.length ? zone : 0); // la intro no tiene programada: suena la de superficie
   }
 
   /** canción generada: un mp3 que suena por el elemento de audio de la música */

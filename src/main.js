@@ -254,6 +254,7 @@ class Game {
 
   startIntro() {
     if (this.state !== 'splash') return;
+    this.audio.setIntro(true); // antes de prender el audio, así arranca directo con la de la intro
     this.audio.unlock();
     // el botón se desvanece mientras la cámara empieza a bajar
     const sp = document.getElementById('screen-splash');
@@ -307,6 +308,7 @@ class Game {
 
   endIntro() {
     this.scene = null;
+    this.audio.setIntro(false); // con el cartel del título empiezan las de superficie
     this.structs.trailerOpen = 1; this.structs.gateOpen = 0;
     this.ui.setIntro(false);
     this.state = 'title';

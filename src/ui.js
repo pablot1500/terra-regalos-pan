@@ -2,7 +2,8 @@
 import { UPGRADES, GIFTS, CHARACTERS, LAYERS, MAX_DEPTH, HP_MAX, SUPPLIES } from './config.js';
 import { ICON_URL, DOG, POPI, charPortrait } from './sprites.js';
 import { fmtMoney } from './util.js';
-import { MusicDirector, hasGenerated } from './music.js';
+import { MusicDirector } from './music.js';
+import { SFX_LIST } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -55,15 +56,10 @@ export class UI {
     $('settings-ok').addEventListener('click', () => sub('screen-settings', false));
     $('controls-ok').addEventListener('click', () => sub('screen-controls', false));
     $('songs-ok').addEventListener('click', () => sub('screen-songs', false));
-    // canciones originales o generadas, y escucharlas desde Configuración
-    $('btn-music-src').addEventListener('click', () => {
-      const a = game.audio;
-      a.unlock();
-      a.setMusicSrc(a.musicSrc === 'gen' ? 'orig' : 'gen');
-      if (a.musicSrc === 'gen' && !hasGenerated()) this.toast('Todavía no hay canciones generadas: mientras tanto suenan las originales', 'warn');
-      this.refreshAudioBtns();
-    });
+    // escuchar las canciones y los efectos de sonido desde Configuración
     $('s-songs').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-songs', true); this.refreshSongs(); });
+    $('s-sfx').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-sfx', true); this.buildSfxList(); });
+    $('sfx-ok').addEventListener('click', () => { sub('screen-sfx', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
     // jugar online
     const net = game.net;
     net.onStatus = (msg, kind) => this.netStatus(msg, kind);
@@ -84,7 +80,7 @@ export class UI {
     $('songs-auto').addEventListener('click', () => { if (game.audio.music) game.audio.music.release(); this.refreshSongs(); });
     $('p-songs').addEventListener('click', () => this.refreshSongs());
     this.closeSub = () => {
-      for (const id of ['screen-settings', 'screen-controls', 'screen-songs']) if (!$(id).classList.contains('hidden')) { sub(id, false); return true; }
+      for (const id of ['screen-settings', 'screen-controls', 'screen-songs', 'screen-sfx']) if (!$(id).classList.contains('hidden')) { sub(id, false); return true; }
       return false;
     };
     $('btn-new').addEventListener('click', () => { game.audio.unlock(); game.requestNewGame(); });
@@ -127,46 +123,60 @@ export class UI {
     if ($('btn-duo')) this.refreshAudioBtns();
   }
 
-  /** arma la lista de canciones del menú de prueba y marca la que está sonando */
+  /** arma la lista de canciones del menú de prueba y marca la que está sonando
+   *  (solo las generadas; las programadas quedan en el código de respaldo, por si un mp3 no carga) */
   refreshSongs() {
     const a = this.g.audio, m = a.music;
     const list = $('songs-list');
-    const ZONES = ['Superficie (hasta 300 m)', 'Zona media (300 a 800 m)', 'Profundo (800 a 1500 m)', 'Núcleo (combate final)'];
+    const ZONES = ['Superficie (hasta 300 m)', 'Zona media (300 a 800 m)', 'Profundo (800 a 1500 m)', 'Núcleo (combate final)', 'Intro (hasta que aparece el título)'];
     list.innerHTML = '';
-    const orig = MusicDirector.list('orig'), gen = MusicDirector.list('gen');
-    const isOn = (z, i, src) => m && m.forced && m.forced.zone === z && m.forced.idx === i && (m.forced.src || 'orig') === src;
-    orig.forEach((songs, z) => {
+    const gen = MusicDirector.list('gen');
+    const isOn = (z, i) => m && m.forced && m.forced.zone === z && m.forced.idx === i && m.forced.src === 'gen';
+    // la intro va primero
+    [4, 0, 1, 2, 3].forEach((z) => {
+      const names = gen[z] || [];
       const h = document.createElement('h3');
-      h.textContent = ZONES[z];
+      h.textContent = ZONES[z] + (names.length ? '' : ': todavía no hay');
       list.appendChild(h);
-      for (const [src, names, label] of [['orig', songs, 'Originales'], ['gen', gen[z], 'Generadas (ElevenLabs)']]) {
-        const sub = document.createElement('p');
-        sub.className = 'song-src';
-        sub.textContent = label + (src === 'gen' && !names.length ? ': todavía no hay' : '');
-        list.appendChild(sub);
-        if (!names.length) continue;
-        const row = document.createElement('div');
-        row.className = 'song-row';
-        names.forEach((name, i) => {
-          const b = document.createElement('button');
-          b.className = 'btn small alt song' + (src === 'gen' ? ' gen' : '');
-          b.textContent = name;
-          if (isOn(z, i, src)) b.classList.add('sel');
-          b.addEventListener('click', () => {
-            a.unlock();
-            if (!a.musicOn) { a.setMusic(true); this.refreshAudioBtns(); }
-            if (a.music) a.music.play(z, i, src);
-            this.refreshSongs();
-          });
-          row.appendChild(b);
+      if (!names.length) return;
+      const row = document.createElement('div');
+      row.className = 'song-row';
+      names.forEach((name, i) => {
+        const b = document.createElement('button');
+        b.className = 'btn small alt song gen';
+        b.textContent = name;
+        if (isOn(z, i)) b.classList.add('sel');
+        b.addEventListener('click', () => {
+          a.unlock();
+          if (!a.musicOn) { a.setMusic(true); this.refreshAudioBtns(); }
+          if (a.music) a.music.play(z, i, 'gen');
+          this.refreshSongs();
         });
-        list.appendChild(row);
-      }
+        row.appendChild(b);
+      });
+      list.appendChild(row);
     });
     const f = m && m.forced;
-    const now = f ? '♪ Sonando: ' + MusicDirector.list(f.src || 'orig')[f.zone][f.idx] + (f.src === 'gen' ? ' (generada)' : ' (original)')
+    const now = f ? '♪ Sonando: ' + (MusicDirector.list('gen')[f.zone] || [])[f.idx]
       : m ? '♪ Música normal: cambia según la profundidad' : '♪ La música arranca al tocar una canción';
     $('songs-now').textContent = now + (a.musicOn ? '' : ' (la música está apagada)');
+  }
+
+  /** lista numerada de todos los efectos de sonido, para escucharlos uno por uno */
+  buildSfxList() {
+    const a = this.g.audio, list = $('sfx-list');
+    if (list.childElementCount) return;
+    SFX_LIST.forEach(([key, desc], i) => {
+      const b = document.createElement('button');
+      b.className = 'btn small alt sfx';
+      b.innerHTML = `<b>${i + 1}.</b> ${desc}`;
+      b.addEventListener('click', () => {
+        a.unlock();
+        if (!a.sfxOn) { a.setSfx(true); this.refreshAudioBtns(); }
+        a.preview(key);
+      });
+      list.appendChild(b);
+    });
   }
 
   /** pantalla de jugar online: muestra el menú o el estado de la sala */
@@ -214,7 +224,6 @@ export class UI {
     $('btn-music').textContent = 'Música: ' + (this.g.audio.musicOn ? 'Sí' : 'No');
     const other = this.g.charId === 'pablo' ? 'Panchi' : 'Pablo';
     $('btn-duo').textContent = `Compañero (${other}): ` + (this.g.duo ? 'Sí' : 'No');
-    $('btn-music-src').textContent = 'Canciones: ' + (this.g.audio.musicSrc === 'gen' ? 'generadas' : 'originales');
     $('q-sfx').classList.toggle('off', !this.g.audio.sfxOn);
     $('q-music').classList.toggle('off', !this.g.audio.musicOn);
     $('q-sfx').setAttribute('aria-pressed', String(this.g.audio.sfxOn));
