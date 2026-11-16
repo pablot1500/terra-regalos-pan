@@ -41,6 +41,9 @@ const TRACKS = [
   [0, 'Globos y confites', 60, 'Happy, bouncy birthday-party digging tune: cheerful chiptune lead with a whistle-like melody, hand claps, bright marimba and a bouncy bass, sunny and carefree, about 112 bpm.'],
 ];
 
+// volumen de cada canción en el juego (1 = normal), afinado a oído desde Escuchar canciones
+const GAIN = { 'Mate y pala': 1.1, 'Cumbia del cantero': 0.9, 'Cuevas de cristal': 1.05, 'Minero de medianoche': 1.1, 'Corazón de la tierra': 1.1, 'Furia de Aguilus': 0.95 };
+
 function apiKey() {
   if (process.env.ELEVENLABS_API_KEY) return process.env.ELEVENLABS_API_KEY.trim();
   try {
@@ -106,7 +109,7 @@ async function main() {
   const zones = [[], [], [], [], [], [], []], backup = []; // ver la lista de zonas arriba de TRACKS
   TRACKS.forEach(([zone, name, secs, desc], i) => {
     const file = `${String(i + 1).padStart(2, '0')}-${slug(name)}.mp3`;
-    if (fs.existsSync(path.join(OUT, file))) (zone < 0 ? backup : zones[zone]).push({ name, file, secs, prompt: desc });
+    if (fs.existsSync(path.join(OUT, file))) (zone < 0 ? backup : zones[zone]).push({ name, file, secs, ...(GAIN[name] ? { gain: GAIN[name] } : {}), prompt: desc });
   });
   fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify({ model, zones, backup }, null, 2) + '\n');
   console.log(`\nmanifest.json actualizado (${zones.flat().length} canciones).`);

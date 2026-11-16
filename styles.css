@@ -647,10 +647,3 @@ body.flashback #game { filter: sepia(0.85) saturate(0.85) brightness(1.06) contr
 .sfx-list { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; align-items: start; }
 .sfx-list .sfx { text-align: left; font-size: 13px; padding: 6px 8px; }
 .sfx-list .sfx b { color: #0e2a40; margin-right: 2px; }
-/* escuchar canciones: cada una con su barrita de volumen abajo */
-.songs .song-cell { flex: 1 1 140px; display: flex; flex-direction: column; gap: 3px; }
-.songs .song-cell .song { flex: none; width: 100%; }
-.song-vol { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
-.song-vol input { flex: 1; min-width: 0; accent-color: var(--pink); }
-.song-vol output { min-width: 38px; text-align: right; }
-.song-vols { font-size: 12px; }

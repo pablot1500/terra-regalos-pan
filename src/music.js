@@ -180,15 +180,8 @@ export const GEN = { zones: Array.from({ length: NZONES }, () => []), loaded: fa
 // la primera canción que suena en cada zona (si no, una al azar)
 const FIRST_GEN = { 3: 'Lluvia de magma' };
 const GEN_GAIN = 0.55; // volumen general de los mp3 (antes 0.36: quedaban bajos al lado de los efectos)
-// volumen de cada canción, ajustado a mano desde Escuchar canciones (1 = normal; se guarda en el navegador).
-// Cuando estén afinados, se pasan al manifest como `gain` y se saca el ajuste a mano.
-const SONG_VOL_KEY = 'terra-regalos-pan:songvol';
-export const songVol = (() => { try { return JSON.parse(localStorage.getItem(SONG_VOL_KEY) || '{}'); } catch { return {}; } })();
-export function setSongVol(file, v) {
-  if (Math.abs(v - 1) < 0.001) delete songVol[file]; else songVol[file] = v;
-  try { localStorage.setItem(SONG_VOL_KEY, JSON.stringify(songVol)); } catch { /* nada */ }
-}
-const fullGain = (t) => GEN_GAIN * (t.gain ?? 1) * (songVol[t.file] ?? 1);
+// cada canción con su volumen afinado a oído (`gain` en el manifest; 1 = normal)
+const fullGain = (t) => GEN_GAIN * (t.gain ?? 1);
 export function loadGenerated() {
   return fetch('src/music/gen/manifest.json', { cache: 'no-store' })
     .then((r) => (r.ok ? r.json() : null))
@@ -265,19 +258,6 @@ export class MusicDirector {
     this.forced = { zone, idx, src };
     if (src === 'gen') this.genIdx[zone] = idx; else this.songIdx[zone] = idx;
     if (this.track) this.fadeOut('force', 0.35);
-  }
-
-  /** se movió el volumen de una canción: si es la que suena, cambia ya */
-  songVolChanged(file) {
-    const tr = this.track;
-    if (!tr || !tr.gen || tr.file !== file || tr.fadingOut) return;
-    const t = GEN.zones[tr.zone].find((s) => s.file === file);
-    if (!t) return;
-    tr.full = fullGain(t);
-    const g = tr.gain.gain, now = this.c.currentTime;
-    g.cancelScheduledValues(now);
-    g.setValueAtTime(g.value, now);
-    g.linearRampToValueAtTime(tr.full, now + 0.1);
   }
 
   /** sale del modo prueba: vuelve la música de la zona donde está el jugador */

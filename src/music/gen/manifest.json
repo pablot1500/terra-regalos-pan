@@ -6,13 +6,15 @@
         "name": "Mate y pala",
         "file": "02-mate-y-pala.mp3",
         "secs": 48,
-        "prompt": "Playful, upbeat digging-with-a-shovel theme. Plucky chiptune lead, snappy drums, cheerful and fast, about 120 bpm."
+        "prompt": "Playful, upbeat digging-with-a-shovel theme. Plucky chiptune lead, snappy drums, cheerful and fast, about 120 bpm.",
+        "gain": 1.1
       },
       {
         "name": "Cumbia del cantero",
         "file": "03-cumbia-del-cantero.mp3",
         "secs": 77,
-        "prompt": "Argentine cumbia meets chiptune: güiro, cumbia drum groove, accordion-like synth lead, festive birthday party vibe, about 100 bpm."
+        "prompt": "Argentine cumbia meets chiptune: güiro, cumbia drum groove, accordion-like synth lead, festive birthday party vibe, about 100 bpm.",
+        "gain": 0.9
       },
       {
         "name": "Globos y confites",
@@ -26,7 +28,8 @@
         "name": "Cuevas de cristal",
         "file": "04-cuevas-de-cristal.mp3",
         "secs": 65,
-        "prompt": "Mysterious but cozy underground crystal cave exploration. Glassy chimes, soft arpeggios, echoing triangle-wave melody, about 88 bpm."
+        "prompt": "Mysterious but cozy underground crystal cave exploration. Glassy chimes, soft arpeggios, echoing triangle-wave melody, about 88 bpm.",
+        "gain": 1.05
       },
       {
         "name": "Eco del granito",
@@ -38,7 +41,8 @@
         "name": "Minero de medianoche",
         "file": "06-minero-de-medianoche.mp3",
         "secs": 83,
-        "prompt": "Laid-back midnight miner groove. Plucked synth lead, warm round bass, relaxed lo-fi retro game feel, about 92 bpm."
+        "prompt": "Laid-back midnight miner groove. Plucked synth lead, warm round bass, relaxed lo-fi retro game feel, about 92 bpm.",
+        "gain": 1.1
       }
     ],
     [
@@ -52,7 +56,8 @@
         "name": "Corazón de la tierra",
         "file": "08-corazon-de-la-tierra.mp3",
         "secs": 60,
-        "prompt": "Glowing lava caverns near the center of the Earth. Rising tension, triangle-wave arpeggios, mysterious melody, about 96 bpm."
+        "prompt": "Glowing lava caverns near the center of the Earth. Rising tension, triangle-wave arpeggios, mysterious melody, about 96 bpm.",
+        "gain": 1.1
       },
       {
         "name": "Latido de magma",
@@ -78,7 +83,8 @@
         "name": "Furia de Aguilus",
         "file": "12-furia-de-aguilus.mp3",
         "secs": 53,
-        "prompt": "Dramatic, slightly comedic villain boss theme. Organ and choir over chiptune drums, epic and theatrical, about 144 bpm."
+        "prompt": "Dramatic, slightly comedic villain boss theme. Organ and choir over chiptune drums, epic and theatrical, about 144 bpm.",
+        "gain": 0.95
       }
     ],
     [
