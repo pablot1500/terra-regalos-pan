@@ -644,6 +644,12 @@ body.flashback #game { filter: sepia(0.85) saturate(0.85) brightness(1.06) contr
 .pad-focus { outline: 3px solid var(--pink) !important; outline-offset: 3px; }
 
 /* menú de efectos de sonido: botones numerados en dos columnas */
-.sfx-list { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.sfx-list { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; align-items: start; }
 .sfx-list .sfx { text-align: left; font-size: 13px; padding: 6px 8px; }
 .sfx-list .sfx b { color: #0e2a40; margin-right: 2px; }
+/* efectos con dos versiones: nombre arriba y los botones Código / ElevenLabs abajo */
+.sfx-item { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--panel-2); border: 3px solid var(--ink); padding: 5px 6px 6px; }
+.sfx-item .sfx-name { grid-column: 1 / -1; text-align: left; font-size: 13px; color: var(--cream); }
+.sfx-item .sfx-name b { color: var(--gold); }
+.sfx-item .sfx-ab { font-size: 12px; padding: 4px 6px; }
+.sfx-item .sfx-ab.rec { background: #ffd34d; color: #3a2a0a; box-shadow: inset -3px -4px 0 #d9a92a, inset 3px 3px 0 #ffe9a3, 0 4px 0 var(--ink); }

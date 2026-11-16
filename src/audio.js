@@ -26,7 +26,6 @@ export const SFX_LIST = [
   ['talk', 'Voz de los diálogos'],
   ['bark', 'Ladrido de Popi'],
   ['surprise', 'Sorpresa (se dan cuenta de algo)'],
-  ['thunder', 'Trueno: los regalos no están (grabado con ElevenLabs)'],
   ['paper', 'La nota de papel'],
   ['gate', 'Se abre el portón'],
   ['gateShut', 'Se cierra el portón / la puerta del Gol'],
@@ -48,6 +47,7 @@ export const SFX_LIST = [
   ['magma', 'Meteorito de magma'],
   ['flame', 'Llamarada'],
   ['bossHit', 'Le pegan a Aguilus'],
+  ['thunder', 'Trueno: los regalos no están'],
 ];
 export class Audio {
   constructor() {
@@ -60,7 +60,8 @@ export class Audio {
     // respaldo y solo suenan si un mp3 no carga
     this.musicSrc = 'gen';
     this.sceneZone = null;    // intro, acción de la intro o menú: la música que suena sin importar la profundidad
-    this.genSfx = {};         // efectos grabados con ElevenLabs ya listos para sonar (src/sfx/gen)
+    this.genSfx = {};         // efectos grabados con ElevenLabs ya listos para sonar (src/sfx/gen): {buffer, gain}
+    this.genUse = {};         // cuáles reemplazan al de código en el juego (el resto, solo para comparar en el menú)
     this.last = {};
     loadGenerated();
     try {
@@ -182,14 +183,22 @@ export class Audio {
     const minGap = { coin: 40, dig: 60, drill: 60, clink: 80, land: 80, fuse: 70 }[name] || 0;
     if (minGap && now - (this.last[name] || 0) < minGap) return;
     this.last[name] = now;
-    const rec = this.genSfx[name];
-    if (rec) {
-      const src = this.ctx.createBufferSource();
-      src.buffer = rec;
-      src.connect(this.sfx);
-      src.start();
-      return;
-    }
+    const rec = this.genUse[name] && this.genSfx[name];
+    if (rec) { this.playRec(rec); return; }
+    this.playCode(name);
+  }
+
+  /** efecto grabado, con su volumen emparejado al de los de código */
+  playRec(rec) {
+    const src = this.ctx.createBufferSource(), g = this.ctx.createGain();
+    src.buffer = rec.buffer;
+    g.gain.value = rec.gain;
+    src.connect(g); g.connect(this.sfx);
+    src.start();
+  }
+
+  /** efecto hecho con código */
+  playCode(name) {
     switch (name) {
       case 'dig': this.noise(0.09, { vol: 0.35, freq: 700 }); this.tone(110, 0.06, { type: 'triangle', vol: 0.25, slide: 60 }); break;
       case 'break': this.noise(0.16, { vol: 0.4, freq: 1100 }); this.tone(160, 0.1, { type: 'triangle', vol: 0.25, slide: 70 }); break;
@@ -249,8 +258,11 @@ export class Audio {
     }
   }
 
-  /** prueba un efecto desde el menú (el jetpack suena un segundo) */
-  preview(name) {
+  /** prueba un efecto desde el menú: `which` = 'code' (el de código), 'rec' (el grabado) o nada (el que usa el juego) */
+  preview(name, which) {
+    if (!this.ctx || !this.sfxOn) return;
+    if (which === 'rec' && this.genSfx[name]) { this.playRec(this.genSfx[name]); return; }
+    if (which === 'code' && name !== 'jet') { this.playCode(name); return; }
     if (name !== 'jet') { this.play(name); return; }
     this.jet(true);
     clearTimeout(this.jetPreviewT);
@@ -296,10 +308,11 @@ export class Audio {
       .then((r) => (r.ok ? r.json() : null))
       .then((m) => {
         for (const [id, e] of Object.entries((m && m.effects) || {})) {
+          this.genUse[id] = e.use !== false;
           fetch('src/sfx/gen/' + e.file)
             .then((r) => r.arrayBuffer())
             .then((b) => this.ctx.decodeAudioData(b))
-            .then((buf) => { this.genSfx[id] = buf; })
+            .then((buf) => { this.genSfx[id] = { buffer: buf, gain: levelGain(buf, id === 'thunder' ? 0.3 : 0.16) }; })
             .catch(() => { /* queda el de código */ });
         }
       })
@@ -310,6 +323,21 @@ export class Audio {
   setDepth(depth) {
     if (this.music) this.music.setDepth(depth);
   }
+}
+
+/** volumen para que un efecto grabado suene más o menos como los de código: mide la parte que suena
+ *  (sin los silencios) y lo lleva a `target` de intensidad media */
+function levelGain(buf, target) {
+  const d = buf.getChannelData(0);
+  let peak = 0;
+  for (let i = 0; i < d.length; i += 4) peak = Math.max(peak, Math.abs(d[i]));
+  // "lo que suena": lo que pasa del 10% del pico (así un efecto grabado bajito también se mide bien)
+  const floor = Math.max(0.002, peak * 0.1);
+  let sum = 0, n = 0;
+  for (let i = 0; i < d.length; i += 4) { const v = Math.abs(d[i]); if (v > floor) { sum += v * v; n++; } }
+  const rms = n ? Math.sqrt(sum / n) : 0;
+  // sin pasarse: el pico queda por debajo de 1 para que no sature
+  return rms > 0 ? Math.min(0.95 / peak, 10, Math.max(0.15, target / rms)) : 1;
 }
 
 /** medio segundo de silencio en WAV (8 kHz, 8 bits), para los trucos de audio de iOS */

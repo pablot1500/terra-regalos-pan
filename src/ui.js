@@ -162,20 +162,34 @@ export class UI {
     $('songs-now').textContent = now + (a.musicOn ? '' : ' (la música está apagada)');
   }
 
-  /** lista numerada de todos los efectos de sonido, para escucharlos uno por uno */
+  /** lista numerada de todos los efectos de sonido, para escucharlos uno por uno; los que tienen
+   *  versión grabada con ElevenLabs muestran dos botones, para comparar con la hecha con código */
   buildSfxList() {
     const a = this.g.audio, list = $('sfx-list');
-    if (list.childElementCount) return;
-    SFX_LIST.forEach(([key, desc], i) => {
+    list.innerHTML = '';
+    const btn = (label, key, which, cls = '') => {
       const b = document.createElement('button');
-      b.className = 'btn small alt sfx';
-      b.innerHTML = `<b>${i + 1}.</b> ${desc}`;
+      b.className = 'btn small alt ' + cls;
+      b.innerHTML = label;
       b.addEventListener('click', () => {
         a.unlock();
         if (!a.sfxOn) { a.setSfx(true); this.refreshAudioBtns(); }
-        a.preview(key);
+        a.preview(key, which);
       });
-      list.appendChild(b);
+      return b;
+    };
+    SFX_LIST.forEach(([key, desc], i) => {
+      const label = `<b>${i + 1}.</b> ${desc}`;
+      if (!a.genSfx[key]) { list.appendChild(btn(label, key, 'code', 'sfx')); return; }
+      // con versión grabada: el nombre y los dos botones (el que usa el juego, marcado)
+      const item = document.createElement('div');
+      item.className = 'sfx-item';
+      const name = document.createElement('span');
+      name.className = 'sfx-name';
+      name.innerHTML = label;
+      const rec = !!a.genUse[key];
+      item.append(name, btn('Código' + (rec ? '' : ' ✓'), key, 'code', 'sfx-ab'), btn('ElevenLabs' + (rec ? ' ✓' : ''), key, 'rec', 'sfx-ab rec'));
+      list.appendChild(item);
     });
   }
 
