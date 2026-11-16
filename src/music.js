@@ -179,7 +179,16 @@ const NZONES = 7;
 export const GEN = { zones: Array.from({ length: NZONES }, () => []), loaded: false };
 // la primera canción que suena en cada zona (si no, una al azar)
 const FIRST_GEN = { 3: 'Lluvia de magma' };
-const GEN_GAIN = 0.36; // volumen de los mp3, emparejado con las programadas (medido: sin esto sonaban casi 3 veces más fuerte)
+const GEN_GAIN = 0.55; // volumen general de los mp3 (antes 0.36: quedaban bajos al lado de los efectos)
+// volumen de cada canción, ajustado a mano desde Escuchar canciones (1 = normal; se guarda en el navegador).
+// Cuando estén afinados, se pasan al manifest como `gain` y se saca el ajuste a mano.
+const SONG_VOL_KEY = 'terra-regalos-pan:songvol';
+export const songVol = (() => { try { return JSON.parse(localStorage.getItem(SONG_VOL_KEY) || '{}'); } catch { return {}; } })();
+export function setSongVol(file, v) {
+  if (Math.abs(v - 1) < 0.001) delete songVol[file]; else songVol[file] = v;
+  try { localStorage.setItem(SONG_VOL_KEY, JSON.stringify(songVol)); } catch { /* nada */ }
+}
+const fullGain = (t) => GEN_GAIN * (t.gain ?? 1) * (songVol[t.file] ?? 1);
 export function loadGenerated() {
   return fetch('src/music/gen/manifest.json', { cache: 'no-store' })
     .then((r) => (r.ok ? r.json() : null))
@@ -231,7 +240,7 @@ export class MusicDirector {
   }
 
   /** intro, parte de acción de la intro, menú del título, o null (según la profundidad) */
-  setSpecial(z) {
+  setSpecial(z, cut = false) {
     if (z === this.special) return;
     this.special = z;
     const tr = this.track;
@@ -239,7 +248,7 @@ export class MusicDirector {
     // a la de acción se pasa de golpe (suena el trueno); el resto, con un fundido normal
     const quick = z === ACTION_ZONE;
     this.quickIn = quick;
-    this.fadeOut('zone', quick ? 0.25 : 1.2);
+    this.fadeOut('zone', cut ? 0.02 : quick ? 0.25 : 1.2);
   }
 
   /** lista de canciones por zona (para el menú de prueba); `src`: 'orig' o 'gen' */
@@ -256,6 +265,19 @@ export class MusicDirector {
     this.forced = { zone, idx, src };
     if (src === 'gen') this.genIdx[zone] = idx; else this.songIdx[zone] = idx;
     if (this.track) this.fadeOut('force', 0.35);
+  }
+
+  /** se movió el volumen de una canción: si es la que suena, cambia ya */
+  songVolChanged(file) {
+    const tr = this.track;
+    if (!tr || !tr.gen || tr.file !== file || tr.fadingOut) return;
+    const t = GEN.zones[tr.zone].find((s) => s.file === file);
+    if (!t) return;
+    tr.full = fullGain(t);
+    const g = tr.gain.gain, now = this.c.currentTime;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(g.value, now);
+    g.linearRampToValueAtTime(tr.full, now + 0.1);
   }
 
   /** sale del modo prueba: vuelve la música de la zona donde está el jugador */
@@ -321,11 +343,12 @@ export class MusicDirector {
     const gain = a.genGain;
     gain.gain.cancelScheduledValues(c.currentTime);
     gain.gain.setValueAtTime(0, c.currentTime);
-    gain.gain.linearRampToValueAtTime(GEN_GAIN, c.currentTime + (this.quickIn ? 0.5 : FADE_IN));
+    const full = fullGain(t);
+    gain.gain.linearRampToValueAtTime(full, c.currentTime + (this.quickIn ? 0.5 : FADE_IN));
     this.quickIn = false;
     el.src = 'src/music/gen/' + t.file;
     el.currentTime = 0;
-    const tr = { gen: true, zone, el, gain, nodes: [], song: { name: t.name, loops: 1 }, loops: 0, fadingOut: false, fadeEnd: 0, then: null, ended: false, full: GEN_GAIN };
+    const tr = { gen: true, zone, el, gain, file: t.file, nodes: [], song: { name: t.name, loops: 1 }, loops: 0, fadingOut: false, fadeEnd: 0, then: null, ended: false, full };
     el.onended = () => { tr.ended = true; };
     el.onerror = () => { tr.ended = true; tr.failed = true; t.broken = true; };
     if (!document.hidden) el.play().catch(() => { /* hasta el próximo toque */ });

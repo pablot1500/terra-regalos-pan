@@ -2,7 +2,7 @@
 import { UPGRADES, GIFTS, CHARACTERS, LAYERS, MAX_DEPTH, HP_MAX, SUPPLIES } from './config.js';
 import { ICON_URL, DOG, POPI, charPortrait } from './sprites.js';
 import { fmtMoney } from './util.js';
-import { MusicDirector } from './music.js';
+import { MusicDirector, GEN, songVol, setSongVol } from './music.js';
 import { SFX_LIST } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
@@ -77,6 +77,12 @@ export class UI {
     $('on-leave').addEventListener('click', () => { game.audio.play('ui'); net.leave(); this.openOnline(); });
     const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     if (ios && !navigator.standalone) this.show('ios-hint', true);
+    $('songs-copy').addEventListener('click', () => {
+      const txt = this.songVolsText() || 'Volúmenes de canciones: todas al 100%';
+      const done = () => this.toast('Copiado: pegámelo en el chat', 'good');
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => this.toast('No se pudo copiar: copiá el texto de abajo a mano', 'warn'));
+      else this.toast('No se pudo copiar: copiá el texto de abajo a mano', 'warn');
+    });
     $('songs-auto').addEventListener('click', () => { if (game.audio.music) game.audio.music.release(); this.refreshSongs(); });
     $('p-songs').addEventListener('click', () => this.refreshSongs());
     this.closeSub = () => {
@@ -134,17 +140,20 @@ export class UI {
     const isOn = (z, i) => m && m.forced && m.forced.zone === z && m.forced.idx === i && m.forced.src === 'gen';
     // primero la del menú y las de la intro, después las del juego
     [6, 4, 5, 0, 1, 2, 3].forEach((z) => {
-      const names = gen[z] || [];
+      const songs = GEN.zones[z] || [];
       const h = document.createElement('h3');
-      h.textContent = ZONES[z] + (names.length ? '' : ': todavía no hay');
+      h.textContent = ZONES[z] + (songs.length ? '' : ': todavía no hay');
       list.appendChild(h);
-      if (!names.length) return;
+      if (!songs.length) return;
       const row = document.createElement('div');
       row.className = 'song-row';
-      names.forEach((name, i) => {
+      songs.forEach((t, i) => {
+        // cada canción: el botón para escucharla y su barrita de volumen
+        const cell = document.createElement('div');
+        cell.className = 'song-cell';
         const b = document.createElement('button');
         b.className = 'btn small alt song gen';
-        b.textContent = name;
+        b.textContent = t.name;
         if (isOn(z, i)) b.classList.add('sel');
         b.addEventListener('click', () => {
           a.unlock();
@@ -152,7 +161,22 @@ export class UI {
           if (a.music) a.music.play(z, i, 'gen');
           this.refreshSongs();
         });
-        row.appendChild(b);
+        const vol = document.createElement('label');
+        vol.className = 'song-vol';
+        const r = document.createElement('input');
+        r.type = 'range'; r.min = '0'; r.max = '200'; r.step = '5';
+        r.value = String(Math.round((songVol[t.file] ?? 1) * 100));
+        const out = document.createElement('output');
+        out.textContent = r.value + '%';
+        r.addEventListener('input', () => {
+          out.textContent = r.value + '%';
+          setSongVol(t.file, Number(r.value) / 100);
+          if (a.music) a.music.songVolChanged(t.file);
+          this.showSongVols();
+        });
+        vol.append(r, out);
+        cell.append(b, vol);
+        row.appendChild(cell);
       });
       list.appendChild(row);
     });
@@ -160,6 +184,19 @@ export class UI {
     const now = f ? '♪ Sonando: ' + (MusicDirector.list('gen')[f.zone] || [])[f.idx]
       : m ? '♪ Música normal: cambia según la profundidad' : '♪ La música arranca al tocar una canción';
     $('songs-now').textContent = now + (a.musicOn ? '' : ' (la música está apagada)');
+    this.showSongVols();
+  }
+
+  /** resumen de los volúmenes ajustados a mano (para copiarlo y pasarlo) */
+  songVolsText() {
+    const rows = [];
+    GEN.zones.forEach((z) => z.forEach((t) => { if (songVol[t.file] !== undefined) rows.push(`${t.name}: ${Math.round(songVol[t.file] * 100)}%`); }));
+    return rows.length ? 'Volúmenes de canciones: ' + rows.join(', ') : '';
+  }
+
+  showSongVols() {
+    const txt = this.songVolsText();
+    $('songs-vols').textContent = txt || 'Todas al 100%. Mové las barritas para ajustar el volumen de cada canción.';
   }
 
   /** lista numerada de todos los efectos de sonido, para escucharlos uno por uno; los que tienen

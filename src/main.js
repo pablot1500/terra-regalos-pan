@@ -311,6 +311,7 @@ class Game {
   endIntro() {
     this.scene = null;
     this.audio.setScene(MENU_ZONE); // con el cartel del título suena la del menú (Patio soleado)
+    this.audio.hushMusic(false); // por si se saltó la intro justo en el silencio
     this.structs.trailerOpen = 1; this.structs.gateOpen = 0;
     this.ui.setIntro(false);
     this.state = 'title';

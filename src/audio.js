@@ -131,7 +131,9 @@ export class Audio {
       this.ctx = new AC();
       this.master = this.ctx.createGain(); this.master.gain.value = 0.7; this.master.connect(this.ctx.destination);
       this.sfx = this.ctx.createGain(); this.sfx.connect(this.master);
-      this.mus = this.ctx.createGain(); this.mus.connect(this.master);
+      this.mus = this.ctx.createGain();
+      // silencio de la música en la intro (cuando no aparecen los regalos), sin cortar la canción de golpe
+      this.hushGain = this.ctx.createGain(); this.mus.connect(this.hushGain); this.hushGain.connect(this.master);
       this.jetBus = this.ctx.createGain(); this.jetBus.connect(this.sfx); // el jetpack también se apaga con los sonidos
       this.applyVolumes();
       const len = this.ctx.sampleRate;
@@ -299,7 +301,20 @@ export class Audio {
   setScene(zone) {
     if (zone === this.sceneZone) return;
     this.sceneZone = zone;
-    if (this.music) this.music.setSpecial(zone);
+    // si venía en silencio, la canción anterior se corta en seco (no se oye su cola al volver el volumen)
+    if (this.music) this.music.setSpecial(zone, !!this.hushed);
+    this.hushMusic(false); // con cada cambio de música vuelve el volumen
+  }
+
+  /** silencia la música con un fundido (on) o la devuelve al volumen normal */
+  hushMusic(on) {
+    if (this.hushed === on) return;
+    this.hushed = on;
+    if (!this.hushGain) return;
+    const g = this.hushGain.gain, t = this.ctx.currentTime;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(on ? 0 : 1, t + (on ? 1.2 : 0.05));
   }
 
   /** efectos grabados con ElevenLabs (tools/generar-efectos.mjs): si alguno no carga, suena el de código */

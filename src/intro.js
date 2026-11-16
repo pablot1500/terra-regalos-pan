@@ -94,17 +94,17 @@ export function* introScript(sc) {
   for (let i = 0; i < 4; i++) { g.audio.play('dig'); yield sc.wait(0.3); }
   sc.emote('pablo', '?');
   yield sc.wait(1.0);
+  // la música se va apagando: queda todo en silencio hasta que cierran la nota
+  g.audio.hushMusic(true);
   yield sc.say('pablo', 'Esperá...');
-  // escarba otra vez, más fuerte... y nada: ¡trueno! y la música pasa a la de acción
+  // escarba otra vez, más fuerte... y nada
   for (let i = 0; i < 3; i++) { g.audio.play('dig'); yield sc.wait(0.18); }
   A.pablo.pose = 'idle';
   sc.emote('pablo', '!');
   sc.fixed = { x: 118, y: APT - 12 };
   sc.setZoom(2.8);
-  g.audio.play('thunder');
-  g.introMusic = ACTION_ZONE;
-  g.audio.setScene(ACTION_ZONE);
-  g.shake(2.2);
+  g.audio.play('surprise');
+  g.shake(1.5);
   yield sc.say('pablo', '¡LOS REGALOS NO ESTÁN!');
   sc.emote('pancha', '!');
   A.pancha.facing = -1;
@@ -116,6 +116,9 @@ export function* introScript(sc) {
   g.audio.play('paper');
   yield sc.wait(0.6);
   yield sc.note(NOTE_TEXT);
+  // al cerrar la nota arranca la música de acción, hasta el final de la intro
+  g.introMusic = ACTION_ZONE;
+  g.audio.setScene(ACTION_ZONE);
   yield sc.say('pancha', '¿¡Otra vez!? ¿Y quién puede haber sido ahora?');
   yield sc.say('pablo', 'Alguna sospecha tengo... pero acá dice "muy abajo". Abajo de dónde?');
 
