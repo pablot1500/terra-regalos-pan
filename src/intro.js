@@ -128,9 +128,11 @@ export function* introScript(sc) {
   sc.setZoom(1);
   if (ch) {
     sc.feathers.push({ x: ch.c * TILE + 14, y: ch.r * TILE - 1, floor: ch.r * TILE + 1, vy: 0, t: 0, landed: true });
-    yield sc.pan(ch.c * TILE + 4 - g.vw / 2, ch.r * TILE - g.vh / 2, 3.2);
-    // acercamiento al cofre, que brilla (con una plumita sospechosa al lado)
-    sc.fixed = { x: ch.c * TILE + 8, y: ch.r * TILE - 8 };
+    // la cámara baja hasta dejar el cofre en el centro...
+    const cx = ch.c * TILE + 6, cy = ch.r * TILE - 6;
+    yield sc.pan(cx - g.vw / 2, cy - g.vh / 2, 3.2);
+    // ...y se acerca derecho, sin moverse para los costados (el cofre brilla, con una plumita sospechosa al lado)
+    sc.fixed = { x: cx, y: cy, k: 0.5, lock: true };
     sc.setZoom(2.2);
     sc.shine = { x: ch.c * TILE + 4, y: ch.r * TILE - 6, t: 0 };
     g.audio.play('gem');
@@ -157,7 +159,6 @@ export function* introScript(sc) {
   sc.emote('pablo', '?'); sc.emote('pancha', '?');
   yield sc.wait(1.6);
   sc.emote('pablo', '!'); sc.emote('pancha', '!');
-  g.audio.play('surprise');
   g.shake(1.2);
   yield sc.say('pancha', '¡Abajo nuestro!!!');
   yield sc.say('pablo', 'No puedo creer que tengamos que hacer esto..');

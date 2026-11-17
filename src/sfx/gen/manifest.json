@@ -85,23 +85,11 @@
       "vol": 1,
       "prompt": "A small happy dachshund dog barking twice, short and cute."
     },
-    "bark2": {
-      "file": "bark2.mp3",
-      "use": false,
-      "vol": 1,
-      "prompt": "A single short, happy, high-pitched yip from a small dachshund dog."
-    },
     "bark3": {
       "file": "bark3.mp3",
       "use": false,
       "vol": 1,
       "prompt": "A small dachshund dog doing an excited, playful double bark: arf arf."
-    },
-    "bark4": {
-      "file": "bark4.mp3",
-      "use": false,
-      "vol": 1,
-      "prompt": "A small dachshund dog giving one short, deeper and proud woof."
     },
     "bark5": {
       "file": "bark5.mp3",
@@ -114,6 +102,36 @@
       "use": true,
       "vol": 1,
       "prompt": "A cartoon surprise sting: short quick rising ding, like an exclamation mark, video game sound effect."
+    },
+    "surprise2": {
+      "file": "surprise2.mp3",
+      "use": false,
+      "vol": 1,
+      "prompt": "A short cartoon realization sting: a quick bright orchestral stab with a xylophone hit, no voices, video game sound effect."
+    },
+    "surprise3": {
+      "file": "surprise3.mp3",
+      "use": false,
+      "vol": 1,
+      "prompt": "A quick ascending slide whistle ending in a bright little bell ding, cartoon surprise, no voices."
+    },
+    "surprise4": {
+      "file": "surprise4.mp3",
+      "use": false,
+      "vol": 1,
+      "prompt": "A sparkly aha moment: three fast rising glockenspiel notes, cute video game discovery sound, no voices."
+    },
+    "surprise5": {
+      "file": "surprise5.mp3",
+      "use": false,
+      "vol": 1,
+      "prompt": "A funny dramatic cartoon surprise sting: one short brass stab with a cymbal hit, no voices."
+    },
+    "surprise6": {
+      "file": "surprise6.mp3",
+      "use": false,
+      "vol": 1,
+      "prompt": "A springy cartoon boing followed by a bubbly pop, like an exclamation mark popping up over a character, no voices."
     },
     "gate": {
       "file": "gate.mp3",

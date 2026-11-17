@@ -33,12 +33,16 @@ const EFFECTS = [
   ['deny', 0.6, 0.5, 'Error, not enough money: short low double buzz, cute video game menu denial sound.'],                            // 18
   ['ui', 0.6, 0.7, 'A clear, crisp and clearly audible bubbly pop click of a game menu button, cute and bright.'],                                                     // 19
   ['bark', 0.7, 0.6, 'A small happy dachshund dog barking twice, short and cute.'],                                                    // 21
-  // más ladridos de Popi, para que vaya alternando (todavía en prueba: se eligen en el menú)
-  ['bark2', 0.7, 0.6, 'A single short, happy, high-pitched yip from a small dachshund dog.'],
+  // los otros ladridos de Popi: va alternando al azar entre bark, bark3 y bark5 (bark2 y bark4 quedaron en respaldo/)
   ['bark3', 0.7, 0.6, 'A small dachshund dog doing an excited, playful double bark: arf arf.'],
-  ['bark4', 0.7, 0.6, 'A small dachshund dog giving one short, deeper and proud woof.'],
   ['bark5', 0.8, 0.6, 'A small dachshund dog barking three quick, excited little yaps.'],
   ['surprise', 0.8, 0.5, 'A cartoon surprise sting: short quick rising ding, like an exclamation mark, video game sound effect.'],     // 22
+  // opciones de sorpresa para elegir en el menú (todavía en prueba)
+  ['surprise2', 0.8, 0.5, 'A short cartoon realization sting: a quick bright orchestral stab with a xylophone hit, no voices, video game sound effect.'],
+  ['surprise3', 1, 0.5, 'A quick ascending slide whistle ending in a bright little bell ding, cartoon surprise, no voices.'],
+  ['surprise4', 0.8, 0.5, 'A sparkly aha moment: three fast rising glockenspiel notes, cute video game discovery sound, no voices.'],
+  ['surprise5', 1, 0.5, 'A funny dramatic cartoon surprise sting: one short brass stab with a cymbal hit, no voices.'],
+  ['surprise6', 0.8, 0.5, 'A springy cartoon boing followed by a bubbly pop, like an exclamation mark popping up over a character, no voices.'],
   ['gate', 1.5, 0.7, 'An old wooden garden gate made of wooden planks slowly creaking open on old hinges: a dry, hollow wooden creak, no metal sounds.'],                                                               // 24
   ['gateShut', 0.8, 0.6, 'A wooden gate closing with a solid thud and a metal latch click.'],                                          // 25
   ['boom', 2, 0.5, 'A big cartoon explosion: punchy boom with a rumble and falling debris, video game sound effect.'],                 // 29

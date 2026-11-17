@@ -13,6 +13,9 @@ const SFX_VOL = {
 };
 export const sfxVolOf = (name) => SFX_VOL[name] ?? 1;
 
+// los ladridos de Popi entre los que va alternando (todos con el volumen de 'bark')
+const BARKS = ['bark', 'bark3', 'bark5'];
+
 /** todos los efectos de sonido, con dónde suenan (para el menú "Efectos de sonido") */
 export const SFX_LIST = [
   ['dig', 'Cavar tierra con la pala'],
@@ -196,7 +199,18 @@ export class Audio {
     const minGap = { coin: 40, dig: 60, drill: 60, clink: 80, land: 80, fuse: 70 }[name] || 0;
     if (minGap && now - (this.last[name] || 0) < minGap) return;
     this.last[name] = now;
+    if (name === 'bark') { this.playTuned('bark', this.pickBark()); return; }
     this.playTuned(name, this.genUse[name] && this.genSfx[name]);
+  }
+
+  /** Popi alterna al azar entre sus ladridos grabados (sin repetir el último); si no cargaron, el de código */
+  pickBark() {
+    const ok = BARKS.filter((k) => this.genSfx[k]);
+    if (!ok.length) return null;
+    let k = ok[Math.floor(Math.random() * ok.length)];
+    if (ok.length > 1 && k === this.lastBark) k = ok[(ok.indexOf(k) + 1 + Math.floor(Math.random() * (ok.length - 1))) % ok.length];
+    this.lastBark = k;
+    return this.genSfx[k];
   }
 
   /** suena el efecto (grabado o de código) con su volumen afinado */

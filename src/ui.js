@@ -5,13 +5,14 @@ import { fmtMoney } from './util.js';
 import { MusicDirector, GEN } from './music.js';
 import { SFX_LIST, sfxVolOf } from './audio.js';
 
-// opciones de ladrido de Popi para elegir (la 1 es la que suena hoy)
-const BARK_OPTIONS = [
-  ['bark', 'Ladrido actual (dos ladridos)'],
-  ['bark2', 'Un yip agudo'],
-  ['bark3', 'Doble ladrido juguetón'],
-  ['bark4', 'Un guau más grave'],
-  ['bark5', 'Tres ladriditos rápidos'],
+// opciones de sonido de sorpresa para elegir (la 0 es la que suena hoy)
+const SURPRISE_OPTIONS = [
+  ['surprise', 'Sorpresa actual'],
+  ['surprise2', 'Golpe de orquesta con xilofón'],
+  ['surprise3', 'Silbato que sube y campanita'],
+  ['surprise4', 'Tres notitas brillantes: ¡ajá!'],
+  ['surprise5', 'Golpe de bronces con platillo'],
+  ['surprise6', 'Boing con burbujita'],
 ];
 
 const $ = (id) => document.getElementById(id);
@@ -68,9 +69,9 @@ export class UI {
     // escuchar las canciones y los efectos de sonido desde Configuración
     $('s-songs').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-songs', true); this.refreshSongs(); });
     $('s-sfx').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-sfx', true); this.buildSfxList(); });
-    $('bark-copy').addEventListener('click', () => {
-      const txt = $('bark-tune').value;
-      const fail = () => { $('bark-tune').select(); this.toast('Seleccioné el texto: copialo a mano', 'warn'); };
+    $('opt-copy').addEventListener('click', () => {
+      const txt = $('opt-tune').value;
+      const fail = () => { $('opt-tune').select(); this.toast('Seleccioné el texto: copialo a mano', 'warn'); };
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => this.toast('Copiado: pegámelo en el chat', 'good'), fail);
       else fail();
     });
@@ -192,28 +193,29 @@ export class UI {
       });
       list.appendChild(b);
     });
-    this.buildBarkOptions();
+    this.buildSfxOptions();
   }
 
-  /** opciones de ladrido de Popi (para elegir con cuáles alterna): cada una con su barrita de volumen.
+  /** opciones del sonido de sorpresa (para elegir cuál queda): cada una con su barrita de volumen.
    *  Los volúmenes se guardan en el navegador y se copian con el botón, para pasarlos. */
-  buildBarkOptions() {
-    const a = this.g.audio, box = $('sfx-barks');
-    const KEY = 'terra-regalos-pan:barkvol';
+  buildSfxOptions() {
+    const a = this.g.audio, box = $('sfx-opts');
+    const KEY = 'terra-regalos-pan:surprisevol';
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { /* nada */ }
-    const opts = BARK_OPTIONS.filter(([k]) => a.genSfx[k]);
+    const opts = SURPRISE_OPTIONS.filter(([k]) => a.genSfx[k]);
     box.innerHTML = '';
-    if (!opts.length) { box.textContent = 'Todavía no cargaron los ladridos: cerrá y volvé a abrir este menú.'; return; }
+    if (!opts.length) { box.textContent = 'Todavía no cargaron los sonidos: cerrá y volvé a abrir este menú.'; return; }
     const vols = {};
-    const text = () => 'Ladridos de Popi: ' + opts.map(([k, d], i) => `${i + 1}. ${d}: ${Math.round(vols[k] * 100)}%`).join(', ');
-    opts.forEach(([key, desc], i) => {
-      vols[key] = saved[key] ?? sfxVolOf('bark');
+    const num = (k) => SURPRISE_OPTIONS.findIndex(([x]) => x === k);
+    const text = () => 'Sorpresa: ' + opts.map(([k, d]) => `${num(k)}. ${d}: ${Math.round(vols[k] * 100)}%`).join(', ');
+    opts.forEach(([key, desc]) => {
+      vols[key] = saved[key] ?? sfxVolOf('surprise');
       const cell = document.createElement('div');
-      cell.className = 'bark-cell';
+      cell.className = 'opt-cell';
       const b = document.createElement('button');
       b.className = 'btn small alt sfx';
-      b.innerHTML = `<b>${i + 1}.</b> ${desc}`;
+      b.innerHTML = `<b>${num(key)}.</b> ${desc}`;
       b.addEventListener('click', () => { a.unlock(); if (!a.sfxOn) { a.setSfx(true); this.refreshAudioBtns(); } a.previewAt(key, vols[key]); });
       const lab = document.createElement('label');
       lab.className = 'tune-vol';
@@ -227,14 +229,14 @@ export class UI {
         out.textContent = r.value + '%';
         saved[key] = vols[key];
         try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch { /* nada */ }
-        $('bark-tune').value = text();
+        $('opt-tune').value = text();
       });
       r.addEventListener('change', () => { a.unlock(); a.previewAt(key, vols[key]); });
       lab.append(r, out);
       cell.append(b, lab);
       box.appendChild(cell);
     });
-    $('bark-tune').value = text();
+    $('opt-tune').value = text();
   }
 
   /** pantalla de jugar online: muestra el menú o el estado de la sala */

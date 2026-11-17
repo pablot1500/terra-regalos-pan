@@ -290,6 +290,8 @@ export class Scene {
       return;
     }
     const tg = this.camTarget();
+    // `lock`: la cámara queda clavada en el punto mientras cambia el zoom (acercamiento recto, sin curvas)
+    if (this.fixed && this.fixed.lock) { c.x = tg.x; c.y = tg.y; return; }
     const k = Math.min(1, dt * (this.camSpeed || 2.6));
     c.x += (tg.x - c.x) * k;
     c.y += (tg.y - c.y) * k;
