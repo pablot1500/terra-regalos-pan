@@ -167,10 +167,21 @@ function tree(x, u, base, rnd, big) {
 }
 
 function makeMid() {
-  const W = 620, H = 90, base = 82;
+  const W = 620, H = 104, base = 82;
   const [c, x] = makeCanvas(W, H);
   const { R, P } = painter(x);
   const rnd = mulberry32(21);
+  // la calle de enfrente de las casas: vereda, cordón y asfalto con la línea punteada
+  // (el último renglón es asfalto liso: en la bajada de la intro se estira hasta el piso)
+  R(0, base, W, 4, '#d6d0c4');
+  for (let i = 3; i < W; i += 7) R(i, base, 1, 4, '#c4bdb0');
+  R(0, base, W, 1, '#e6e1d7');
+  R(0, base + 4, W, 1, '#f0ece4'); R(0, base + 5, W, 1, '#a39c90');
+  R(0, base + 6, W, H - base - 6, '#6f737b');
+  R(0, base + 6, W, 1, '#5b5f67');
+  for (let i = 0; i < W; i += 14) R(i, base + 12, 7, 1, '#f2efe6');
+  const spk = mulberry32(77); // azar aparte: así las casas quedan iguales que antes
+  for (let i = 0; i < 60; i++) P(Math.floor(spk() * W), base + 7 + Math.floor(spk() * (H - base - 9)), spk() < 0.5 ? '#7c8088' : '#656971');
   let u = -6;
   let k = 0;
   while (u < 360) {
