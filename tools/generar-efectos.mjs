@@ -33,6 +33,11 @@ const EFFECTS = [
   ['deny', 0.6, 0.5, 'Error, not enough money: short low double buzz, cute video game menu denial sound.'],                            // 18
   ['ui', 0.6, 0.7, 'A clear, crisp and clearly audible bubbly pop click of a game menu button, cute and bright.'],                                                     // 19
   ['bark', 0.7, 0.6, 'A small happy dachshund dog barking twice, short and cute.'],                                                    // 21
+  // más ladridos de Popi, para que vaya alternando (todavía en prueba: se eligen en el menú)
+  ['bark2', 0.7, 0.6, 'A single short, happy, high-pitched yip from a small dachshund dog.'],
+  ['bark3', 0.7, 0.6, 'A small dachshund dog doing an excited, playful double bark: arf arf.'],
+  ['bark4', 0.7, 0.6, 'A small dachshund dog giving one short, deeper and proud woof.'],
+  ['bark5', 0.8, 0.6, 'A small dachshund dog barking three quick, excited little yaps.'],
   ['surprise', 0.8, 0.5, 'A cartoon surprise sting: short quick rising ding, like an exclamation mark, video game sound effect.'],     // 22
   ['gate', 1.5, 0.7, 'An old wooden garden gate made of wooden planks slowly creaking open on old hinges: a dry, hollow wooden creak, no metal sounds.'],                                                               // 24
   ['gateShut', 0.8, 0.6, 'A wooden gate closing with a solid thud and a metal latch click.'],                                          // 25

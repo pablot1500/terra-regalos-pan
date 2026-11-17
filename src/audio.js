@@ -11,7 +11,7 @@ const SFX_VOL = {
   splash: 0.65, steam: 0.35, laugh: 0.2, peep: 0.75, charge: 1.2, swoosh: 1.2, throw: 1.2, beam: 0.35,
   magma: 1.4, flame: 0.35, bossHit: 0.35, thunder: 0.2,
 };
-const sfxVolOf = (name) => SFX_VOL[name] ?? 1;
+export const sfxVolOf = (name) => SFX_VOL[name] ?? 1;
 
 /** todos los efectos de sonido, con dónde suenan (para el menú "Efectos de sonido") */
 export const SFX_LIST = [
@@ -276,6 +276,16 @@ export class Audio {
         this.tone(70, 1.5, { type: 'triangle', vol: 0.45, slide: 35 });
         break;
     }
+  }
+
+  /** prueba un efecto grabado a un volumen dado (para elegir opciones en el menú) */
+  previewAt(name, vol) {
+    if (!this.ctx || !this.sfxOn || !this.genSfx[name]) return;
+    const out = this.ctx.createGain();
+    out.gain.value = vol;
+    out.connect(this.sfx);
+    this.dest = out;
+    try { this.playRec(this.genSfx[name]); } finally { this.dest = null; }
   }
 
   /** prueba un efecto desde el menú: `which` = 'code' (el de código), 'rec' (el grabado) o nada (el que usa el juego) */

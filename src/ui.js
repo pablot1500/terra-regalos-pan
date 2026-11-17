@@ -3,7 +3,16 @@ import { UPGRADES, GIFTS, CHARACTERS, LAYERS, MAX_DEPTH, HP_MAX, SUPPLIES } from
 import { ICON_URL, DOG, POPI, charPortrait } from './sprites.js';
 import { fmtMoney } from './util.js';
 import { MusicDirector, GEN } from './music.js';
-import { SFX_LIST } from './audio.js';
+import { SFX_LIST, sfxVolOf } from './audio.js';
+
+// opciones de ladrido de Popi para elegir (la 1 es la que suena hoy)
+const BARK_OPTIONS = [
+  ['bark', 'Ladrido actual (dos ladridos)'],
+  ['bark2', 'Un yip agudo'],
+  ['bark3', 'Doble ladrido juguetón'],
+  ['bark4', 'Un guau más grave'],
+  ['bark5', 'Tres ladriditos rápidos'],
+];
 
 const $ = (id) => document.getElementById(id);
 
@@ -59,6 +68,12 @@ export class UI {
     // escuchar las canciones y los efectos de sonido desde Configuración
     $('s-songs').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-songs', true); this.refreshSongs(); });
     $('s-sfx').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-sfx', true); this.buildSfxList(); });
+    $('bark-copy').addEventListener('click', () => {
+      const txt = $('bark-tune').value;
+      const fail = () => { $('bark-tune').select(); this.toast('Seleccioné el texto: copialo a mano', 'warn'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => this.toast('Copiado: pegámelo en el chat', 'good'), fail);
+      else fail();
+    });
     $('sfx-ok').addEventListener('click', () => { sub('screen-sfx', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
     // jugar online
     const net = game.net;
@@ -177,6 +192,49 @@ export class UI {
       });
       list.appendChild(b);
     });
+    this.buildBarkOptions();
+  }
+
+  /** opciones de ladrido de Popi (para elegir con cuáles alterna): cada una con su barrita de volumen.
+   *  Los volúmenes se guardan en el navegador y se copian con el botón, para pasarlos. */
+  buildBarkOptions() {
+    const a = this.g.audio, box = $('sfx-barks');
+    const KEY = 'terra-regalos-pan:barkvol';
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { /* nada */ }
+    const opts = BARK_OPTIONS.filter(([k]) => a.genSfx[k]);
+    box.innerHTML = '';
+    if (!opts.length) { box.textContent = 'Todavía no cargaron los ladridos: cerrá y volvé a abrir este menú.'; return; }
+    const vols = {};
+    const text = () => 'Ladridos de Popi: ' + opts.map(([k, d], i) => `${i + 1}. ${d}: ${Math.round(vols[k] * 100)}%`).join(', ');
+    opts.forEach(([key, desc], i) => {
+      vols[key] = saved[key] ?? sfxVolOf('bark');
+      const cell = document.createElement('div');
+      cell.className = 'bark-cell';
+      const b = document.createElement('button');
+      b.className = 'btn small alt sfx';
+      b.innerHTML = `<b>${i + 1}.</b> ${desc}`;
+      b.addEventListener('click', () => { a.unlock(); if (!a.sfxOn) { a.setSfx(true); this.refreshAudioBtns(); } a.previewAt(key, vols[key]); });
+      const lab = document.createElement('label');
+      lab.className = 'tune-vol';
+      const r = document.createElement('input');
+      r.type = 'range'; r.min = '0'; r.max = '200'; r.step = '5';
+      r.value = String(Math.round(vols[key] * 100));
+      const out = document.createElement('output');
+      out.textContent = r.value + '%';
+      r.addEventListener('input', () => {
+        vols[key] = Number(r.value) / 100;
+        out.textContent = r.value + '%';
+        saved[key] = vols[key];
+        try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch { /* nada */ }
+        $('bark-tune').value = text();
+      });
+      r.addEventListener('change', () => { a.unlock(); a.previewAt(key, vols[key]); });
+      lab.append(r, out);
+      cell.append(b, lab);
+      box.appendChild(cell);
+    });
+    $('bark-tune').value = text();
   }
 
   /** pantalla de jugar online: muestra el menú o el estado de la sala */

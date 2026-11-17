@@ -85,6 +85,30 @@
       "vol": 1,
       "prompt": "A small happy dachshund dog barking twice, short and cute."
     },
+    "bark2": {
+      "file": "bark2.mp3",
+      "use": false,
+      "vol": 1,
+      "prompt": "A single short, happy, high-pitched yip from a small dachshund dog."
+    },
+    "bark3": {
+      "file": "bark3.mp3",
+      "use": false,
+      "vol": 1,
+      "prompt": "A small dachshund dog doing an excited, playful double bark: arf arf."
+    },
+    "bark4": {
+      "file": "bark4.mp3",
+      "use": false,
+      "vol": 1,
+      "prompt": "A small dachshund dog giving one short, deeper and proud woof."
+    },
+    "bark5": {
+      "file": "bark5.mp3",
+      "use": false,
+      "vol": 1,
+      "prompt": "A small dachshund dog barking three quick, excited little yaps."
+    },
     "surprise": {
       "file": "surprise.mp3",
       "use": true,

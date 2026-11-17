@@ -146,7 +146,7 @@ export const UPGRADES = [
   {
     id: 'bateria', name: 'Batería', icon: 'battery',
     desc: 'Más energía para cavar y volar sin volver a casa.',
-    levels: [[210, 0], [290, 90], [400, 380], [550, 1350], [750, 4200], [1000, 11250], [Infinity, 30000]],
+    levels: [[200, 0], [300, 90], [400, 380], [550, 1350], [750, 4200], [1000, 11250], [Infinity, 30000]],
     label: (v) => (v === Infinity ? 'Energía infinita' : `${v} de energía`),
   },
   {
