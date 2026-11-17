@@ -8,7 +8,7 @@ import { initTiles, T } from './tiles.js';
 import { hash2 } from './rng.js';
 import { initSprites, drawChest, drawGiftBox, drawTorch, DOG } from './sprites.js';
 import { World } from './world.js';
-import { Structures, DOG_POS, PATIO, TRAILER_X, TRAILER_H } from './structures.js';
+import { Structures, DOG_POS, PATIO, TRAILER_X, TRAILER_H, DIG_ZONE } from './structures.js';
 import { Background } from './background.js';
 import { CoreBackdrop } from './core.js';
 import { Lighting } from './lighting.js';
@@ -16,7 +16,7 @@ import { Particles, Pickups, FloatTexts } from './entities.js';
 import { Player } from './player.js';
 import { Popi } from './popi.js';
 import { Scene } from './scene.js';
-import { introScript, popiScript } from './intro.js';
+import { introScript, popiScript, carlosScript } from './intro.js';
 import { Boss } from './boss.js';
 import { BuddyAI } from './buddy.js';
 import { Chatter } from './chatter.js';
@@ -127,7 +127,8 @@ class Game {
     this.inv = { torch: 0 };
     this.torches = [];
     this.popi = null;
-    this.popiMet = false; // Popi viene escondido en el Gol: aparece la primera vez que bajan al patio
+    this.kitGiven = false; // la pala, el jetpack y la batería: se los da Carlos la primera vez que van al taller
+    this.popiMet = false; // Popi sale del arbusto grande la primera vez que pisan el cantero (después abre el taller)
     this.players = [new Player(this, this.charId)];
     this.boss = new Boss(this, false);
     this.net.hookWorld(this.world);
@@ -172,6 +173,8 @@ class Game {
     this.inv = { torch: (d.inv && Number.isFinite(d.inv.torch)) ? d.inv.torch : 0 };
     this.popiWith = !!d.popi;
     this.popiMet = !!d.popi || !!d.popiMet;
+    // partidas de antes de la escena de Carlos: si ya tenían algo, ya tienen el equipo
+    this.kitGiven = !!d.kitGiven || this.popiMet || Object.values(this.upgrades).some((v) => v > 0) || (this.counters.best || 0) > 20;
     this.boss = new Boss(this, !!d.bossDone, d.bossLosses || 0);
     this.torches = Array.isArray(d.torches)
       ? d.torches.filter((t) => t && Number.isFinite(t.x) && Number.isFinite(t.y)).map((t) => ({ x: t.x, y: t.y, seed: Number.isFinite(t.seed) ? t.seed : Math.random() * 10 }))
@@ -293,16 +296,25 @@ class Game {
     });
   }
 
-  /** Popi sale del Gol (una sola vez por partida) y se suma a la aventura */
+  /** primera vez en la ventanita: Carlos les da la pala, el jetpack y la batería */
+  startCarlosScene(p) {
+    p.vx = 0; p.digging = false;
+    this.startScene((sc) => carlosScript(sc, p), {
+      onSkip: () => { this.kitGiven = true; },
+      onEnd: () => { this.kitGiven = true; this.save(); },
+    });
+  }
+
+  /** la primera vez que pisan el cantero (ya equipados), Popi sale del arbusto y se suma a la aventura */
   startPopiScene(p) {
     this.popiMet = true;
-    this.popiInGol = true; // mientras dura la escena, Popi está en el auto (no esperando en el patio)
     p.vx = 0; p.digging = false;
     this.startScene((sc) => popiScript(sc, p), {
-      onSkip: () => { this.structs.golDoor = 0; this.structs.golShake = 0; this.popiInGol = false; },
+      onSkip: () => { this.structs.bushShake = 0; },
       onEnd: () => {
-        this.structs.golDoor = 0; this.structs.golShake = 0; this.popiInGol = false;
+        this.structs.bushShake = 0;
         if (!this.popi) this.setPopi(p);
+        this.toast('¡El Taller de Carlos ya está abierto para comprar mejoras!', null, 'good');
         this.save();
       },
     });
@@ -336,6 +348,7 @@ class Game {
       torches: this.torches.map((t) => ({ x: t.x, y: t.y, seed: t.seed })),
       popi: !!this.popi && this.popi.owner === this.players[0],
       popiMet: !!this.popiMet,
+      kitGiven: !!this.kitGiven,
       bossDone: !!(this.boss && this.boss.state === 'done'),
       bossLosses: this.boss ? this.boss.losses : 0,
       player: p ? { char: p.char, x: p.x, y: p.y, hp: p.hp, energy: p.energy } : null,
@@ -778,10 +791,12 @@ class Game {
       if (!guest) this.chatter.update(dt);
       if (this.popi) { if (guest) this.popi.anim += dt; else this.popi.update(dt); }
       // Popi espera en el patio: al acercarte te ladra y te lo podés llevar
-      // la primera vez que pisan el patio, Popi sale del Gol. Si ya bajaron sin pasar por ahí
-      // (por ejemplo, con "Pelear con Aguilus" de la pausa), Popi ya los espera en el patio.
-      if (!this.popiMet && this.counters.best > 20) this.popiMet = true;
-      if (!this.popiMet && !guest && !p.dead && p.onGround && Math.abs(p.y + p.h - SURFACE * TILE) < 2 && p.cx > 26 * TILE && p.cx < 60 * TILE) this.startPopiScene(p);
+      // si ya bajaron sin pasar por las escenas (por ejemplo, con "Pelear con Aguilus" de la pausa),
+      // ya tienen el equipo y Popi los espera en el patio
+      if (this.counters.best > 20) { this.kitGiven = true; this.popiMet = true; }
+      // ya equipados, la primera vez que pisan el cantero Popi sale del arbusto grande
+      const onCantero = p.onGround && Math.abs(p.y + p.h - SURFACE * TILE) < 2 && p.cx > DIG_ZONE.c0 * TILE && p.cx < (DIG_ZONE.c1 + 1) * TILE;
+      if (this.kitGiven && !this.popiMet && !guest && !p.dead && onCantero) this.startPopiScene(p);
       const nearDog = this.popiMet && !this.popi && Math.abs(p.cx - (DOG_POS.x + 10)) < 22 && Math.abs(p.y + p.h - (DOG_POS.y + 14)) < 12;
       if (nearDog && !this.wasNearDog) {
         this.audio.play('bark');
@@ -804,6 +819,20 @@ class Game {
         this.ui.setActButton('POPI');
         if (inp.interact) this.togglePopi();
         this.tip('popi', '¡Es Popi! Te puede acompañar y ayudar a cavar');
+      } else if (p.inShop && !this.kitGiven) {
+        // la primera vez: Carlos les da el equipo
+        if (enteredShop) this.addText(TRAILER_X + 31, SURFACE * TILE - TRAILER_H + 20, '¡HOLA!', '#fff4e0');
+        this.ui.setPrompt(this.ui.isTouch ? null : 'Presioná E para hablar con Carlos');
+        this.ui.setActButton('CARLOS');
+        if (inp.interact) {
+          if (guest) this.toast('Carlos habla con quien creó la sala: esperá que pase por la ventanita', null, 'warn');
+          else this.startCarlosScene(p);
+        }
+      } else if (p.inShop && !this.popiMet) {
+        // ya tienen el equipo, pero el taller abre recién después de lo de Popi
+        if (enteredShop) this.addText(TRAILER_X + 31, SURFACE * TILE - TRAILER_H + 20, '¡A CAVAR!', '#fff4e0');
+        this.ui.setPrompt('Carlos: ¡primero vayan a probar la pala en el cantero!');
+        this.ui.setActButton(null);
       } else if (p.inShop) {
         // Carlos saluda desde la ventanita
         if (enteredShop) this.addText(TRAILER_X + 31, SURFACE * TILE - TRAILER_H + 20, '¡HOLA!', '#fff4e0');
@@ -941,6 +970,10 @@ class Game {
   }
 
   updateTips(p) {
+    if (!this.kitGiven) {
+      if (p.x > 22 * TILE && p.depth < 2) this.tip('kit', 'Para cavar hace falta equipo: pasá por el Taller de Carlos, la casa rodante del fondo a la derecha');
+      return;
+    }
     if (p.x > 27 * TILE && p.depth < 2) {
       this.tip('dig', this.ui.isTouch ? 'Cavá en el cantero del medio del patio: joystick abajo o CAVAR' : 'Cavá en el cantero del medio del patio: click hacia donde quieras (o J + dirección)');
     }
@@ -1112,7 +1145,7 @@ class Game {
     const wag = Math.floor(t / (near ? 0.11 : 0.55)) % 2;
     const dogSpr = blink ? DOG.blink : near ? (wag ? DOG.happyB : DOG.happyA) : (wag ? DOG.b : DOG.a);
     // (mientras Popi es parte de una escena, o todavía está escondido en el Gol, el de la escena es el único)
-    const popiActing = this.popiInGol || !!(this.scene && this.scene.actors && this.scene.actors.popi);
+    const popiActing = !!(this.scene && this.scene.actors && this.scene.actors.popi);
     if (!this.popi && this.popiMet && this.state !== 'intro' && !popiActing) ctx.drawImage(dogSpr, DOG_POS.x - camX, DOG_POS.y - camY);
     if (!this.popi && this.popiMet && near && Math.random() < 0.02) {
       this.particles.add({ x: DOG_POS.x + 5, y: DOG_POS.y - 2, vx: 0, vy: -12, life: 1, max: 1, heart: true, grav: 0 });

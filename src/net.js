@@ -262,7 +262,7 @@ export class Net {
       pk: g.pickups.list.map((k) => [Math.round(k.x), Math.round(k.y), k.item]),
       po: g.popi ? [r1(g.popi.x), r1(g.popi.y), g.popi.facing, g.popi.onGround ? 1 : 0, g.popi.digging ? 1 : 0, g.popi.flying ? 1 : 0, g.popi.owner === g.players[0] ? 'h' : 'g'] : null,
       ch: g.chatter.netState(g.players[0]),
-      pm: g.popiMet ? 1 : 0,
+      pm: g.popiMet ? 1 : 0, kg: g.kitGiven ? 1 : 0,
       b: B ? this.bossState(B) : null,
     };
     if (this.sentTorchVer !== this.torchVer) {
@@ -419,7 +419,7 @@ export class Net {
     } else g.popi = null;
     if (g.state === 'shop' && before !== g.popiState()) g.ui.renderShop();
     g.chatter.remoteState = s.ch;
-    g.popiMet = !!s.pm;
+    g.popiMet = !!s.pm; g.kitGiven = !!s.kg;
     if (s.b) this.applyBoss(s.b);
   }
 

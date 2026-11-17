@@ -44,6 +44,7 @@ export class UI {
     $('intro-skip').addEventListener('click', () => game.scene && game.scene.skip());
     $('intro').addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; if (game.scene) game.scene.advance(); });
     $('intro-note-ok').addEventListener('click', () => { const cb = this.noteCb; this.introNote(null); if (cb) cb(); });
+    $('intro-kit-ok').addEventListener('click', (e) => { e.stopPropagation(); game.audio.play('ui'); const cb = this.kitCb; this.introKit(false); if (cb) cb(); });
     $('btn-intro').addEventListener('click', () => { game.audio.play('ui'); game.startIntro(); });
     // configuración y controles: se abren desde el título o desde la pausa
     const sub = (id, open) => {
@@ -416,12 +417,22 @@ export class UI {
     this.show('intro-note', !!text);
   }
 
+  /** el equipo de Carlos (pala, jetpack y batería) en la escena del taller */
+  introKit(show, onClose) {
+    this.kitCb = show ? onClose : null;
+    if (show) for (const img of $('intro-kit').querySelectorAll('img[data-icon]')) img.src = ICON_URL[img.dataset.icon];
+    this.show('intro-kit', !!show);
+  }
+
   // ---------- HUD ----------
   updateHUD() {
     const g = this.g, p = g.players[0];
     if (!p) return;
     const L = this.last;
     const hp = Math.ceil(p.hp), en = Math.ceil(p.energy), emax = g.stats.energyMax;
+    // la barra de energía aparece cuando Carlos les da la batería
+    const showEn = !!g.kitGiven;
+    if (L.showEn !== showEn) { L.showEn = showEn; $('bar-en').classList.toggle('hidden', !showEn); }
     if (L.hp !== hp) {
       L.hp = hp;
       $('bar-hp').querySelector('.fill').style.width = (hp / HP_MAX) * 100 + '%';

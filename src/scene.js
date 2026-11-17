@@ -1,6 +1,6 @@
 // Escenas con diálogos (la intro, el encuentro con Aguilus y el final): actores, cámara con zoom,
 // caja de diálogo y guión. El guión es una función generadora: cada `yield` espera a que termine lo anterior.
-import { getCharFrames, CHAR_PAL, CHAR_W, CHAR_H, drawText, DOG, POPI, ICON_URL, charPortrait, drawDrill, drawWaterGun } from './sprites.js';
+import { getCharFrames, CHAR_PAL, CHAR_W, CHAR_H, drawText, DOG, POPI, ICON_URL, charPortrait, drawDrill, drawWaterGun, drawArmShovel } from './sprites.js';
 import { drawAguilus, aguilusPortrait, AG_H } from './aguilus.js';
 import { clamp, pixelLine } from './util.js';
 import { TILE, SURFACE } from './config.js';
@@ -102,6 +102,14 @@ export class Scene {
     return () => this.line === null;
   }
 
+  /** el cartel con el equipo de Carlos: espera a que toquen el botón */
+  kit() {
+    this.kitOpen = true;
+    this.ui.introSay(null);
+    this.ui.introKit(true, () => { this.kitOpen = false; });
+    return () => !this.kitOpen;
+  }
+
   note(text) {
     this.noteOpen = true;
     this.ui.introSay(null);
@@ -141,7 +149,7 @@ export class Scene {
 
   /** click / espacio: completa la línea que se está escribiendo o pasa a la siguiente */
   advance() {
-    if (this.done || this.noteOpen) return;
+    if (this.done || this.noteOpen || this.kitOpen) return;
     const L = this.line;
     if (!L) return;
     if (L.shown < L.text.length) { L.shown = L.text.length; this.ui.introText(L.text); }
@@ -166,6 +174,7 @@ export class Scene {
     this.ui.introSay(null);
     this.ui.introCaption(null);
     this.ui.introNote(null);
+    this.ui.introKit(false);
     this.ui.fade(false);
     this.ui.setFlashback(false);
     this.g.zoom = 1;
@@ -348,7 +357,9 @@ export class Scene {
         sy = snap(a.y - AG_H) - camY + (a.pose === 'weak' ? 6 : 0);
         headY = sy;
       } else {
-        const frames = getCharFrames(a.id)[a.facing > 0 ? 'right' : 'left'];
+        // sin jetpack en la intro y hasta que Carlos les da el equipo
+        const noJet = this.g.state === 'intro' || this.g.state === 'remoteScene' && !this.g.kitGiven || this.g.state === 'scene' && !this.g.kitGiven;
+        const frames = getCharFrames(a.id, noJet ? -1 : 0)[a.facing > 0 ? 'right' : 'left'];
         let frame = 'idle', bob = 0;
         const moving = a.target !== null || a.ty !== null;
         if (a.flying || a.fallTo !== null) frame = 'air';
@@ -411,6 +422,7 @@ function drawTool(ctx, sx0, sy0, a, bob, g) {
   ctx.save();
   ctx.translate(sx0 - sx, sy0 - sy);
   if (a.tool === 'water') drawWaterGun(ctx, sx, sy, a.facing, bob, a.gunAng ?? 0.3, a.id);
+  else if (a.tool === 'shovel') drawArmShovel(ctx, sx, sy, a.facing, bob, 1.0, 1.05, Math.max(0, g.upgrades.pala || 0), a.id, 4);
   else drawDrill(ctx, sx, sy, a.facing, bob, 0.9, Math.max(3, g.upgrades.pala || 0), a.id, 0);
   ctx.restore();
 }

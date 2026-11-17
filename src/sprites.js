@@ -173,12 +173,15 @@ export const STAFF = mapSprite(
   { o: '#2b1d2b', V: '#c98cff', v: '#8a3fd0', W: '#ffffff', n: '#5a3218', N: '#a8703f' },
 );
 
+/** jet = -1: sin jetpack (antes de que Carlos les dé el equipo) */
 function composeFrame(charId, legsKey, bob, blink, jet = 0, helmet = 0) {
-  const pal = { ...CHAR_PAL[charId], ...JET_TIERS[Math.min(jet, JET_TIERS.length - 1)] };
+  const pal = { ...CHAR_PAL[charId], ...JET_TIERS[Math.min(Math.max(0, jet), JET_TIERS.length - 1)] };
   const [c, x] = makeCanvas(CHAR_W, CHAR_H);
   x.drawImage(mapSprite((CHAR_LEGS[charId] || LEGS)[legsKey], pal), 0, 16);
   // parpadeo: se apaga el brillo y queda la línea de las pestañas
-  const top = blink ? TOP[charId].map((r, i) => (i === 6 ? r.replace(/[weE]/g, 's') : i === 7 ? r.replace(/E/g, 'e') : r)) : TOP[charId];
+  let top = blink ? TOP[charId].map((r, i) => (i === 6 ? r.replace(/[weE]/g, 's') : i === 7 ? r.replace(/E/g, 'e') : r)) : TOP[charId];
+  // sin jetpack: se borra la mochila de la espalda (las primeras columnas del torso)
+  if (jet < 0) top = top.map((r, i) => (i >= 10 ? r.slice(0, 5).replace(/[kjJr]/g, '.') + r.slice(5) : r));
   x.drawImage(mapSprite(top, pal), 0, bob);
   const H = HELMET_TIERS[Math.min(helmet, HELMET_TIERS.length - 1)];
   if (H) x.drawImage(mapSprite(HELMET, { o: '#2b1d2b', ...H }), 0, bob);
@@ -268,6 +271,16 @@ export function drawArmShovel(ctx, sx, sy, facing, bob, armAng, shovelAng, palaL
   // brazo (manga + mano)
   pixelLine(ctx, mx(shX), my(shY), mx((shX + hx) / 2), my((shY + hy) / 2), pal.C);
   px(hx, hy, pal.s);
+}
+
+/** brazo sin herramienta (antes de que Carlos les dé la pala) */
+export function drawBareArm(ctx, sx, sy, facing, bob, ang, charId) {
+  const pal = CHAR_PAL[charId];
+  const mx = (lx) => (facing > 0 ? sx + Math.round(lx) : sx + CHAR_W - 1 - Math.round(lx));
+  const hx = SHOULDER.x + Math.cos(ang) * 3, hy = SHOULDER.y + bob + Math.sin(ang) * 3;
+  pixelLine(ctx, mx(SHOULDER.x), sy + SHOULDER.y + bob, mx(hx), sy + Math.round(hy), pal.C);
+  ctx.fillStyle = pal.s;
+  ctx.fillRect(mx(hx), sy + Math.round(hy), 1, 1);
 }
 
 const DRILL_TIERS = [

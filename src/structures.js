@@ -19,6 +19,7 @@ export const DOG_POS = { x: 54 * TILE, y: S * TILE - 14 }; // Popi espera en el 
 export const GOL_X = 51 * TILE + 4;     // el Gol gris, justo a la derecha del cantero (Popi viene escondido adentro)
 export const GOL_H = 34;
 export const TREE_X = 27 * TILE;      // el arbolito, al pie de la escalera
+export const BIG_BUSH = { x: 34.6 * TILE, w: 34, h: 24 }; // el arbusto grande a la derecha del arbolito (de ahí sale Popi)
 export const GOL_DOOR = { x0: 30, x1: 43, y0: 6, y1: 23 }; // puerta de adelante del Gol (en el dibujo)
 // contorno de esa puerta: arriba sigue la ventanilla y el parabrisas inclinado (no el techo ni el parante)
 const GOL_DOOR_SHAPE = [[30, 6], [35, 6], [42, 13], [43, 13], [43, 23], [30, 23]];
@@ -730,12 +731,13 @@ export class Structures {
     this.bushes = [
       [27.4 * TILE, paintBush(18, 14, 3, ['#ff9ad5', '#ffffff'])],
       // el grande, entre el arbolito y el cantero (donde antes había un sedán)
-      [34.6 * TILE, paintBush(34, 24, 7, ['#ff9ad5', '#ffffff'])],
+      [BIG_BUSH.x, paintBush(BIG_BUSH.w, BIG_BUSH.h, 7, ['#ff9ad5', '#ffffff'])],
       [59.2 * TILE, paintBush(20, 15, 11, ['#ffd34d', '#ffffff'])],
     ];
     this.gol = paintGol();
     this.golDoor = 0;  // puerta del Gol: 0 = cerrada, 1 = abierta (escena de Popi)
     this.golShake = 0; // el Gol se sacude (Popi ladrando adentro)
+    this.bushShake = 0; // el arbusto grande se mece (Popi escondido adentro)
   }
 
   /** Fondo del patio (pared, árbol, el Gol, arbustos) — va detrás de todo */
@@ -758,7 +760,18 @@ export class Structures {
     // el Gol gris estacionado al fondo
     this.drawGol(GOL_X - camX, g0 - this.gol.height + 1, t);
     // arbustos contra la medianera
-    for (const [bx, spr] of this.bushes) ctx.drawImage(spr, Math.round(bx) - camX, g0 - spr.height);
+    for (const [bx, spr] of this.bushes) {
+      if (bx === BIG_BUSH.x && this.bushShake > 0) {
+        // se mece: la copa va para los costados más que la base
+        const a = Math.sin(t * 38) * this.bushShake;
+        for (let row = 0; row < spr.height; row += 4) {
+          const k = 1 - row / spr.height, dx = Math.round(a * 1.6 * k);
+          ctx.drawImage(spr, 0, row, spr.width, 4, Math.round(bx) - camX + dx, g0 - spr.height + row, spr.width, 4);
+        }
+        continue;
+      }
+      ctx.drawImage(spr, Math.round(bx) - camX, g0 - spr.height);
+    }
   }
 
   /** el Gol: se sacude si Popi ladra adentro y la puerta de adelante se abre para que salga */

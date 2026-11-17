@@ -1,6 +1,6 @@
 import { TILE, WORLD_W, EDGE, PHYS, DIG, CRYSTAL_DIG, BRUSH_R, HP_MAX, REST, HOVER, LAVA, BOSS } from './config.js';
 import { DEF, T, isDiggable, hardness } from './tiles.js';
-import { getCharFrames, drawArmShovel, drawDrill, drawWaterGun, CHAR_W, CHAR_H } from './sprites.js';
+import { getCharFrames, drawArmShovel, drawDrill, drawWaterGun, drawBareArm, CHAR_W, CHAR_H } from './sprites.js';
 import { HOME_ZONE, SHOP_ZONE, SPAWN, inZone } from './structures.js';
 import { depthAtY, SUB } from './world.js';
 import { clamp } from './util.js';
@@ -231,6 +231,11 @@ export class Player {
     } else {
       this.firing = false;
       aim = this.readAim(inp, ix);
+      // sin el equipo de Carlos no hay pala: no se puede cavar
+      if (aim && !g.kitGiven) {
+        if (inp.digPressed || inp.downPressed || inp.mouseDig) this.note('¡No tenés pala! Primero pasá por el Taller de Carlos', 'nokit');
+        aim = null;
+      }
       if (aim) this.lastAim = aim;
       if (aim && Math.abs(aim.x) > 0.2) this.facing = aim.x > 0 ? 1 : -1;
       else if (ix) this.facing = ix;
@@ -283,10 +288,11 @@ export class Player {
         g.audio.play('jump');
       }
       this.vy = Math.min(this.vy + PHYS.gravity * dt, inLava ? 45 : PHYS.maxFall);
-      const wantJet = inp.jump && !this.onGround && (this.jumpT > 0.17 || this.vy > -30);
+      // sin el equipo de Carlos tampoco hay jetpack (en la pelea siempre hay)
+      const wantJet = inp.jump && !this.onGround && (this.jumpT > 0.17 || this.vy > -30) && (g.kitGiven || arena);
       // descenso controlado (S solo, o Espacio + abajo): frena la caída para bajar
       // por el pozo sin lastimarse, y no gasta energía; con cada mejora baja más despacio
-      const glide = !this.onGround && ((inp.glide && this.vy > 20) || (wantJet && inp.down));
+      const glide = !this.onGround && (g.kitGiven || arena) && ((inp.glide && this.vy > 20) || (wantJet && inp.down));
       if (glide) {
         this.flying = true;
         if (this.vy > st.glide) this.vy = Math.max(st.glide, this.vy - PHYS.jetAccel * dt);
@@ -561,7 +567,8 @@ export class Player {
   // ------------------------------------------------------------
   draw(ctx, camX, camY) {
     if (this.dead) return;
-    const frames = getCharFrames(this.char, this.game.upgrades.motor, this.game.upgrades.casco)[this.facing > 0 ? 'right' : 'left'];
+    const kit = this.game.kitGiven || (this.game.boss && this.game.boss.fighting);
+    const frames = getCharFrames(this.char, kit ? this.game.upgrades.motor : -1, this.game.upgrades.casco)[this.facing > 0 ? 'right' : 'left'];
     if (this.downed) { this.drawDowned(ctx, camX, camY, frames); return; }
     if (this.hurtT > 0 && Math.floor(this.hurtT * 20) % 2 === 0) return;
     let frame;
@@ -590,6 +597,13 @@ export class Player {
       const a = this.aim || this.lastAim || { x: this.facing, y: 0 };
       const ang = Math.atan2(a.y, Math.abs(a.x) < 0.05 ? 0.05 : a.x * this.facing);
       drawWaterGun(ctx, sx, sy, this.facing, bob, ang, this.char, this.gunKick || 0);
+      return;
+    }
+
+    // sin el equipo de Carlos: el brazo solo, sin pala
+    if (!kit) {
+      const sw = Math.abs(this.vx) > 5 && this.onGround ? Math.sin(this.walkT * 9 * Math.PI / 2) * 0.35 : 0;
+      drawBareArm(ctx, sx, sy, this.facing, bob, !this.onGround ? -0.5 : 1.15 + sw, this.char);
       return;
     }
 

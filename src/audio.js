@@ -40,6 +40,7 @@ export const SFX_LIST = [
   ['talk', 'Voz de los diálogos'],
   ['bark', 'Ladrido de Popi'],
   ['surprise', 'Sorpresa (se dan cuenta de algo)'],
+  ['rustle', 'Arbusto que se mueve (Popi escondido)'],
   ['paper', 'La nota de papel'],
   ['gate', 'Se abre el portón'],
   ['gateShut', 'Se cierra el portón / la puerta del Gol'],
@@ -283,6 +284,7 @@ export class Audio {
       case 'peep': this.tone(1400, 0.07, { type: 'square', vol: 0.06, slide: 1900 }); this.tone(1200, 0.12, { type: 'square', vol: 0.05, slide: 500, delay: 0.08 }); break;
       case 'laugh': [0, 1, 2, 3].forEach((i) => this.tone(330 - i * 25, 0.11, { type: 'square', vol: 0.06, slide: 420 - i * 25, delay: i * 0.15 })); break;
       case 'pump': this.noise(0.08, { vol: 0.25, freq: 700 }); this.tone(260, 0.06, { type: 'triangle', vol: 0.12, delay: 0.1 }); this.noise(0.06, { vol: 0.2, freq: 1200, delay: 0.12 }); break;
+      case 'rustle': for (let i = 0; i < 5; i++) this.noise(0.07, { vol: 0.3, freq: 2600 + Math.random() * 1400, type: 'bandpass', delay: i * 0.06 }); break;
       case 'rest': this.tone(880, 0.2, { type: 'sine', vol: 0.06 }); break;
       case 'thunder':
         this.noise(0.25, { vol: 0.7, freq: 2600, type: 'highpass' });
