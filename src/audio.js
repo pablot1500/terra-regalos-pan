@@ -2,6 +2,17 @@ import { MusicDirector, loadGenerated } from './music.js';
 
 // Sonidos chiptune generados con WebAudio (sin archivos).
 
+// volumen de cada efecto (1 = normal), para afinarlo a oído desde el menú Efectos de sonido.
+// SFX_VOL es lo ya afinado; lo que se mueve en el menú se guarda en el navegador y manda sobre esto.
+const SFX_VOL = {};
+const SFX_TUNE_KEY = 'terra-regalos-pan:sfxvol';
+export const sfxTune = (() => { try { return JSON.parse(localStorage.getItem(SFX_TUNE_KEY) || '{}'); } catch { return {}; } })();
+export const sfxVolOf = (name) => sfxTune[name] ?? SFX_VOL[name] ?? 1;
+export function setSfxTune(name, v) {
+  if (Math.abs(v - (SFX_VOL[name] ?? 1)) < 0.001) delete sfxTune[name]; else sfxTune[name] = v;
+  try { localStorage.setItem(SFX_TUNE_KEY, JSON.stringify(sfxTune)); } catch { /* nada */ }
+}
+
 /** todos los efectos de sonido, con dónde suenan (para el menú "Efectos de sonido") */
 export const SFX_LIST = [
   ['dig', 'Cavar tierra con la pala'],
@@ -164,7 +175,7 @@ export class Audio {
     if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    o.connect(g); g.connect(out || this.sfx);
+    o.connect(g); g.connect(out || this.dest || this.sfx);
     o.start(t); o.stop(t + dur + 0.02);
   }
 
@@ -175,7 +186,7 @@ export class Audio {
     const g = c.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    s.connect(f); f.connect(g); g.connect(this.sfx);
+    s.connect(f); f.connect(g); g.connect(this.dest || this.sfx);
     s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
   }
 
@@ -185,9 +196,16 @@ export class Audio {
     const minGap = { coin: 40, dig: 60, drill: 60, clink: 80, land: 80, fuse: 70 }[name] || 0;
     if (minGap && now - (this.last[name] || 0) < minGap) return;
     this.last[name] = now;
-    const rec = this.genUse[name] && this.genSfx[name];
-    if (rec) { this.playRec(rec); return; }
-    this.playCode(name);
+    this.playTuned(name, this.genUse[name] && this.genSfx[name]);
+  }
+
+  /** suena el efecto (grabado o de código) con su volumen afinado */
+  playTuned(name, rec) {
+    const v = sfxVolOf(name);
+    let out = this.sfx;
+    if (Math.abs(v - 1) > 0.001) { out = this.ctx.createGain(); out.gain.value = v; out.connect(this.sfx); }
+    this.dest = out;
+    try { if (rec) this.playRec(rec); else this.playCode(name); } finally { this.dest = null; }
   }
 
   /** efecto grabado, con su volumen emparejado al de los de código */
@@ -195,7 +213,7 @@ export class Audio {
     const src = this.ctx.createBufferSource(), g = this.ctx.createGain();
     src.buffer = rec.buffer;
     g.gain.value = rec.gain;
-    src.connect(g); g.connect(this.sfx);
+    src.connect(g); g.connect(this.dest || this.sfx);
     src.start();
   }
 
@@ -263,8 +281,8 @@ export class Audio {
   /** prueba un efecto desde el menú: `which` = 'code' (el de código), 'rec' (el grabado) o nada (el que usa el juego) */
   preview(name, which) {
     if (!this.ctx || !this.sfxOn) return;
-    if (which === 'rec' && this.genSfx[name]) { this.playRec(this.genSfx[name]); return; }
-    if (which === 'code' && name !== 'jet') { this.playCode(name); return; }
+    if (which === 'rec' && this.genSfx[name]) { this.playTuned(name, this.genSfx[name]); return; }
+    if (which === 'code' && name !== 'jet') { this.playTuned(name, null); return; }
     if (name !== 'jet') { this.play(name); return; }
     this.jet(true);
     clearTimeout(this.jetPreviewT);
@@ -279,7 +297,7 @@ export class Audio {
       const s = c.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true;
       // soplido grave y suave (sin el siseo agudo), que entra y sale despacito
       const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 420; f.Q.value = 0.3;
-      const g = c.createGain(); g.gain.value = 0; g.gain.linearRampToValueAtTime(0.13, c.currentTime + 0.25);
+      const g = c.createGain(); g.gain.value = 0; g.gain.linearRampToValueAtTime(0.13 * sfxVolOf('jet'), c.currentTime + 0.25);
       s.connect(f); f.connect(g); g.connect(this.jetBus);
       s.start();
       this.jetSrc = s; this.jetGain = g;
