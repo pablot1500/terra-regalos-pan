@@ -321,7 +321,7 @@ export class UI {
     const tw = gx - 1;
     cake.innerHTML = `<span class="hv"><svg viewBox="0 0 31 30" aria-hidden="true">${cakeSvg}</svg>`
       + `<svg class="num" viewBox="-1 -1 ${tw + 2} 9"><g class="sh" transform="translate(0.5 0.6)">${txt}</g><g class="fg">${txt}</g></svg></span>`;
-    hover(cake, 'gem');
+    hover(cake, 'coin');
     const box = document.querySelector('.logo-box');
     document.querySelectorAll('.title-gift').forEach((img) => {
       img.src = ICON_URL.giftBig;
