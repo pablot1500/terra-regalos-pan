@@ -8,11 +8,11 @@ import { SFX_LIST, sfxVolOf } from './audio.js';
 // opciones de sonido de sorpresa para elegir (la 0 es la que suena hoy)
 const SURPRISE_OPTIONS = [
   ['surprise', 'Sorpresa actual'],
-  ['surprise2', 'Golpe de orquesta con xilofón'],
-  ['surprise3', 'Silbato que sube y campanita'],
-  ['surprise4', 'Tres notitas brillantes: ¡ajá!'],
-  ['surprise5', 'Golpe de bronces con platillo'],
-  ['surprise6', 'Boing con burbujita'],
+  ['surprise2', 'Lamparita: ding con brillitos'],
+  ['surprise3', 'Marimba: dos notas que suben'],
+  ['surprise4', 'Arpa rápida y campanita'],
+  ['surprise5', 'Pizzicato que sube y destello'],
+  ['surprise6', 'Chasquido de dedos y campanita'],
 ];
 
 const $ = (id) => document.getElementById(id);
@@ -200,7 +200,7 @@ export class UI {
    *  Los volúmenes se guardan en el navegador y se copian con el botón, para pasarlos. */
   buildSfxOptions() {
     const a = this.g.audio, box = $('sfx-opts');
-    const KEY = 'terra-regalos-pan:surprisevol';
+    const KEY = 'terra-regalos-pan:surprisevol2';
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { /* nada */ }
     const opts = SURPRISE_OPTIONS.filter(([k]) => a.genSfx[k]);
