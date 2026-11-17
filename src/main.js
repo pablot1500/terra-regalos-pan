@@ -742,6 +742,7 @@ class Game {
     const inp = this.input.read(this.cam.x, this.cam.y);
     const p = this.players[0];
     if (this.input.pad.on) this.padUI(inp);
+    this.ui.updateDescentTool(); // prueba de la bajada de la intro (?bajada)
     // música: la de la intro (y su parte de acción), la del menú en el título, y en el juego según la profundidad
     this.audio.setScene(this.state === 'intro' ? this.introMusic : this.state === 'title' ? MENU_ZONE : null);
 
