@@ -167,14 +167,13 @@ function tree(x, u, base, rnd, big) {
 }
 
 function makeMid() {
-  const W = 620, H = 104, base = 82;
+  const W = 700, H = 104, base = 82; // ancho de sobra: el barrio llega hasta el borde derecho con cualquier pantalla
   const [c, x] = makeCanvas(W, H);
   const { R, P } = painter(x);
   const rnd = mulberry32(21);
   // la calle de enfrente de las casas: vereda, cordón y asfalto con la línea punteada
   // (el último renglón es asfalto liso: en la bajada de la intro se estira hasta el piso).
-  // Termina donde empieza la loma que baja a la playa: queda escondida detrás del pasto.
-  const SW = 378;
+  const SW = W;
   R(0, base, SW, 4, '#d6d0c4');
   for (let i = 3; i < SW; i += 7) R(i, base, 1, 4, '#c4bdb0');
   R(0, base, SW, 1, '#e6e1d7');
@@ -186,7 +185,7 @@ function makeMid() {
   for (let i = 0; i < 60; i++) P(Math.floor(spk() * SW), base + 7 + Math.floor(spk() * (H - base - 9)), spk() < 0.5 ? '#7c8088' : '#656971');
   let u = -6;
   let k = 0;
-  while (u < 360) {
+  while (u < W) {
     if (k % 3 === 2) { tree(x, u + 3, base, rnd, rnd() < 0.5); u += 10; }
     const bw = house(x, rnd, u, base);
     u += bw + 1 + Math.floor(rnd() * 3);
@@ -194,17 +193,6 @@ function makeMid() {
     // farolas
     if (rnd() < 0.35) { R(u, base - 18, 1, 18, '#3a3f45'); R(u - 1, base - 19, 3, 1, '#3a3f45'); P(u, base - 18, '#ffe58a'); }
   }
-  // loma de pasto que baja suave hasta la playa
-  for (let uu = 360; uu < 412; uu++) {
-    const k = (uu - 360) / 52;
-    const top = Math.round(base - 9 + (H - base + 10) * (1 - Math.cos(k * Math.PI)) / 2);
-    if (top >= H) continue;
-    R(uu, top, 1, H - top, '#8db86a');
-    P(uu, top, '#a9d07e');
-    if ((uu * 5) % 7 === 0) P(uu, top + 2, '#77a35a');
-    if ((uu * 7) % 13 === 0 && k < 0.6) { R(uu, top - 2, 1, 2, '#6f9e4f'); P(uu + 1, top - 3, '#8cba55'); }
-  }
-  tree(x, 366, base - 8, rnd, false);
   // aire de distancia
   x.globalCompositeOperation = 'source-atop';
   x.fillStyle = 'rgba(175,212,240,0.28)';
