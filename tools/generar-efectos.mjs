@@ -37,12 +37,6 @@ const EFFECTS = [
   ['bark3', 0.7, 0.6, 'A small dachshund dog doing an excited, playful double bark: arf arf.'],
   ['bark5', 0.8, 0.6, 'A small dachshund dog barking three quick, excited little yaps.'],
   ['surprise', 0.8, 0.5, 'A cartoon surprise sting: short quick rising ding, like an exclamation mark, video game sound effect.'],     // 22
-  // opciones de sorpresa para elegir en el menú (todavía en prueba)
-  ['surprise2', 0.8, 0.6, 'A lightbulb idea moment: a bright clear ding with a quick sparkly rising shimmer, like an idea lighting up over a cartoon character, no voices.'],
-  ['surprise3', 0.8, 0.6, 'A quick cheerful realization sting on a bright marimba: two fast notes, low then high, that say aha!, cute video game sound, no voices.'],
-  ['surprise4', 1, 0.6, 'A sudden realization: a very quick rising harp glissando that ends on one bright bell ting, cartoon aha moment, no voices.'],
-  ['surprise5', 0.8, 0.6, 'A cartoon eureka sting: quick pizzicato strings plucking upward into a sparkly chime, playful and bright, no voices.'],
-  ['surprise6', 0.8, 0.6, 'A got-it moment: a snappy finger snap followed instantly by a bright rising chime, cute video game sound, no voices.'],
   ['gate', 1.5, 0.7, 'An old wooden garden gate made of wooden planks slowly creaking open on old hinges: a dry, hollow wooden creak, no metal sounds.'],                                                               // 24
   ['gateShut', 0.8, 0.6, 'A wooden gate closing with a solid thud and a metal latch click.'],                                          // 25
   ['boom', 2, 0.5, 'A big cartoon explosion: punchy boom with a rumble and falling debris, video game sound effect.'],                 // 29

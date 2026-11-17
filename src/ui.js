@@ -3,17 +3,8 @@ import { UPGRADES, GIFTS, CHARACTERS, LAYERS, MAX_DEPTH, HP_MAX, SUPPLIES } from
 import { ICON_URL, DOG, POPI, charPortrait } from './sprites.js';
 import { fmtMoney } from './util.js';
 import { MusicDirector, GEN } from './music.js';
-import { SFX_LIST, sfxVolOf } from './audio.js';
+import { SFX_LIST } from './audio.js';
 
-// opciones de sonido de sorpresa para elegir (la 0 es la que suena hoy)
-const SURPRISE_OPTIONS = [
-  ['surprise', 'Sorpresa actual'],
-  ['surprise2', 'Lamparita: ding con brillitos'],
-  ['surprise3', 'Marimba: dos notas que suben'],
-  ['surprise4', 'Arpa rápida y campanita'],
-  ['surprise5', 'Pizzicato que sube y destello'],
-  ['surprise6', 'Chasquido de dedos y campanita'],
-];
 
 const $ = (id) => document.getElementById(id);
 
@@ -69,12 +60,6 @@ export class UI {
     // escuchar las canciones y los efectos de sonido desde Configuración
     $('s-songs').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-songs', true); this.refreshSongs(); });
     $('s-sfx').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-sfx', true); this.buildSfxList(); });
-    $('opt-copy').addEventListener('click', () => {
-      const txt = $('opt-tune').value;
-      const fail = () => { $('opt-tune').select(); this.toast('Seleccioné el texto: copialo a mano', 'warn'); };
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => this.toast('Copiado: pegámelo en el chat', 'good'), fail);
-      else fail();
-    });
     $('sfx-ok').addEventListener('click', () => { sub('screen-sfx', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
     // jugar online
     const net = game.net;
@@ -193,51 +178,8 @@ export class UI {
       });
       list.appendChild(b);
     });
-    this.buildSfxOptions();
   }
 
-  /** opciones del sonido de sorpresa (para elegir cuál queda): cada una con su barrita de volumen.
-   *  Los volúmenes se guardan en el navegador y se copian con el botón, para pasarlos. */
-  buildSfxOptions() {
-    const a = this.g.audio, box = $('sfx-opts');
-    const KEY = 'terra-regalos-pan:surprisevol2';
-    let saved = {};
-    try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { /* nada */ }
-    const opts = SURPRISE_OPTIONS.filter(([k]) => a.genSfx[k]);
-    box.innerHTML = '';
-    if (!opts.length) { box.textContent = 'Todavía no cargaron los sonidos: cerrá y volvé a abrir este menú.'; return; }
-    const vols = {};
-    const num = (k) => SURPRISE_OPTIONS.findIndex(([x]) => x === k);
-    const text = () => 'Sorpresa: ' + opts.map(([k, d]) => `${num(k)}. ${d}: ${Math.round(vols[k] * 100)}%`).join(', ');
-    opts.forEach(([key, desc]) => {
-      vols[key] = saved[key] ?? sfxVolOf('surprise');
-      const cell = document.createElement('div');
-      cell.className = 'opt-cell';
-      const b = document.createElement('button');
-      b.className = 'btn small alt sfx';
-      b.innerHTML = `<b>${num(key)}.</b> ${desc}`;
-      b.addEventListener('click', () => { a.unlock(); if (!a.sfxOn) { a.setSfx(true); this.refreshAudioBtns(); } a.previewAt(key, vols[key]); });
-      const lab = document.createElement('label');
-      lab.className = 'tune-vol';
-      const r = document.createElement('input');
-      r.type = 'range'; r.min = '0'; r.max = '200'; r.step = '5';
-      r.value = String(Math.round(vols[key] * 100));
-      const out = document.createElement('output');
-      out.textContent = r.value + '%';
-      r.addEventListener('input', () => {
-        vols[key] = Number(r.value) / 100;
-        out.textContent = r.value + '%';
-        saved[key] = vols[key];
-        try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch { /* nada */ }
-        $('opt-tune').value = text();
-      });
-      r.addEventListener('change', () => { a.unlock(); a.previewAt(key, vols[key]); });
-      lab.append(r, out);
-      cell.append(b, lab);
-      box.appendChild(cell);
-    });
-    $('opt-tune').value = text();
-  }
 
   /** pantalla de jugar online: muestra el menú o el estado de la sala */
   openOnline() {

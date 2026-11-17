@@ -273,6 +273,9 @@ function paintStairs(x) {
       if (yy < 127) R(xx, yy, 1, 2, stoneSh);
     }
   }
+  // zócalo: sigue el del edificio por debajo de la escalera (la puertita queda apoyada)
+  R(144, 120, 56, 8, '#cfc6b6'); R(144, 120, 56, 1, '#e6dfd1'); R(144, 127, 56, 1, '#9d9485');
+  for (let i = 160; i < 200; i += 12) R(i, 121, 1, 6, '#bdb3a2');
   // huellas de los escalones
   R(144, 80, 16, 2, tread); R(144, 80, 16, 1, '#fbf8f1');
   for (let i = 0; i < 5; i++) {
@@ -283,6 +286,7 @@ function paintStairs(x) {
   R(199, 120, 1, 8, edge);
   // puertita de depósito bajo el descanso
   R(147, 98, 10, 22, '#8a939b'); R(148, 99, 8, 21, '#b9c1c9'); R(148, 99, 8, 1, '#d6dce1'); P(155, 109, '#5b636d');
+  R(146, 119, 12, 1, '#7d858c'); R(146, 120, 12, 1, '#a39a8b'); // umbral
   // baranda
   const rail = '#2f3a35', railHi = '#5d6b64';
   R(144, 72, 17, 1, rail); R(144, 71, 17, 1, railHi);

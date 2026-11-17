@@ -103,36 +103,6 @@
       "vol": 1,
       "prompt": "A cartoon surprise sting: short quick rising ding, like an exclamation mark, video game sound effect."
     },
-    "surprise2": {
-      "file": "surprise2.mp3",
-      "use": false,
-      "vol": 1,
-      "prompt": "A lightbulb idea moment: a bright clear ding with a quick sparkly rising shimmer, like an idea lighting up over a cartoon character, no voices."
-    },
-    "surprise3": {
-      "file": "surprise3.mp3",
-      "use": false,
-      "vol": 1,
-      "prompt": "A quick cheerful realization sting on a bright marimba: two fast notes, low then high, that say aha!, cute video game sound, no voices."
-    },
-    "surprise4": {
-      "file": "surprise4.mp3",
-      "use": false,
-      "vol": 1,
-      "prompt": "A sudden realization: a very quick rising harp glissando that ends on one bright bell ting, cartoon aha moment, no voices."
-    },
-    "surprise5": {
-      "file": "surprise5.mp3",
-      "use": false,
-      "vol": 1,
-      "prompt": "A cartoon eureka sting: quick pizzicato strings plucking upward into a sparkly chime, playful and bright, no voices."
-    },
-    "surprise6": {
-      "file": "surprise6.mp3",
-      "use": false,
-      "vol": 1,
-      "prompt": "A got-it moment: a snappy finger snap followed instantly by a bright rising chime, cute video game sound, no voices."
-    },
     "gate": {
       "file": "gate.mp3",
       "use": true,

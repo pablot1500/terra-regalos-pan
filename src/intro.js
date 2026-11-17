@@ -135,11 +135,9 @@ export function* introScript(sc) {
     sc.fixed = { x: cx, y: cy, k: 0.5, lock: true };
     sc.setZoom(2.2);
     sc.shine = { x: ch.c * TILE + 4, y: ch.r * TILE - 6, t: 0 };
-    g.audio.play('gem');
     for (let k = 0; k < 34; k++) {
       const a = Math.random() * Math.PI * 2, r = 6 + Math.random() * 10;
       g.particles.add({ x: sc.shine.x + Math.cos(a) * r, y: sc.shine.y + Math.sin(a) * r * 0.7, vx: Math.cos(a) * 6, vy: -8 - Math.random() * 10, life: 0.9, max: 0.9, color: Math.random() < 0.6 ? '#ffd34d' : '#fff4e0', star: true, grav: -4 });
-      if (k === 17) g.audio.play('gem');
       yield sc.wait(0.12);
     }
     sc.shine = null;
