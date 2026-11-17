@@ -3,7 +3,7 @@ import { UPGRADES, GIFTS, CHARACTERS, LAYERS, MAX_DEPTH, HP_MAX, SUPPLIES } from
 import { ICON_URL, DOG, POPI, charPortrait } from './sprites.js';
 import { fmtMoney } from './util.js';
 import { MusicDirector, GEN } from './music.js';
-import { SFX_LIST, sfxVolOf, setSfxTune } from './audio.js';
+import { SFX_LIST } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -59,12 +59,6 @@ export class UI {
     // escuchar las canciones y los efectos de sonido desde Configuración
     $('s-songs').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-songs', true); this.refreshSongs(); });
     $('s-sfx').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-sfx', true); this.buildSfxList(); });
-    $('sfx-copy').addEventListener('click', () => {
-      const txt = this.sfxTuneText();
-      const fail = () => { $('sfx-tune').select(); this.toast('Seleccioné el texto: copialo a mano', 'warn'); };
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => this.toast('Copiado: pegámelo en el chat', 'good'), fail);
-      else fail();
-    });
     $('sfx-ok').addEventListener('click', () => { sub('screen-sfx', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
     // jugar online
     const net = game.net;
@@ -168,14 +162,11 @@ export class UI {
     $('songs-now').textContent = now + (a.musicOn ? '' : ' (la música está apagada)');
   }
 
-  /** lista numerada de todos los efectos de sonido, para escucharlos uno por uno (tal como suenan
-   *  en el juego), cada uno con su barrita de volumen para afinarlo a oído */
+  /** lista numerada de todos los efectos de sonido, para escucharlos uno por uno (tal como suenan en el juego) */
   buildSfxList() {
     const a = this.g.audio, list = $('sfx-list');
     list.innerHTML = '';
     SFX_LIST.forEach(([key, desc], i) => {
-      const cell = document.createElement('div');
-      cell.className = 'sfx-cell';
       const b = document.createElement('button');
       b.className = 'btn small alt sfx';
       b.innerHTML = `<b>${i + 1}.</b> ${desc}`;
@@ -184,31 +175,9 @@ export class UI {
         if (!a.sfxOn) { a.setSfx(true); this.refreshAudioBtns(); }
         a.preview(key);
       });
-      const vol = document.createElement('label');
-      vol.className = 'tune-vol';
-      const r = document.createElement('input');
-      r.type = 'range'; r.min = '0'; r.max = '200'; r.step = '5';
-      r.value = String(Math.round(sfxVolOf(key) * 100));
-      const out = document.createElement('output');
-      out.textContent = r.value + '%';
-      r.addEventListener('input', () => { out.textContent = r.value + '%'; setSfxTune(key, Number(r.value) / 100); this.showSfxTune(); });
-      // al soltar la barrita suena, para escuchar cómo quedó
-      r.addEventListener('change', () => { a.unlock(); a.preview(key); });
-      vol.append(r, out);
-      cell.append(b, vol);
-      list.appendChild(cell);
+      list.appendChild(b);
     });
-    this.showSfxTune();
   }
-
-  /** texto con los volúmenes de efectos que no están al 100% (para copiarlo y pasarlo) */
-  sfxTuneText() {
-    const rows = [];
-    SFX_LIST.forEach(([key, desc], i) => { const v = sfxVolOf(key); if (Math.abs(v - 1) > 0.001) rows.push(`${i + 1}. ${desc}: ${Math.round(v * 100)}%`); });
-    return 'Volúmenes de efectos: ' + (rows.length ? rows.join(', ') : 'todos al 100%');
-  }
-
-  showSfxTune() { $('sfx-tune').value = this.sfxTuneText(); }
 
   /** pantalla de jugar online: muestra el menú o el estado de la sala */
   openOnline() {

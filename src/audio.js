@@ -2,16 +2,16 @@ import { MusicDirector, loadGenerated } from './music.js';
 
 // Sonidos chiptune generados con WebAudio (sin archivos).
 
-// volumen de cada efecto (1 = normal), para afinarlo a oído desde el menú Efectos de sonido.
-// SFX_VOL es lo ya afinado; lo que se mueve en el menú se guarda en el navegador y manda sobre esto.
-const SFX_VOL = {};
-const SFX_TUNE_KEY = 'terra-regalos-pan:sfxvol';
-export const sfxTune = (() => { try { return JSON.parse(localStorage.getItem(SFX_TUNE_KEY) || '{}'); } catch { return {}; } })();
-export const sfxVolOf = (name) => sfxTune[name] ?? SFX_VOL[name] ?? 1;
-export function setSfxTune(name, v) {
-  if (Math.abs(v - (SFX_VOL[name] ?? 1)) < 0.001) delete sfxTune[name]; else sfxTune[name] = v;
-  try { localStorage.setItem(SFX_TUNE_KEY, JSON.stringify(sfxTune)); } catch { /* nada */ }
-}
+// volumen de cada efecto en el juego (1 = normal), afinado a oído desde el menú Efectos de sonido
+const SFX_VOL = {
+  dig: 0.25, break: 1.15, clink: 0.4, drill: 0.8, coin: 0.75, bill: 0.3, gold: 0.7, gem: 0.25,
+  chest: 0.65, jump: 0.6, land: 2, jet: 1.6, hurt: 0.45, faint: 0.7, rest: 1.3, torch: 1.2,
+  buy: 0.25, deny: 0.4, ui: 0.6, talk: 1.35, bark: 0.35, surprise: 0.2, paper: 1.35, gate: 0.3,
+  gateShut: 0.35, shutter: 1.25, click: 0.8, fuse: 0.7, boom: 0.4, magic: 0.6, pump: 1.5, squirt: 1.45,
+  splash: 0.65, steam: 0.35, laugh: 0.2, peep: 0.75, charge: 1.2, swoosh: 1.2, throw: 1.2, beam: 0.35,
+  magma: 1.4, flame: 0.35, bossHit: 0.35, thunder: 0.2,
+};
+const sfxVolOf = (name) => SFX_VOL[name] ?? 1;
 
 /** todos los efectos de sonido, con dónde suenan (para el menú "Efectos de sonido") */
 export const SFX_LIST = [
