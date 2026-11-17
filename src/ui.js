@@ -272,18 +272,17 @@ export class UI {
     const px = TWO.flatMap((row, y) => [...row].map((c, x) => (c === '#' ? `<rect x="${x}" y="${y}" width="1" height="1"/>` : ''))).join('');
     const two = document.querySelector('.logo .two');
     two.innerHTML = `<span class="hv"><svg viewBox="-1 -1 7 9" aria-label="2"><g class="sh" transform="translate(0.5 0.6)">${px}</g><g class="fg">${px}</g></svg></span>`;
-    // efecto al pasar el mouse (o tocar): se juega completo una vez y vuelve a quedar como estaba
-    const hover = (el, sound) => {
+    // efecto al pasar el mouse (o tocar): se juega completo una vez y vuelve a quedar como estaba (sin sonido)
+    const hover = (el) => {
       const hv = el.querySelector('.hv');
       el.addEventListener('pointerenter', () => {
         hv.classList.remove('pop'); void hv.offsetWidth; hv.classList.add('pop');
-        if (sound && this.g.audio.ctx) this.g.audio.play(sound);
       });
       hv.addEventListener('animationend', () => hv.classList.remove('pop'));
     };
-    l1.querySelectorAll('.ch:not(.sp)').forEach((el) => hover(el, 'talk'));
-    hover(stamp, 'ui');
-    hover(two, 'coin');
+    l1.querySelectorAll('.ch:not(.sp)').forEach((el) => hover(el));
+    hover(stamp);
+    hover(two);
     // el sello grande que reemplaza al 2: una torta de cumple con ¡25!
     const cake = document.querySelector('.logo .cake');
     const C = (x, y, w, h, c) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"/>`;
@@ -321,13 +320,12 @@ export class UI {
     const tw = gx - 1;
     cake.innerHTML = `<span class="hv"><svg viewBox="0 0 31 30" aria-hidden="true">${cakeSvg}</svg>`
       + `<svg class="num" viewBox="-1 -1 ${tw + 2} 9"><g class="sh" transform="translate(0.5 0.6)">${txt}</g><g class="fg">${txt}</g></svg></span>`;
-    hover(cake, 'coin');
+    hover(cake);
     const box = document.querySelector('.logo-box');
     document.querySelectorAll('.title-gift').forEach((img) => {
       img.src = ICON_URL.giftBig;
       const burst = () => {
         img.classList.remove('pop'); void img.offsetWidth; img.classList.add('pop');
-        if (this.g.audio.ctx) this.g.audio.play('coin');
         const bx = box.getBoundingClientRect(), r = img.getBoundingClientRect();
         for (let i = 0; i < 6; i++) {
           const s = document.createElement('span');
