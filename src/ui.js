@@ -101,7 +101,6 @@ export class UI {
     $('screen-shop').addEventListener('click', (e) => { if (e.target.id === 'screen-shop') game.closeShop(); });
     $('gift-ok').addEventListener('click', () => game.closeGift());
     this.refreshAudioBtns();
-    this.setupDescentTool();
     for (const k of ['music', 'sfx', 'jet']) {
       const el = $('vol-' + k), out = el.nextElementSibling;
       el.value = Math.round(game.audio.vol[k] * 100);
@@ -597,35 +596,6 @@ export class UI {
   // ---------- Mensajes ----------
   /** botón de la pausa para volver a pelear con Aguilus (solo si ya le ganaste) */
   showRematch(on) { $('btn-rematch').classList.toggle('hidden', !on); }
-
-  /** prueba de la bajada de la intro (?bajada): congelar la cámara y moverla con la barrita */
-  setupDescentTool() {
-    if (!/bajada/.test(location.search)) return;
-    this.descentTool = true;
-    const g = this.g, drop = () => g.scene && g.scene.camDrop;
-    $('dt-freeze').addEventListener('click', () => { const d = drop(); if (d) d.frozen = !d.frozen; });
-    $('dt-range').addEventListener('input', () => {
-      const d = drop();
-      if (!d) return;
-      d.frozen = true;
-      d.t = (Number($('dt-range').value) / 1000) * d.dur;
-    });
-    $('dt-restart').addEventListener('click', () => { location.reload(); });
-    for (const ev of ['pointerdown', 'click']) $('descent-tool').addEventListener(ev, (e) => e.stopPropagation());
-  }
-
-  /** cada cuadro: muestra la barrita mientras baja la cámara, con el segundo exacto */
-  updateDescentTool() {
-    if (!this.descentTool) return;
-    const g = this.g, d = g.state === 'intro' && g.scene && g.scene.camDrop;
-    this.show('descent-tool', !!d);
-    if (!d) return;
-    if (!d.frozen) $('dt-range').value = String(Math.round((d.t / d.dur) * 1000));
-    $('dt-freeze').textContent = d.frozen ? 'Seguir ▸' : 'Congelar ❚❚';
-    const pct = Math.round((d.t / d.dur) * 100);
-    const txt = `Bajada: ${d.t.toFixed(2).replace('.', ',')} s de ${d.dur.toFixed(1).replace('.', ',')} s (${pct}%)${d.frozen ? ' · congelada' : ''}`;
-    if ($('dt-info').textContent !== txt) $('dt-info').textContent = txt;
-  }
 
   /** modo recuerdo de las escenas (sepia y bordes de sueño) */
   setFlashback(on) {

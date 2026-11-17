@@ -647,10 +647,3 @@ body.flashback #game { filter: sepia(0.85) saturate(0.85) brightness(1.06) contr
 .sfx-list { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; align-items: start; }
 .sfx-list .sfx { text-align: left; font-size: 13px; padding: 6px 8px; }
 .sfx-list .sfx b { color: #0e2a40; margin-right: 2px; }
-
-/* prueba de la bajada de la intro (?bajada): barrita arriba de todo */
-#descent-tool { position: absolute; left: 50%; top: calc(7vh + 46px); transform: translateX(-50%); z-index: 30; width: min(92vw, 640px);
-  background: rgba(11,8,16,0.85); border: 2px solid var(--ink); padding: 6px 10px; color: var(--cream); font-size: 13px; }
-#descent-tool .dt-row { display: flex; align-items: center; gap: 8px; }
-#descent-tool input { flex: 1; min-width: 0; accent-color: var(--pink); }
-#descent-tool p { margin: 4px 0 0; text-align: center; user-select: text; -webkit-user-select: text; }

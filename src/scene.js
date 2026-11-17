@@ -235,9 +235,8 @@ export class Scene {
     }
     if (this.shine) this.shine.t += dt;
     if (this.camDrop) {
-      // congelada desde la barrita de prueba (?bajada): no avanza ni termina
-      if (this.camDrop.frozen) { /* quieta */ } else this.camDrop.t += dt;
-      if (!this.camDrop.frozen && this.camDrop.t >= this.camDrop.dur) { this.g.zoom = this.camDrop.z1; this.camDrop = null; this.snapCam(); }
+      this.camDrop.t += dt;
+      if (this.camDrop.t >= this.camDrop.dur) { this.g.zoom = this.camDrop.z1; this.camDrop = null; this.snapCam(); }
     }
     if (this.waitFn && this.waitFn()) { this.waitFn = null; this.step(); }
   }
