@@ -1023,14 +1023,29 @@ class Game {
     const st = this.state;
     if (['intro', 'scene', 'remoteScene'].includes(st) && this.scene) {
       if (this.scene.kitOpen) { if (inp.padA || inp.padB || inp.interact) this.ui.closeKit(); }
-      else if (inp.padA) { if (this.scene.noteOpen) document.getElementById('intro-note-ok').click(); else this.scene.advance(); }
+      else if (this.scene.noteOpen) { if (inp.padA || inp.padB) document.getElementById('intro-note-ok').click(); }
+      else if (inp.padA) this.scene.advance();
       if (inp.padStart) this.scene.skip();
       return;
     }
     if (st === 'play' || st === 'descend') return;
+    // lo que se apretó en un menú no pasa al juego si el menú se cierra en este mismo instante
+    // (la B que cierra la pausa no cambia de herramienta; la A de "Seguir" no salta)
+    if (inp.padB) inp.toolPressed = false;
+    if (inp.padA) { inp.jumpPressed = false; inp.jetPressed = false; }
     const screens = [...document.querySelectorAll('.screen:not(.hidden)')];
     const top = screens[screens.length - 1];
     if (!top) return;
+    if (inp.padB) {
+      // B = atrás: toca el botón de volver o cerrar de la pantalla que está arriba (si no tiene, como Escape)
+      const back = this.backButton(top);
+      if (back) back.click();
+      else {
+        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
+        window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Escape', key: 'Escape' }));
+      }
+      return;
+    }
     const items = [...top.querySelectorAll('button, input[type=range], select')]
       .filter((el) => el.offsetParent !== null && !el.disabled && !el.closest('.hidden'));
     if (!items.length) return;
@@ -1047,11 +1062,22 @@ class Game {
       } else this.padFocus(items[(i + inp.padSide + items.length) % items.length]);
     }
     if (inp.padA && el.type !== 'range') el.click();
-    if (inp.padB) {
-      // B = atrás (igual que Escape)
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
-      window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Escape', key: 'Escape' }));
+  }
+
+  /** el botón de volver / cerrar de cada pantalla (para la B del joystick) */
+  backButton(screen) {
+    const ids = {
+      'screen-settings': 'settings-ok', 'screen-controls': 'controls-ok', 'screen-songs': 'songs-ok',
+      'screen-sfx': 'sfx-ok', 'screen-online': 'on-close', 'screen-shop': 'shop-close',
+      'screen-gift': 'gift-ok', 'screen-pause': 'btn-resume',
+    };
+    if (ids[screen.id]) return document.getElementById(ids[screen.id]);
+    if (screen.id === 'screen-msg') {
+      // los avisos: "Cancelar" (o el botón secundario) si hay; si tiene un solo botón, ese
+      const btns = [...screen.querySelectorAll('#msg-btns button')];
+      return btns.find((b) => b.classList.contains('alt')) || (btns.length === 1 ? btns[0] : null);
     }
+    return null;
   }
 
   padFocus(el) {
