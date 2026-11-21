@@ -3,6 +3,7 @@ import {
   TILE, SURFACE, WORLD_W, WORLD_H, DEFAULT_SEED, UPGRADES, ITEMS, GIFTS, HP_MAX,
   DEATH_MONEY_PENALTY, ENDING_TEXT, CHARACTERS, BRUSH_R, SUPPLIES, TORCH, DIG,
   CORE_ROW, BOTTOM_ROW,
+  JET_MODE, JET_HOVER,
 } from './config.js';
 import { initTiles, T } from './tiles.js';
 import { hash2 } from './rng.js';
@@ -52,7 +53,8 @@ function computeStats(u) {
     jetSpeed: v('motor').s,
     jetCost: v('motor').e,
     glide: v('motor').g,
-    hover: v('motor').h || 0,
+    hover: JET_MODE === 'hover' ? 0 : v('motor').h || 0, // modo vuelo con E (solo en el jetpack clásico)
+    jet: JET_HOVER[u.motor] || JET_HOVER[0],          // jetpack nuevo: velocidades y manejo del nivel
     lightR: v('casco'),
     reach: DIG.reachMult * (1 + DIG.reachPerUpgrade * (u.pala + u.ancho)),
   };
@@ -844,9 +846,16 @@ class Game {
         if (inp.interact) this.openShop();
         this.tip('shop', 'Este es el Taller rodante: por la ventanita se compran las mejoras');
       } else {
-        // modo vuelo del jetpack (últimos niveles): E lo prende y lo apaga
-        this.ui.setActButton(this.stats.hover ? (p.hovering ? 'ATERRIZAR' : 'VOLAR') : null);
-        if (inp.interact && this.stats.hover) p.toggleHover();
+        if (JET_MODE === 'hover') {
+          // jetpack nuevo: en el aire, E / X / APAGAR lo apaga
+          const jetOn = p.hovering && !p.onGround;
+          this.ui.setActButton(jetOn ? 'APAGAR' : null);
+          if (inp.interact && jetOn) p.jetOff();
+        } else {
+          // modo vuelo del jetpack clásico (últimos niveles): E lo prende y lo apaga
+          this.ui.setActButton(this.stats.hover ? (p.hovering ? 'ATERRIZAR' : 'VOLAR') : null);
+          if (inp.interact && this.stats.hover) p.toggleHover();
+        }
         if (p.resting && (p.energy < this.stats.energyMax - 0.5 || p.hp < HP_MAX - 0.5)) this.ui.setPrompt('Descansando... ♥');
         else this.ui.setPrompt(null);
       }
@@ -981,13 +990,19 @@ class Game {
     if (p.x > 27 * TILE && p.depth < 2) {
       this.tip('dig', 'Cavá en el cantero del medio del patio: ' + this.ui.hint('click hacia donde quieras (o J + dirección)', 'stick derecho hacia donde quieras (o stick izquierdo abajo)', 'joystick abajo o CAVAR'));
     }
-    if (p.depth > 14) this.tip('jet', `Para subir: mantené ${this.ui.hint('Espacio', 'A', 'SALTAR')} y volás con el jetpack`);
+    const jump = this.ui.hint('Espacio', 'A', 'SALTAR');
+    if (p.depth > 14) this.tip('jet', JET_MODE === 'hover'
+      ? `Jetpack: en el aire, tocá ${jump} otra vez y quedás flotando. Mantené ${jump} (o arriba) para subir`
+      : `Para subir: mantené ${jump} y volás con el jetpack`);
+    if (JET_MODE === 'hover' && p.hovering && p.depth > 4) this.tip('jetoff', `Con el jetpack prendido te movés para todos lados. Para apagarlo en el aire: ${this.ui.hint('E', 'X', 'APAGAR')}`);
     if (p.energy < this.stats.energyMax * 0.3 && p.depth > 4) this.tip('energy', 'Energía baja: volvé al departamento a descansar');
     if (this.money >= 60 && this.upgrades.pala === 0) this.tip('afford', '¡Ya te alcanza para mejorar la pala en el Taller!');
     if (p.depth > 30) this.tip('torch', this.ui.hint('Tip: en el Taller venden antorchas (se ponen con T)', 'Tip: en el Taller venden antorchas (se ponen con Y)', 'Tip: en el Taller venden antorchas para iluminar'));
     if (p.depth > 990) this.tip('lava', 'Cuidado con la lava: quema, y si cavás por debajo se derrama');
     if (this.stats.hover && p.depth > 4) this.tip('hover', `Tu jetpack tiene modo vuelo: ${this.ui.hint('apretá E', 'apretá X', 'tocá VOLAR')} para prenderlo o apagarlo`);
-    if (p.depth > 40) this.tip('fall', this.ui.hint('Ojo con las caídas: mantené S para bajar despacio con el jetpack', 'Ojo con las caídas: mantené LT para bajar despacio con el jetpack', 'Ojo con las caídas: para bajar despacio mantené SALTAR + joystick abajo'));
+    if (p.depth > 40) this.tip('fall', JET_MODE === 'hover'
+      ? `Ojo con las caídas: si venís cayendo, tocá ${jump} y el jetpack te frena`
+      : this.ui.hint('Ojo con las caídas: mantené S para bajar despacio con el jetpack', 'Ojo con las caídas: mantené LT para bajar despacio con el jetpack', 'Ojo con las caídas: para bajar despacio mantené SALTAR + joystick abajo'));
   }
 
   /** destellos de los minerales de las capas profundas (se ven aunque esté oscuro) */

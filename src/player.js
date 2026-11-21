@@ -1,4 +1,4 @@
-import { TILE, WORLD_W, EDGE, PHYS, DIG, CRYSTAL_DIG, BRUSH_R, HP_MAX, REST, HOVER, LAVA, BOSS } from './config.js';
+import { TILE, WORLD_W, EDGE, PHYS, DIG, CRYSTAL_DIG, BRUSH_R, HP_MAX, REST, HOVER, LAVA, BOSS, JET_MODE, JET_COST } from './config.js';
 import { DEF, T, isDiggable, hardness } from './tiles.js';
 import { getCharFrames, drawArmShovel, drawDrill, drawWaterGun, drawBareArm, CHAR_W, CHAR_H } from './sprites.js';
 import { HOME_ZONE, SHOP_ZONE, SPAWN, inZone } from './structures.js';
@@ -19,6 +19,19 @@ const MAT_FX = {
   14: { dust: ['rgba(160,152,138,0.7)', 'rgba(196,188,172,0.6)'], maxPuffs: 8 },                       // grava
   15: { dust: ['rgba(30,24,40,0.6)', 'rgba(60,40,50,0.5)'], maxPuffs: 4, spark: ['#ff8a3d', '#ffd34d', '#ffffff'] }, // obsidiana
 };
+
+/** acerca `v` a `target` a razón de `rate` por segundo */
+function approach(v, target, rate, dt) {
+  return v < target ? Math.min(target, v + rate * dt) : Math.max(target, v - rate * dt);
+}
+
+/** jetpack nuevo: qué tan rápido cambia la velocidad. Si venís más rápido que el tope (`max`), frena fuerte;
+ *  soltando o yendo para el otro lado, un poco más que acelerar; si no, el manejo del nivel */
+function jetRate(v, target, max, J) {
+  if (Math.abs(v) > max * 1.05) return J.brake;
+  if (target === 0 || Math.sign(target) !== Math.sign(v)) return J.acc * 1.3;
+  return J.acc;
+}
 
 export class Player {
   constructor(game, charId, ai = null) {
@@ -57,7 +70,7 @@ export class Player {
     this.dead = false;
     this.restFx = 0;
     this.jetFx = 0;
-    this.hovering = false;    // modo vuelo del jetpack (últimos niveles)
+    this.hovering = false;    // jetpack prendido, flotando (jetpack nuevo); en el clásico, el modo vuelo de los últimos niveles
     this.burnT = 0;           // para mostrar de a ratos el daño de la lava
     this.burnAcc = 0;
     this.jetFuel = 0;         // en la pelea el jetpack dura poquito
@@ -65,6 +78,16 @@ export class Player {
     this.gunCd = 0; this.gunKick = 0;
     this.downed = false;      // pelea: se quedó sin vida y espera que el otro lo levante
     this.revive = 0;          // barrita de revivir (0 a 1)
+  }
+
+  /** el jetpack nuevo ('hover'): en la pelea y para el compañero automático sigue el clásico */
+  usesHoverJet(arena) { return JET_MODE === 'hover' && !arena && !this.bot; }
+
+  /** jetpack nuevo: apagarlo en el aire (E / X / APAGAR) */
+  jetOff() {
+    if (!this.hovering) return;
+    this.hovering = false;
+    this.game.audio.play('ui');
   }
 
   toggleHover() {
@@ -138,7 +161,7 @@ export class Player {
       const d = Math.hypot(x, y);
       return { x: x / d, y: y / d };
     }
-    if (inp.stickDown) {
+    if (inp.stickDown && !(this.hovering && !this.onGround && this.usesHoverJet(!!this.game.boss?.fighting))) {
       // joystick abajo solo (o en diagonal hacia abajo); en el teclado, S es para bajar despacio
       if (inp.sy > 0.55) { const d = Math.hypot(inp.sx, inp.sy); return { x: inp.sx / d, y: inp.sy / d }; }
       return { x: 0, y: 1 };
@@ -254,20 +277,43 @@ export class Player {
 
     // ---- movimiento horizontal ----
     this.sprinting = !!inp.sprint && walkIx !== 0;
-    if (this.hovering && (!st.hover || arena)) this.hovering = false;
-    const H = this.hovering ? HOVER[st.hover] : null;
-    const want = H ? walkIx * H.h * (this.sprinting ? 1.35 : 1)
-      : walkIx * PHYS.walk * (this.flying ? 1.12 : 1) * (this.sprinting ? PHYS.sprintMult : 1);
-    const acc = H ? H.acc : this.onGround ? PHYS.accelGround : PHYS.accelAir;
-    if (this.vx < want) this.vx = Math.min(want, this.vx + acc * dt);
-    else this.vx = Math.max(want, this.vx - acc * dt);
+    const hoverJet = this.usesHoverJet(arena);
+    if (this.hovering && !hoverJet && (!st.hover || arena)) this.hovering = false;
+    // J: jetpack nuevo prendido · H: modo vuelo del jetpack clásico
+    const J = hoverJet && this.hovering ? st.jet : null;
+    const H = !hoverJet && this.hovering ? HOVER[st.hover] : null;
+    if (J) {
+      // flotando: el manejo responde según el nivel; si venís muy rápido, frena más fuerte
+      const want = walkIx * J.h * (this.sprinting ? 1.35 : 1);
+      this.vx = approach(this.vx, want, jetRate(this.vx, want, J.h * 1.4, J), dt);
+    } else {
+      const want = H ? walkIx * H.h * (this.sprinting ? 1.35 : 1)
+        : walkIx * PHYS.walk * (this.flying ? 1.12 : 1) * (this.sprinting ? PHYS.sprintMult : 1);
+      const acc = H ? H.acc : this.onGround ? PHYS.accelGround : PHYS.accelAir;
+      if (this.vx < want) this.vx = Math.min(want, this.vx + acc * dt);
+      else this.vx = Math.max(want, this.vx - acc * dt);
+    }
 
     // ---- salto y jetpack ----
     this.jumpT += dt;
     const wasFlying = this.flying;
     this.flying = false;
     const inLava = this.game.world.lavaInRect(this.x, this.y, this.w, this.h) > 0;
-    if (H) {
+    let jetIy = 0;
+    if (J) {
+      // jetpack nuevo prendido: sin gravedad; arriba (o mantener saltar) sube, abajo baja y suelto queda flotando quieto
+      jetIy = (inp.up || inp.jump ? -1 : 0) + (inp.down || inp.glide ? 1 : 0);
+      const spr = this.sprinting ? 1.35 : 1;
+      const wantV = jetIy < 0 ? -J.up * spr : jetIy > 0 ? J.down * spr : 0;
+      this.vy = approach(this.vy, wantV, jetRate(this.vy, wantV, this.vy > 0 ? J.down : J.up, J), dt);
+      this.flying = true;
+      this.jetFlame(dt);
+      const moving = jetIy !== 0 || walkIx !== 0;
+      const cost = jetIy < 0 ? JET_COST.up : moving ? JET_COST.move : JET_COST.idle;
+      if (!st.infEnergy) this.energy = Math.max(0, this.energy - st.jetCost * cost * dt);
+      if (this.energy <= 0) { this.hovering = false; this.note('¡Sin energía para volar!', 'nojet'); }
+      this.peakY = this.y;
+    } else if (H) {
       // modo vuelo: sin gravedad, se mueve para donde apuntes y frena enseguida
       const iy = (inp.up || inp.jump ? -1 : 0) + (inp.down ? 1 : 0);
       const wantV = iy * H.v * (this.sprinting ? 1.35 : 1);
@@ -281,6 +327,14 @@ export class Player {
       }
       this.peakY = this.y;
     } else {
+      // jetpack nuevo: tocar saltar de nuevo en el aire lo prende (frena de a poco y quedás flotando)
+      if (hoverJet && inp.jumpPressed && !this.onGround && !inLava && g.kitGiven) {
+        if (this.energy > 0) {
+          this.hovering = true;
+          this.peakY = this.y;
+          g.audio.play('jump');
+        } else this.note('¡Sin energía para volar!', 'nojet');
+      }
       if (inp.jumpPressed && (this.onGround || inLava)) {
         this.vy = -PHYS.jump * (inLava ? 0.8 : 1);
         this.onGround = false;
@@ -289,7 +343,7 @@ export class Player {
       }
       this.vy = Math.min(this.vy + PHYS.gravity * dt, inLava ? 45 : PHYS.maxFall);
       // sin el equipo de Carlos tampoco hay jetpack (en la pelea siempre hay)
-      const wantJet = inp.jump && !this.onGround && (this.jumpT > 0.17 || this.vy > -30) && (g.kitGiven || arena);
+      const wantJet = !hoverJet && inp.jump && !this.onGround && (this.jumpT > 0.17 || this.vy > -30) && (g.kitGiven || arena);
       // descenso controlado (S solo, o Espacio + abajo): frena la caída para bajar
       // por el pozo sin lastimarse, y no gasta energía; con cada mejora baja más despacio
       const glide = !this.onGround && (g.kitGiven || arena) && ((inp.glide && this.vy > 20) || (wantJet && inp.down));
@@ -328,6 +382,7 @@ export class Player {
     }
     this.onGround = this.vy >= 0 && this.collides(this.x, this.y + 1);
     if (arena && this.onGround) this.jetFuel = BOSS.jetTime;
+    if (J && this.onGround && jetIy >= 0 && this.hovering) this.hovering = false; // aterrizó: se apaga solo
     if (this.onGround) {
       if (!wasGround) this.land();
       this.vy = 0;

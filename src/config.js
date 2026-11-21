@@ -39,7 +39,31 @@ export const PHYS = {
   sprintMult: 1.7,       // Shift: correr (también volando)
 };
 
-// Modo vuelo del jetpack (se prende y apaga con E): h/v = velocidad, acc = qué tan rápido responde
+// ---- Jetpack ----
+// 'hover' (el nuevo): saltar en el piso salta; tocarlo de nuevo en el aire prende el jetpack, que frena de a poco
+//   y te deja flotando quieto; ahí te movés para arriba, abajo y a los costados. Se apaga solo al tocar el piso,
+//   al quedarte sin energía, o con E / X / APAGAR en el aire.
+// 'clasico' (el de antes, guardado de respaldo): mantener saltar empuja para arriba con gravedad, S baja despacio,
+//   y los dos últimos niveles traen el modo vuelo con E (HOVER, abajo).
+export const JET_MODE = 'hover';
+// jetpack nuevo, por nivel de la mejora Jetpack: h = velocidad a los costados, up / down = para subir y bajar,
+// acc = qué tan rápido responde el manejo, brake = qué tan fuerte frena si venís más rápido que eso
+// (por ejemplo cayendo, al prenderlo). Subir va a la misma velocidad que el jetpack de antes en cada nivel.
+export const JET_HOVER = [
+  { h: 70, up: 85, down: 90, acc: 230, brake: 600 },
+  { h: 80, up: 115, down: 105, acc: 300, brake: 700 },
+  { h: 92, up: 150, down: 120, acc: 390, brake: 820 },
+  { h: 105, up: 190, down: 140, acc: 500, brake: 950 },
+  { h: 120, up: 235, down: 160, acc: 650, brake: 1100 },
+  { h: 135, up: 290, down: 185, acc: 850, brake: 1300 },
+  { h: 160, up: 350, down: 220, acc: 1300, brake: 1700 },
+  { h: 210, up: 420, down: 270, acc: 2600, brake: 2800 },
+];
+// cuánto gasta el jetpack nuevo (multiplica la energía por segundo del nivel): subiendo, moviéndote
+// a los costados o para abajo, o flotando quieto
+export const JET_COST = { up: 1, move: 0.7, idle: 0.4 };
+
+// Modo vuelo del jetpack clásico (se prende y apaga con E): h/v = velocidad, acc = qué tan rápido responde
 export const HOVER = [
   null,
   { h: 120, v: 150, acc: 900 },   // anteúltimo nivel: vuelo estable y manejable
@@ -160,13 +184,15 @@ export const UPGRADES = [
     // s = velocidad, e = energía por segundo, g = velocidad al bajar despacio (S),
     // h = modo vuelo con E (1: estable, 2: rapidísimo; ver HOVER)
     id: 'motor', name: 'Jetpack', icon: 'rocket',
-    desc: 'Volás más rápido, gastás menos energía y bajás más despacio con S. Los últimos niveles traen modo vuelo (E).',
+    desc: JET_MODE === 'hover'
+      ? 'Más velocidad y mejor manejo en el aire, y gastás menos energía. Flotando quieto gasta menos que moviéndote.'
+      : 'Volás más rápido, gastás menos energía y bajás más despacio con S. Los últimos niveles traen modo vuelo (E).',
     levels: [
       [{ s: 85, e: 6, g: 60 }, 0], [{ s: 115, e: 4.6, g: 52 }, 260], [{ s: 150, e: 3.5, g: 45 }, 1200], [{ s: 190, e: 2.6, g: 38 }, 4300],
       [{ s: 235, e: 1.9, g: 31 }, 13000], [{ s: 290, e: 1.3, g: 25 }, 30000], [{ s: 350, e: 0.8, g: 20, h: 1 }, 60000],
       [{ s: 420, e: 0.5, g: 15, h: 2 }, 120000],
     ],
-    label: (v) => (v.h ? `Modo vuelo${v.h === 2 ? ' turbo' : ''} (E) · Vel. ${v.s}` : `Vel. ${v.s} · ${String(v.e).replace('.', ',')}/seg`),
+    label: (v) => (JET_MODE !== 'hover' && v.h ? `Modo vuelo${v.h === 2 ? ' turbo' : ''} (E) · Vel. ${v.s}` : `Vel. ${v.s} · ${String(v.e).replace('.', ',')}/seg`),
     tiers: ['Jetpack básico', 'Jetpack sport', 'Jetpack turbo', 'Jetpack a reacción', 'Cohete', 'Cohete supersónico', 'Cohete estelar', 'Nave del núcleo'],
   },
   {

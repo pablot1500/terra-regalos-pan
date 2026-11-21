@@ -28,19 +28,21 @@ Para probarlo en el celular, conectá el celu a la misma red Wi-Fi y abrí `http
 |---|---|---|
 | Caminar | A / D o ← → | Joystick (aparece donde apoyás el pulgar en la mitad izquierda) |
 | Correr (también volando) | Shift | Joystick a fondo |
-| Saltar · volar con el jetpack | Espacio o W (mantener) | SALTAR (mantener) |
-| Bajar despacio con el jetpack (no gasta energía) | S o ↓ (mantener) | SALTAR + joystick abajo |
+| Saltar | Espacio o W | SALTAR |
+| Prender el jetpack (en el aire: frena de a poco y quedás flotando) | Espacio o W otra vez en el aire | SALTAR otra vez en el aire |
+| Moverse con el jetpack prendido | W / S / A / D o flechas (mantener Espacio también sube) | Joystick para todos lados (mantener SALTAR también sube) |
+| Apagar el jetpack en el aire (se apaga solo al tocar el piso) | E | Botón APAGAR |
+| Bajar despacio sin jetpack (no gasta energía) | S o ↓ (mantener) | — |
 | Cavar hacia abajo | Click abajo o J + S | Joystick abajo |
 | Cavar en cualquier dirección | Click (apuntando con el mouse) | Tocar y mantener sobre el juego (cava hacia el dedo) o CAVAR + joystick (360°) |
 | Cavar con teclado | J + W/A/S/D (8 direcciones) | — |
 | Poner antorcha | T | Botón de antorcha |
 | Comprar en el taller (parado frente a la ventanita) | E | Botón TALLER |
-| Prender/apagar el modo vuelo (últimos niveles del jetpack) | E | Botón VOLAR |
 | Cavado automático (un click empieza, otro frena) | B o botón AUTO | Botón AUTO + toque en CAVAR |
 | Música / sonidos | M / N o los botones de arriba | Botones de arriba |
 | Pausa | Esc | Botón ❚❚ |
 
-**Con joystick** (Xbox, PlayStation o cualquier control estándar, en compu, celu o tablet): stick izquierdo o cruz para caminar (abajo cava para abajo), stick derecho para cavar hacia ese lado (y en la pelea, para apuntar y tirar agua), A saltar/volar, RT cavar o disparar, LT bajar despacio, X o B para la E (taller, Popi, vuelo, revivir), Y antorcha, LB cavado automático, Start pausa. En los menús, la cruz mueve, A aprieta y B vuelve; en las escenas, A pasa los diálogos y Start las salta. Con joystick, el botón enfocado se ilumina con un brillo suave; en el taller, después de comprar el foco se queda en el mismo botón (o pasa al más cercano que se pueda comprar), y el botón de saltar las escenas avisa que se salta con Start. Los movimientos "fantasma" del mouse (cuando algo cambia debajo del cursor sin moverlo) no cuentan como pasar al mouse. Cuando se juega con joystick, los carteles y tips ("Apretá X para hablar con Carlos", antorchas con Y, etc.), el taller y la pantalla de Controles muestran los botones del control; si se vuelve a tocar el teclado o la pantalla, vuelven las teclas o los botones táctiles.
+**Con joystick** (Xbox, PlayStation o cualquier control estándar, en compu, celu o tablet): stick izquierdo o cruz para caminar (abajo cava para abajo), stick derecho para cavar hacia ese lado (y en la pelea, para apuntar y tirar agua), A saltar (en el aire, A otra vez prende el jetpack y con el stick te movés para todos lados), RT cavar o disparar, LT bajar despacio, X o B para la E (taller, Popi, apagar el jetpack, revivir), Y antorcha, LB cavado automático, Start pausa. En los menús, la cruz mueve, A aprieta y B vuelve; en las escenas, A pasa los diálogos y Start las salta. Con joystick, el botón enfocado se ilumina con un brillo suave; en el taller, después de comprar el foco se queda en el mismo botón (o pasa al más cercano que se pueda comprar), y el botón de saltar las escenas avisa que se salta con Start. Los movimientos "fantasma" del mouse (cuando algo cambia debajo del cursor sin moverlo) no cuentan como pasar al mouse. Cuando se juega con joystick, los carteles y tips ("Apretá X para hablar con Carlos", antorchas con Y, etc.), el taller y la pantalla de Controles muestran los botones del control; si se vuelve a tocar el teclado o la pantalla, vuelven las teclas o los botones táctiles.
 
 En iPhone/iPad conviene agregarlo a la pantalla de inicio (Compartir → Agregar a pantalla de inicio) para jugar en pantalla completa. En iPad los botones son más grandes.
 
@@ -79,7 +81,8 @@ En iPhone/iPad conviene agregarlo a la pantalla de inicio (Compartir → Agregar
   - **Pala ancha**: cava más bloques por palazo.
   - **Batería**: más energía (el último nivel es infinita).
   - **Armadura**: menos daño por caídas (el anteúltimo nivel te hace inmune; el último además baja 80% el daño de la lava).
-  - **Jetpack**: volar más rápido, gastar menos energía y bajar más despacio con S. El anteúltimo nivel trae **modo vuelo** (E): sin gravedad, se maneja fácil para arriba, abajo y a los costados; el último lo hace rapidísimo.
+  - **Jetpack**: en el aire, tocar saltar otra vez lo prende: si venías cayendo frena de a poco (no de golpe) y quedás flotando quieto; desde ahí te movés para arriba, abajo y a los costados. Se apaga solo al tocar el piso, al quedarte sin energía o con E / X / APAGAR. Cada nivel sube más rápido (las mismas velocidades del jetpack de antes: 85 → 420), se mueve más rápido a los costados (70 → 210) y responde más: al principio cuesta un poco arrancar y frenar, y el último es rapidísimo y precisísimo (como el modo vuelo turbo de antes). Consumo: flotando quieto gasta el 40% de la energía por segundo del nivel, moviéndote a los costados o para abajo el 70% y subiendo el 100%. Los valores están en `JET_HOVER` y `JET_COST` (`src/config.js`).
+  - **Jetpack de antes (respaldo):** sigue en el código. Con `JET_MODE = 'clasico'` en `src/config.js` vuelve: mantener saltar empuja para arriba con gravedad, S baja despacio y los dos últimos niveles traen el modo vuelo con E. En la pelea con Aguilus (jetpack cortito y techo) y para el compañero automático se sigue usando el de antes.
   - **Casco de minero**: la lámpara ilumina más lejos bajo tierra.
   - Cada mejora de la pala/taladro y de la pala ancha también suma un poco de alcance para cavar.
 - **Popi**, el perro salchicha, se coló en el auto: ya con el equipo de Carlos, la primera vez que pasan por el cantero (aunque sea saltando o volando por encima) el arbusto grande (a la derecha del arbolito) se mece, sale Popi de un salto y se suma a la aventura. Ahí se abre el Taller. Si llegaron abajo sin pasar por las escenas (por ejemplo, probando la pelea desde la pausa), ya tienen el equipo y Popi los espera en el patio. Después lo pueden dejar en el patio y volver a buscarlo (acercate y apretá E, o desde el taller): con casquito y mini jetpack te sigue solo (camina, salta y vuela), te ayuda a cavar los bloques de al lado al 25% de tu ritmo, y no gasta energía ni se lastima.
