@@ -19,7 +19,8 @@ import { Popi } from './popi.js';
 import { Scene } from './scene.js';
 import { introScript, popiScript, carlosScript, eagletScript, carlosGunScript, lavaScript } from './intro.js';
 import { Eaglets } from './eaglets.js';
-import { playChestOpen } from './chestopen.js';
+import { playChestOpen, stopChestOpen } from './chestopen.js';
+import { hideCutin } from './cutin.js';
 import { Boss } from './boss.js';
 import { BuddyAI } from './buddy.js';
 import { Chatter } from './chatter.js';
@@ -311,6 +312,9 @@ class Game {
     this.scene = new Scene(this, script, {
       onSkip,
       onEnd: (skipped, sc) => {
+        // si saltearon la escena en medio de un primer plano, del cofre o del cartel del regalo
+        hideCutin(); stopChestOpen(); this.ui.show('sunset', false);
+        if (this.ui.giftCb) { this.ui.giftCb = null; this.ui.show('screen-gift', false); }
         this.scene = null;
         this.ui.setIntro(false);
         this.ui.show('hud', true);
@@ -350,7 +354,7 @@ class Game {
       this.state = 'title-done'; // sin la bajada de cámara del título: directo a la escena
       this.continueGame();
     }
-    for (const id of ['screen-settings', 'screen-pause', 'screen-controls', 'screen-songs', 'screen-sfx']) this.ui.show(id, false);
+    for (const id of ['screen-settings', 'screen-pause', 'screen-controls', 'screen-songs', 'screen-sfx', 'screen-giftart']) this.ui.show(id, false);
     if (this.state === 'paused') this.resume();
     if (this.state !== 'play') return;
     if (!this.openedGifts.includes(1)) { this.toast('Primero abrí el primer regalo', null, 'warn'); return; }
@@ -1173,7 +1177,7 @@ class Game {
   backButton(screen) {
     const ids = {
       'screen-settings': 'settings-ok', 'screen-controls': 'controls-ok', 'screen-songs': 'songs-ok',
-      'screen-sfx': 'sfx-ok', 'screen-online': 'on-close', 'screen-shop': 'shop-close',
+      'screen-sfx': 'sfx-ok', 'screen-giftart': 'giftart-ok', 'screen-online': 'on-close', 'screen-shop': 'shop-close',
       'screen-gift': 'gift-ok', 'screen-pause': 'btn-resume',
     };
     if (ids[screen.id]) return document.getElementById(ids[screen.id]);

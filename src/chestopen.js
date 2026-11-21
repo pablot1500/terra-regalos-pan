@@ -56,9 +56,10 @@ let running = null;
 
 /**
  * Muestra la apertura del cofre y llama a `onReveal` en el momento del destello (para mostrar el cartel detrás).
- * `audio` es el de juego (para los golpes y el destello).
+ * `audio` es el de juego (para los golpes y el destello). Con `empty`, el cofre está vacío: se abre, sale
+ * un poco de polvo, no hay destello, y se queda un ratito mostrando que no hay nada.
  */
-export function playChestOpen(audio, onReveal) {
+export function playChestOpen(audio, onReveal, { empty = false } = {}) {
   if (running) running.stop(false);
   const root = document.getElementById('chest-open');
   const cv = root.querySelector('canvas'), flash = root.querySelector('.co-flash');
@@ -92,15 +93,22 @@ export function playChestOpen(audio, onReveal) {
     }
     if (t >= BURST && step === 3) {
       step = 4;
-      audio.play('chest'); audio.play('magic');
-      burst(60, 60, ['#ffffff', '#ffd34d', '#ff9ccc', '#8fe9ff', '#fff0a0']);
+      if (empty) {
+        // vacío: un "clonc" y polvo gris
+        audio.play('clink'); audio.play('deny');
+        for (let i = 0; i < 26; i++) parts.push({ x: CX + (Math.random() - 0.5) * 20, y: CY - 6 * S, vx: (Math.random() - 0.5) * 20, vy: -8 - Math.random() * 14, life: 0.8 + Math.random() * 0.6, col: Math.random() < 0.5 ? '#8a8090' : '#5d5560' });
+      } else {
+        audio.play('chest'); audio.play('magic');
+        burst(60, 60, ['#ffffff', '#ffd34d', '#ff9ccc', '#8fe9ff', '#fff0a0']);
+      }
     }
-    // destello: sube de golpe, y cuando ya aparece el cartel se va despacito
+    // destello: sube de golpe, y cuando ya aparece el cartel se va despacito (vacío: sin destello)
+    const end = empty ? END + 1.1 : END;
     let fl = 0;
-    if (t >= BURST) fl = Math.min(1, (t - BURST) / 0.12);
-    if (t >= END) fl = Math.max(0, 1 - (t - END) / FADE);
+    if (!empty && t >= BURST) fl = Math.min(1, (t - BURST) / 0.12);
+    if (!empty && t >= end) fl = Math.max(0, 1 - (t - end) / FADE);
     flash.style.opacity = fl.toFixed(3);
-    if (t >= END && !revealed) {
+    if (t >= end && !revealed) {
       revealed = true;
       root.classList.add('out'); // el fondo oscuro se va: queda el destello arriba del cartel
       onReveal && onReveal();
@@ -118,7 +126,7 @@ export function playChestOpen(audio, onReveal) {
     if (since < 0.18) dy -= Math.sin((since / 0.18) * Math.PI) * (2 + step);
     const shake = step < 4 && t > 0.6 && t < BURST ? Math.round(Math.sin(t * 60) * (k * 0.8)) : 0;
     // rayos (cada vez más fuertes)
-    if (step) {
+    if (step && !(empty && step >= 4)) {
       const cyR = CY - 6 * S + dy, len = 22 + k * 10 + (step >= 4 ? 10 : 0);
       rays(x, CX, cyR, 12, len, t * 0.6, 0.18 + k * 0.3, '#ffe38a');
       rays(x, CX, cyR, 12, len, -t * 0.4 + 0.26, 0.1 + k * 0.2, '#ff9ccc');
@@ -126,8 +134,11 @@ export function playChestOpen(audio, onReveal) {
     x.save();
     x.translate(Math.round(CX - 7.5 * S) + shake, Math.round(CY - 11 * S + dy));
     x.scale(S, S);
-    if (step >= 4) drawChest(x, 0, 0, 1);
-    else drawChestGap(x, 0, 0, step, k);
+    if (step >= 4) {
+      drawChest(x, 0, 0, 1);
+      // vacío: adentro está oscuro (sin el brillo dorado) y hay una telita de araña
+      if (empty) { x.fillStyle = '#2a1410'; x.fillRect(1, 2, 13, 3); x.fillStyle = '#9a909e'; x.fillRect(2, 2, 1, 1); x.fillRect(3, 3, 1, 1); x.fillRect(4, 2, 1, 1); x.fillRect(3, 2, 1, 1); }
+    } else drawChestGap(x, 0, 0, step, k);
     x.restore();
     // chispas
     for (const p of parts) {
@@ -136,12 +147,15 @@ export function playChestOpen(audio, onReveal) {
       x.fillStyle = p.col; x.fillRect(Math.round(p.x), Math.round(p.y), 1, 1);
     }
     for (let i = parts.length - 1; i >= 0; i--) if (parts[i].life <= 0) parts.splice(i, 1);
-    if (t >= END + FADE) { stop(); return; }
+    if (t >= end + FADE) { stop(); return; }
     raf = requestAnimationFrame(frame);
   };
   raf = requestAnimationFrame(frame);
   running = { stop };
 }
+
+/** corta la apertura si se está mostrando (por ejemplo, si saltean la escena) */
+export function stopChestOpen() { if (running) running.stop(false); }
 
 /** ¿se está mostrando la apertura? */
 export function chestOpening() { return !!running; }

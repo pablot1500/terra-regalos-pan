@@ -3,6 +3,20 @@
 import { getCharFrames, CHAR_PAL, CHAR_W, CHAR_H, drawText, DOG, POPI, ICON_URL, charPortrait, drawDrill, drawWaterGun, drawArmShovel } from './sprites.js';
 import { drawAguilus, aguilusPortrait, AG_H } from './aguilus.js';
 import { eagletFrame } from './eagletart.js';
+import { shoeCanvas } from './giftart.js';
+
+let SHOE_PAIR = null;
+/** las zapatillas chiquitas, para verlas en el piso */
+function shoePairSprite() {
+  if (!SHOE_PAIR) {
+    const s = shoeCanvas(11, 6);
+    const c = document.createElement('canvas'); c.width = s.width + 5; c.height = s.height + 2;
+    const x = c.getContext('2d');
+    x.drawImage(s, 5, 0); x.drawImage(s, 0, 2);
+    SHOE_PAIR = c;
+  }
+  return SHOE_PAIR;
+}
 import { clamp, pixelLine } from './util.js';
 import { TILE, SURFACE } from './config.js';
 import { T } from './tiles.js';
@@ -14,6 +28,8 @@ export const SPEAKERS = {
   popi: { name: 'Popi', icon: () => DOG.happyA.toDataURL() },
   carlos: { name: 'Carlos', icon: () => carlosFace || (carlosFace = charPortrait('carlos', 1).toDataURL()) },
   aguilus: { name: 'Aguilus', icon: () => aguilusPortrait() },
+  // la voz de alguien que no se ve (Aguilus, antes de aparecer): retrato en sombra
+  voz: { name: '???', icon: () => aguilusPortrait(true) },
 };
 
 const ease = (u) => (u < 0.5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2);
@@ -346,6 +362,11 @@ export class Scene {
         const bob = a.target === null && a.ty === null ? Math.round(Math.sin((this.t + a.phase) * 4) * 2) : 0;
         ctx.drawImage(fr, Math.round(snap(a.x) - camX - 7), Math.round(snap(a.y) - camY - 5 + bob));
         continue;
+      } else if (a.kind === 'shoes') {
+        // el par de zapatillas en el piso (las que deja Aguilus)
+        const s = shoePairSprite();
+        ctx.drawImage(s, Math.round(snap(a.x) - camX - s.width / 2), Math.round(snap(a.y) - camY - s.height + 1));
+        continue;
       } else if (a.id === 'popi') {
         // Popi con su casquito: camina, salta o mueve la cola
         const set = POPI[a.facing > 0 ? 'right' : 'left'];
@@ -360,7 +381,7 @@ export class Scene {
       } else if (a.id === 'aguilus') {
         const ox = snap(a.x) - camX, oy = snap(a.y) - camY, rx = Math.round(ox), ry = Math.round(oy);
         ctx.save(); ctx.translate(ox - rx, oy - ry);
-        drawAguilus(ctx, rx, ry, a.facing, a.pose, this.t + a.phase);
+        drawAguilus(ctx, rx, ry, a.facing, a.pose, this.t + a.phase, false, !!a.shoes);
         ctx.restore();
         sx = snap(a.x - CHAR_W / 2) - camX;
         sy = snap(a.y - AG_H) - camY + (a.pose === 'weak' ? 6 : 0);

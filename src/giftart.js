@@ -263,3 +263,156 @@ export function gift2Url() {
   if (!url2) url2 = paintWatchFront().toDataURL();
   return url2;
 }
+
+// ------------------------------------------------------------
+//  Tercer regalo: unas zapatillas blancas de malla, con plateado, rayas y el cuello negro (4 dibujos para elegir)
+// ------------------------------------------------------------
+const GIFT3_KEY = 'terra-regalos-pan:regalo3';
+// el contorno de la capellada (de costado, la punta a la derecha), en proporciones del ancho y el alto
+const UPPER = [[0.04, 0.74], [0.025, 0.3], [0.05, 0.12], [0.1, 0.05], [0.17, 0.12], [0.24, 0.17], [0.3, 0.09], [0.35, 0.06],
+  [0.41, 0.15], [0.5, 0.23], [0.62, 0.32], [0.74, 0.41], [0.86, 0.48], [0.95, 0.56], [0.985, 0.66], [0.97, 0.74]];
+function inPoly(px_, py_, pts) {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const [xi, yi] = pts[i], [xj, yj] = pts[j];
+    if ((yi > py_) !== (yj > py_) && px_ < ((xj - xi) * (py_ - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+/** el borde de arriba de la capellada en la columna u (0..1) */
+function topAt(u) {
+  for (let k = 1; k < UPPER.length - 2; k++) {
+    const [x0, y0] = UPPER[k], [x1, y1] = UPPER[k + 1];
+    if (u >= x0 && u <= x1) return y0 + ((u - x0) / (x1 - x0)) * (y1 - y0);
+  }
+  return 0.06;
+}
+
+/** una zapatilla de costado, de W x H, dibujada en (ox, oy) del contexto x (sin contorno) */
+function shoe(x, ox, oy, W, H) {
+  const SL = ['#f3f5f7', '#d3d9df', '#b0b9c3', '#8b95a0', '#69737e'];
+  const P = (i, j, c) => px(x, ox + i, oy + j, c);
+  const sole0 = Math.round(H * 0.72);
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const u = (i + 0.5) / W, v = (j + 0.5) / H;
+    // suela: blanca, gruesa, con la punta levantada y el taco redondeado; abajo la goma negra
+    const toeLift = u > 0.82 ? ((u - 0.82) / 0.18) ** 2 * 0.16 : 0, heelRound = u < 0.06 ? ((0.06 - u) / 0.06) ** 2 * 0.1 : 0;
+    if (j >= sole0 && v <= 1 - toeLift - heelRound && u > 0.02 && u < 0.99) {
+      const fromBot = Math.round((1 - toeLift - heelRound) * H) - j;
+      let col = '#f7f7f5';
+      if (fromBot <= Math.max(1, Math.round(H / 24))) col = '#1d1d22';                     // goma negra
+      else if (fromBot === Math.max(1, Math.round(H / 24)) + 1) col = '#3a3a40';
+      else if (j === sole0) col = '#c9ccd2';                                                // unión con la capellada
+      else if (j === sole0 + Math.round((H - sole0) * 0.5) && u > 0.12 && u < 0.84) col = '#d3d6db'; // rayita
+      P(i, j, col);
+      continue;
+    }
+    if (!inPoly(u, v, UPPER)) continue;
+    const top = topAt(u), dTop = (v - top) * H; // píxeles desde el borde de arriba
+    // malla blanca con agujeritos
+    let col = (i % 3 === 0 && j % 3 === 1) || (i % 3 === 2 && j % 3 === 2 && u > 0.5) ? '#d4d6e0' : '#f7f7fa';
+    // cuello acolchado y talón de arriba: negros
+    if ((u > 0.07 && u < 0.33 && dTop < Math.max(2.5, H * 0.1)) || (u < 0.12 && v < 0.24)) col = dTop < 1 ? '#2c2c33' : '#141418';
+    // lengüeta (arriba, entre el cuello y los cordones): blanca lisa
+    else if (u >= 0.3 && u < 0.4 && dTop < H * 0.12) col = '#ececf1';
+    else {
+      // plateado: puntera, talón y la tira de los ojalillos
+      let sv = -1;
+      if (u > 0.8 && v > 0.5 + (0.92 - u) * 0.3) sv = (v - 0.5) * 6;
+      else if (u < 0.22 && v > 0.38 - u * 0.4) sv = (v - 0.35) * 5 + 0.5;
+      else if (u > 0.38 && u < 0.8 && dTop >= 0 && dTop < Math.max(2, H * 0.09)) sv = 1 + dTop * 0.6;
+      if (sv >= 0) col = SL[Math.max(0, Math.min(4, Math.round(sv + Math.sin(i * 0.6) * 0.4)))];
+      // las cuatro rayas en diagonal, blancas con el borde negro (se inclinan hacia atrás al bajar)
+      const sw_ = Math.max(1, Math.round(W / 42));
+      // atrás de las rayas, plateado (así se ven las rayas blancas)
+      const c0 = (0.46 - (v - 0.3) * 0.42) * W, c3 = c0 + 3 * 0.075 * W;
+      if (dTop > Math.max(2.5, H * 0.1) && v < 0.68 && i + 0.5 > c0 - sw_ - 3 && i + 0.5 < c3 + sw_ + 3) col = SL[2 + ((i + j) % 5 === 0 ? 1 : 0)];
+      for (let k = 0; k < 4; k++) {
+        const cx = (0.46 + k * 0.075 - (v - 0.3) * 0.42) * W;
+        const d = Math.abs(i + 0.5 - cx);
+        if (dTop > Math.max(2.5, H * 0.1) && v < 0.68 && d <= sw_ + 1) col = d > sw_ ? '#16161b' : '#ffffff';
+      }
+    }
+    P(i, j, col);
+  }
+  // cordones blancos cruzados sobre los ojalillos
+  for (let k = 0; k < 6; k++) {
+    const u = 0.42 + k * 0.06, j = Math.round(topAt(u) * H), i = Math.round(u * W);
+    P(i - 1, j - 1, '#ffffff'); P(i, j - 1, '#ffffff'); P(i + 1, j, '#ffffff'); P(i - 2, j, '#ffffff');
+    P(i, j + 1, '#5d6670');
+  }
+}
+
+/** 1: de costado */
+function paintShoeSide() {
+  const [c, x] = makeCanvas(64, 36);
+  shoe(x, 1, 1, 62, 34);
+  sparkle(x, 59, 8); sparkle(x, 6, 33);
+  return outlined(c, OUTLINE);
+}
+/** 2: el par, una atrás de la otra */
+function paintShoePair() {
+  const [c, x] = makeCanvas(56, 31);
+  shoe(x, 0, 0, 56, 31);
+  // la de atrás un poco más oscura
+  const [b, bx] = makeCanvas(56, 31);
+  shoe(bx, 0, 0, 56, 31);
+  bx.globalCompositeOperation = 'source-atop'; bx.fillStyle = 'rgba(40,40,60,0.18)'; bx.fillRect(0, 0, 56, 31);
+  const [c2, x2] = makeCanvas(70, 46);
+  x2.drawImage(outlined(b, OUTLINE), 12, 0);   // la de atrás, más arriba y a la derecha
+  x2.drawImage(outlined(c, OUTLINE), 0, 13);   // la de adelante
+  sparkle(x2, 4, 8); sparkle(x2, 66, 40);
+  return c2;
+}
+/** 3: en su caja de zapatillas, con papel de seda */
+function paintShoeBox() {
+  const [c, x] = makeCanvas(70, 50);
+  // tapa apoyada atrás
+  rect(x, 6, 0, 60, 12, '#1d1d24'); rect(x, 7, 1, 58, 10, '#2c2c36'); rect(x, 7, 1, 58, 1, '#4a4a58');
+  rect(x, 30, 4, 12, 3, '#d9dbe2'); // el logo de la tapa (una etiqueta blanca)
+  // caja
+  rect(x, 0, 16, 70, 34, '#15151b'); rect(x, 1, 17, 68, 32, '#24242d');
+  // papel de seda blanco arrugado asomando
+  for (let i = 2; i < 68; i++) { const h = 3 + Math.round(Math.sin(i * 0.7) * 1.5 + Math.sin(i * 0.23) * 1); for (let j = 0; j < h; j++) px(x, i, 18 + j, j === 0 ? '#ffffff' : (i + j) % 3 ? '#eceef3' : '#d7dae2'); }
+  // la zapatilla adentro (se ve la parte de arriba)
+  const [s, sx] = makeCanvas(60, 32);
+  shoe(sx, 0, 0, 60, 32);
+  x.drawImage(outlined(s, OUTLINE), 4, 5, 62, 34, 4, 2, 62, 34);
+  // frente de la caja (tapa la suela)
+  rect(x, 0, 34, 70, 16, '#15151b'); rect(x, 1, 35, 68, 14, '#2c2c36'); rect(x, 1, 35, 68, 1, '#4a4a58');
+  rect(x, 4, 40, 18, 5, '#d9dbe2'); rect(x, 5, 41, 7, 1, '#5d6670'); rect(x, 5, 43, 12, 1, '#5d6670');
+  sparkle(x, 64, 22); sparkle(x, 8, 14);
+  return outlined(c, OUTLINE);
+}
+/** 4: bien de cerca, más grande y con más detalle */
+function paintShoeBig() {
+  const [c, x] = makeCanvas(88, 50);
+  shoe(x, 1, 1, 86, 48);
+  sparkle(x, 82, 10); sparkle(x, 8, 46); sparkle(x, 60, 4);
+  return outlined(c, OUTLINE);
+}
+
+export const GIFT3_OPTIONS = [
+  { name: 'De costado', paint: paintShoeSide },
+  { name: 'El par', paint: paintShoePair },
+  { name: 'En su caja', paint: paintShoeBox },
+  { name: 'Bien de cerca', paint: paintShoeBig },
+];
+const cache3 = [];
+/** el dibujo del tercer regalo (data URL); sin número, el elegido */
+export function gift3Url(i = gift3Choice()) {
+  if (!cache3[i]) cache3[i] = GIFT3_OPTIONS[i].paint().toDataURL();
+  return cache3[i];
+}
+export function gift3Choice() {
+  try { const v = Number(localStorage.getItem(GIFT3_KEY)); if (v >= 0 && v < GIFT3_OPTIONS.length) return v; } catch { /* nada */ }
+  return 0;
+}
+export function setGift3Choice(i) { try { localStorage.setItem(GIFT3_KEY, String(i)); } catch { /* nada */ } }
+
+/** una zapatilla suelta (para los primeros planos de las escenas): canvas sin contorno de W x H */
+export function shoeCanvas(W, H) {
+  const [c, x] = makeCanvas(W, H);
+  shoe(x, 0, 0, W, H);
+  return outlined(c, OUTLINE);
+}

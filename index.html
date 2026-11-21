@@ -77,6 +77,10 @@
     <!-- Intro -->
     <div id="intro" class="hidden">
       <div class="bars"><div class="bar-top"></div><div class="bar-bot"></div></div>
+      <!-- primeros planos de historieta (src/cutin.js) -->
+      <div id="cutin" class="hidden" aria-hidden="true"><canvas></canvas></div>
+      <!-- el atardecer de la escena final -->
+      <div id="sunset" class="hidden" aria-hidden="true"></div>
       <p id="intro-caption" class="intro-caption hidden"></p>
       <button id="intro-skip" class="intro-skip">Saltar intro ▸▸</button>
       <div id="intro-box" class="intro-box hidden">
@@ -216,6 +220,19 @@
       </div>
     </div>
 
+    <!-- Elegir el dibujo del regalo final (las zapatillas) -->
+    <div id="screen-giftart" class="screen modal hidden">
+      <div class="panel pause">
+        <h2>Regalo final</h2>
+        <p class="hint">Elegí el dibujo de las zapatillas: es el que aparece al abrir el último cofre.</p>
+        <div id="giftart-list" class="giftart-list"></div>
+        <div class="row">
+          <button class="btn small alt" id="giftart-preview">Ver cómo queda</button>
+          <button class="btn" id="giftart-ok">Listo</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Efectos de sonido (para escucharlos uno por uno) -->
     <div id="screen-sfx" class="screen modal hidden">
       <div class="panel pause">
@@ -245,6 +262,7 @@
           <button class="btn small alt" id="s-agui">Ver otra vez la escena de las aguilitas</button>
           <button class="btn small alt" id="s-lava">Ver otra vez la escena de la lava</button>
         </div>
+        <button class="btn small alt" id="s-giftart">Dibujo del regalo final</button>
         <p class="hint">Con el compañero prendido, el otro personaje te acompaña, ayuda a cavar y charlan cada tanto.</p>
         <div class="vols">
           <label><span>Música</span><input type="range" id="vol-music" min="0" max="100" step="5"><output></output></label>

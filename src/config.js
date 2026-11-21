@@ -268,8 +268,9 @@ export const GIFTS = [
   },
   {
     // el último está en el núcleo: en la plataforma de abajo de todo (por ahora no se abre)
-    id: 3, depth: 1500, headline: '¡¡El regalo final!!', title: 'El regalo final', final: true, core: true,
-    text: 'Acá va a ir la última sorpresa.\n(Texto de prueba.)',
+    // art: 'zapatillas' = las zapatillas (src/giftart.js; el dibujo se elige en Configuración)
+    id: 3, depth: 1500, headline: '¡¡El regalo final!!', art: 'zapatillas', title: 'Zapatillas!!!', final: true, core: true,
+    text: 'Unas zapatillas nuevas para la cumpleañera, para seguir corriendo aventuras.',
   },
 ];
 

@@ -726,3 +726,26 @@ button.pad-focus::after {
 #chest-open.out { background: transparent; pointer-events: none; }
 #chest-open.out canvas { opacity: 0; }
 #chest-open .co-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+
+/* Configuración → Dibujo del regalo final */
+.giftart-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 10px 0 12px; }
+.giftart-opt {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 8px; cursor: pointer;
+  background: var(--panel-2); border: 3px solid var(--ink); color: var(--cream); font-family: inherit; font-size: 14px; position: relative;
+}
+.giftart-opt img { width: min(100%, 186px); height: 120px; object-fit: contain; image-rendering: pixelated; }
+.giftart-opt b { color: var(--gold); }
+.giftart-opt:hover { background: var(--panel-hi); }
+.giftart-opt.on { border-color: var(--gold); box-shadow: 0 0 0 2px var(--ink), 0 0 14px rgba(255,211,77,0.55); }
+.giftart-opt.on::before { content: '✓'; position: absolute; top: 6px; left: 6px; font-size: 14px; background: var(--gold); color: var(--ink); padding: 1px 6px; border: 2px solid var(--ink); }
+@media (max-height: 560px), (max-width: 520px) { .giftart-opt img { height: 90px; } }
+
+/* primeros planos de historieta en las escenas (src/cutin.js) */
+#cutin { position: absolute; left: 0; right: 0; top: 7vh; bottom: 7vh; display: flex; align-items: center; justify-content: center; background: #0b0810; pointer-events: none; }
+#cutin canvas { height: 100%; max-width: 100%; aspect-ratio: 16 / 9; object-fit: cover; image-rendering: pixelated; }
+#cutin.go { animation: cutin-in 0.35s cubic-bezier(.3,1.6,.5,1) both; }
+#cutin.go::after { content: ''; position: absolute; inset: 0; background: #fff; animation: cutin-flash 0.25s ease-out both; }
+@keyframes cutin-in { from { transform: scale(1.25) rotate(-2deg); } to { transform: none; } }
+@keyframes cutin-flash { from { opacity: 0.9; } to { opacity: 0; } }
+/* atardecer de la escena final */
+#sunset { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to bottom, rgba(255,110,60,0.42), rgba(255,160,90,0.2) 50%, rgba(90,30,70,0.3)); }

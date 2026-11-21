@@ -47,7 +47,11 @@ const PAL = {
   o: '#22142b', h: '#8a5530', H: '#5a3218', g: '#b07a4a', f: '#f2e3c4', F: '#d9c49c', r: '#d9603a',
   y: '#f2c14e', Y: '#9fb0a0', v: '#3a2014', w: '#ffffff', e: '#1d1012', E: '#3a2a1a',
   s: '#e8b48a', c: '#4a3070', C: '#2e1c4a', d: '#a374dc', z: '#c9c0b0', l: '#c9a26b', b: '#6b4429',
+  W: '#ffffff', S: '#b0b9c3', k: '#1d1d22',
 };
+// con las zapatillas del regalo puestas (blancas, plateadas y con la suela negra)
+const SHOES = ['...oWWSo.oSWWWo.', '...okkko.okkkko.'];
+const withShoes = (rows) => rows.slice(0, 28).concat(SHOES);
 
 const closed = (rows) => rows.map((r, i) => (i === 7 ? r.replace(/[weE]/g, 'r') : r));
 
@@ -71,13 +75,24 @@ function frames() {
     flyA: build(BODY.slice(0, 23).concat(TAILS[0])),
     flyB: build(BODY.slice(0, 23).concat(TAILS[1])),
     weak: build(closed(BODY)),
+    idleS: build(withShoes(BODY)),
+    blinkS: build(withShoes(closed(BODY))),
   };
   return F;
 }
 
 /** Retrato para la caja de diálogo (18x24, como los demás) */
-let portraitURL = null;
-export function aguilusPortrait() {
+let portraitURL = null, shadowURL = null;
+export function aguilusPortrait(shadow = false) {
+  if (shadow) {
+    if (shadowURL) return shadowURL;
+    // en sombra: no se sabe quién habla
+    const [c, x] = makeCanvas(18, 24);
+    x.drawImage(frames().idle.right, 1, 1);
+    x.globalCompositeOperation = 'source-atop';
+    x.fillStyle = '#120c16'; x.fillRect(0, 0, 18, 24);
+    return (shadowURL = c.toDataURL());
+  }
   if (portraitURL) return portraitURL;
   const [c, x] = makeCanvas(18, 24);
   x.drawImage(frames().idle.right, 1, 1);
@@ -88,14 +103,14 @@ export function aguilusPortrait() {
  * Dibuja a Aguilus con los pies en (x, y) (x = centro).
  * pose: 'idle' | 'cast' | 'fly' | 'weak' | 'hurt' ; flash: destello blanco del golpe
  */
-export function drawAguilus(ctx, x, y, facing, pose, t, flash = false) {
+export function drawAguilus(ctx, x, y, facing, pose, t, flash = false, shoes = false) {
   const fr = frames();
-  let f = fr.idle, bob = 0;
+  let f = shoes ? fr.idleS : fr.idle, bob = 0;
   if (pose === 'fly' || pose === 'cast' || pose === 'hurt') {
     f = Math.floor(t * 7) % 2 ? fr.flyB : fr.flyA;
     bob = Math.round(Math.sin(t * 4) * 1);
   } else if (pose === 'weak') f = fr.weak;
-  else if (t % 3.9 > 3.75) f = fr.blink;
+  else if (t % 3.9 > 3.75) f = shoes ? fr.blinkS : fr.blink;
   const sx = Math.round(x - AG_W / 2), sy = Math.round(y - AG_H) + bob;
   const R = facing > 0;
   if (pose === 'weak') {

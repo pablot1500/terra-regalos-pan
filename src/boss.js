@@ -2,7 +2,9 @@
 // después del "interruptor secreto" de Carlos, pelea contra las súper pistolas de agua.
 // Tira rocas de magma (el agua las apaga), plumas, columnas de fuego, picadas, un rayo violeta,
 // lluvia de meteoritos y llama aguilitas. Si alguno cae, el otro lo puede revivir.
-import { TILE, SURFACE, BOSS, HP_MAX, ENDING_TEXT, CHARACTERS } from './config.js';
+import { TILE, SURFACE, BOSS, HP_MAX, ENDING_TEXT, CHARACTERS, GIFTS } from './config.js';
+import { playChestOpen } from './chestopen.js';
+import { showCutin, hideCutin } from './cutin.js';
 import { CORE_PLATFORM } from './world.js';
 import { drawAguilus, AG_H } from './aguilus.js';
 import { DIG_ZONE, TRAILER_X, TRAILER_H } from './structures.js';
@@ -114,6 +116,7 @@ export class Boss {
   constructor(game, done, losses = 0) {
     this.g = game;
     this.losses = losses;     // cuántas veces te ganó (para que te gaste al volver)
+    this.shoes = !done;       // tiene puestas las zapatillas del regalo (hasta que se las devuelve al final)
     this.state = done ? 'done' : 'waiting'; // waiting → scene → fight → scene → done
     this.hp = BOSS.hp;
     this.phase = 1;
@@ -183,11 +186,18 @@ export class Boss {
         // si se saltó en medio del recuerdo, vuelven a la plataforma
         if (this.spots) for (const [id, s] of Object.entries(this.spots)) Object.assign(A[id], s, { target: null, ty: null, fallTo: null });
         Object.assign(A.aguilus, { y: SKY_Y, ty: null, target: null, pose: 'fly', hidden: false });
+        this.openCoreChest();
         Object.assign(A[this.mateId], { y: FLOOR_Y, fallTo: null });
         sc.flashback = false;
       },
       onEnd: (skipped, sc) => this.startFight(sc, p),
     });
+  }
+
+  /** el último cofre queda abierto (y vacío: el regalo lo tiene Aguilus) */
+  openCoreChest() {
+    const ch = this.g.world.chests.find((c) => c.core);
+    if (ch) { ch.opened = true; ch.open = 1; }
   }
 
   /** sin nadie online, el compañero bot pelea al lado (aunque el modo de a dos esté apagado) */
@@ -242,6 +252,9 @@ export class Boss {
     const g = this.g;
     this.state = 'done';
     this.losses = 0;
+    this.shoes = false;
+    if (!g.openedGifts.includes(3)) g.openedGifts.push(3); // las zapatillas (aunque hayan salteado la escena)
+    g.ui.fade(false);
     // todos aterrizan en el patio (online, el otro también)
     for (const f of this.fighters()) {
       const a = sc.actors[f.char];
@@ -942,7 +955,8 @@ export class Boss {
   // ------------------------------------------------------------
   draw(ctx, camX, camY) {
     if (this.state === 'waiting') {
-      drawAguilus(ctx, this.x - camX, this.y - camY, -1, 'idle', this.t);
+      // la primera vez no se lo ve: aparece en la escena, después de abrir el cofre vacío
+      if (this.losses > 0) drawAguilus(ctx, this.x - camX, this.y - camY, -1, 'idle', this.t, false, this.shoes);
       return;
     }
     if (this.state !== 'fight') return;
@@ -994,7 +1008,7 @@ export class Boss {
     if (a && a.type === 'beam') this.drawBeam(ctx, camX, camY, a);
     const pose = a && a.type === 'dive' ? (a.stage === 'ground' ? 'idle' : 'fly')
       : a && (a.type === 'beam' || a.type === 'summon' || (a.type !== 'feathers' && a.t < (a.wind || 0))) ? 'cast' : 'fly';
-    drawAguilus(ctx, this.x - camX, this.y - camY, this.facing, pose, t, this.flash > 0 && Math.floor(t * 30) % 2 === 0);
+    drawAguilus(ctx, this.x - camX, this.y - camY, this.facing, pose, t, this.flash > 0 && Math.floor(t * 30) % 2 === 0, this.shoes);
     // escudo mágico: burbuja violeta (el agua rebota)
     if (this.shieldT > 0) {
       const cx = this.x - camX, cy = this.y - AG_H / 2 - camY, r = 20 + Math.sin(t * 12) * 1;
@@ -1117,6 +1131,21 @@ function shaftX(g) {
 // donde aterrizan al final: sobre las baldosas del patio, al lado del arbolito
 const LAND_X = 32 * TILE;
 
+/** la apertura del cofre (el grande, en el medio de la pantalla); espera a que termine */
+function chestWait(sc, opts) {
+  let done = false;
+  playChestOpen(sc.g.audio, () => { done = true; }, opts);
+  return () => done;
+}
+
+/** el cartel de un regalo en medio de una escena; espera a que toquen el botón */
+function giftWait(sc, gift) {
+  let done = false;
+  sc.g.ui.giftCb = () => { done = true; };
+  sc.g.ui.showGift(gift);
+  return () => done;
+}
+
 // ------------------------------------------------------------
 //  Guiones
 // ------------------------------------------------------------
@@ -1234,28 +1263,65 @@ function* encounterScript(sc, B, p) {
   const A = sc.actors;
   sc.actor(me, meX, FLOOR_Y, { facing: towards, tool: 'drill' });
   sc.actor(mate, mateX, FLOOR_Y - 220, { facing: towards, tool: 'drill' });
-  sc.actor('aguilus', B.homeX, FLOOR_Y, { facing: -towards, phase: 0 });
+  // Aguilus todavía no se ve: aparece después, atrás de ellos
+  sc.actor('aguilus', B.homeX, FLOOR_Y, { facing: -towards, phase: 0, hidden: true, shoes: true });
   sc.fixed = { x: meX, y: FLOOR_Y - 14 };
   sc.setZoom(2);
   sc.snapCam();
   sc.drop(mate, FLOOR_Y);
   yield sc.say(mate, '¡Esperame! ¡Uf, qué caída!');
   yield sc.arrive(mate);
-  // aparece Aguilus junto al cofre
-  const mid = (meX + B.homeX) / 2;
-  sc.fixed = { x: mid, y: FLOOR_Y - 20 };
-  sc.setZoom(Math.abs(B.homeX - meX) > 170 ? 1 : 1.5);
+  // el último cofre
+  const chX = B.homeX + 20;
+  sc.fixed = { x: (meX + chX) / 2, y: FLOOR_Y - 18 };
+  sc.setZoom(Math.abs(chX - meX) > 170 ? 1.2 : 1.8);
   g.sfx('surprise');
+  sc.emote(me, '!');
+  yield sc.say(me, '¡Mirá! ¡Ahí está el último regalo!');
+  yield sc.say(mate, '¡Vamos, vamos, vamos!');
+  // se acercan corriendo
+  const side = chX > meX ? -1 : 1; // de qué lado del cofre se paran
+  sc.walk(me, chX + side * 14, 70); sc.walk(mate, chX + side * 28, 70);
+  sc.fixed = { x: chX + side * 12, y: FLOOR_Y - 16 };
+  sc.setZoom(2.4);
+  yield sc.arrive(me, mate);
+  A[me].facing = A[mate].facing = -side;
+  yield sc.wait(0.3);
+  // se abre: tac, tac, tac... ¡y está vacío!
+  yield chestWait(sc, { empty: true });
+  B.openCoreChest();
+  sc.emote(me, '?'); sc.emote(mate, '?');
+  yield sc.say(me, '¿Eh? ¿Está... vacío?');
+  yield sc.say(mate, '¿Qué pasó? ¿Dónde está el regalo?');
+  yield sc.wait(0.4);
+  // una voz atrás de ellos
+  yield sc.say('voz', '¿Buscaban esto?');
+  g.sfx('surprise'); g.shakeAll(2);
   sc.emote(me, '!'); sc.emote(mate, '!');
-  yield sc.say('aguilus', '¡Mira vos! Así que llegaron hasta el centro de la Tierra...');
-  sc.fixed = { x: B.homeX, y: FLOOR_Y - 18 };
+  const agX = clamp(chX + side * 70, ARENA.x0 + 10, ARENA.x1 - 10);
+  Object.assign(A.aguilus, { x: agX, y: FLOOR_Y, hidden: false, facing: -side, pose: 'idle' });
+  A[me].facing = A[mate].facing = side;
+  sc.fixed = { x: (A[me].x + agX) / 2, y: FLOOR_Y - 18 };
+  sc.setZoom(2);
+  yield sc.wait(0.6);
+  // primer plano: ¡tiene puestas las zapatillas!
+  g.sfx('boom'); g.shakeAll(6);
+  showCutin('shoes');
+  yield sc.wait(0.6);
+  g.sfx('laugh');
+  yield sc.say('aguilus', '¡JA! ¡Ahora tu regalo es MÍO! ¿Y? ¿No me quedan divinas?');
+  // primer plano: Panchi, furiosa
+  g.sfx('hurt'); g.shakeAll(4);
+  showCutin('pancha');
+  yield sc.say('pancha', '¡¡NOOO!! ¡Devolveme mis zapatillas, pajarraco!');
+  hideCutin();
+  sc.fixed = { x: agX, y: FLOOR_Y - 18 };
   sc.setZoom(2.2);
   yield sc.say('pablo', '¡¿Aguilus?! ¡Sabía que eras vos! ¡La pluma te delató!');
   yield sc.say('pancha', 'Pablo... lo sabíamos desde el principio.');
-  yield sc.say('aguilus', 'Esta vez no voy a dejar que se los lleven. ¡Este año sí te arruino el cumple, Pancha!');
-  sc.fixed = { x: mid, y: FLOOR_Y - 20 };
-  sc.setZoom(1.5);
-  yield sc.say('pablo', '¡Devolvé esos regalos, pajarraco!');
+  yield sc.say('aguilus', '¿Las quieren? ¡Vengan a buscarlas! ¡Este año sí te arruino el cumple, Pancha!');
+  const kx = (A[me].x + A[mate].x) / 2;
+  const mid = (kx + B.homeX) / 2;
   // se eleva volando y se ríe
   A.aguilus.pose = 'fly';
   sc.fly('aguilus', B.homeX, SKY_Y, 45);
@@ -1269,7 +1335,7 @@ function* encounterScript(sc, B, p) {
   g.sfx('laugh');
   yield sc.say('aguilus', '¡JA, JA, JAAA! ¡No me van a vencer! ¡Con esos taladritos no me hacen ni cosquillas!');
   // los chicos, abajo
-  sc.fixed = { x: (meX + mateX) / 2, y: FLOOR_Y - 14 };
+  sc.fixed = { x: kx, y: FLOOR_Y - 14 };
   sc.setZoom(2.4);
   A[me].facing = A[mate].x > A[me].x ? 1 : -1;
   A[mate].facing = -A[me].facing;
@@ -1285,7 +1351,7 @@ function* encounterScript(sc, B, p) {
     sc.setZoom(2.2);
     g.sfx('laugh');
     yield sc.say('aguilus', '¡JUA, JUA, JUA! ¿Me van a ganar con una pistolita de agua?');
-    sc.fixed = { x: (meX + mateX) / 2, y: FLOOR_Y - 14 };
+    sc.fixed = { x: kx, y: FLOOR_Y - 14 };
     sc.setZoom(2.4);
     for (const id of [me, mate]) A[id].facing = A.aguilus.x > A[id].x ? 1 : -1;
     yield sc.say('pablo', 'No es una pistola de agua...');
@@ -1299,7 +1365,7 @@ function* encounterScript(sc, B, p) {
   yield sc.say('pablo', '¿Carlos? ¿Qué nos dijo Carlos?');
   yield* flashback(sc, B, me, mate);
   // de vuelta en el núcleo
-  sc.fixed = { x: (meX + mateX) / 2, y: FLOOR_Y - 14 };
+  sc.fixed = { x: kx, y: FLOOR_Y - 14 };
   sc.setZoom(2.4, true);
   sc.snapCam();
   sc.ui.fade(false);
@@ -1317,7 +1383,7 @@ function* encounterScript(sc, B, p) {
   sc.setZoom(2.2);
   g.sfx('laugh');
   yield sc.say('aguilus', '¡JUA, JUA, JUA! ¿Me van a ganar con una pistolita de agua?');
-  sc.fixed = { x: (meX + mateX) / 2, y: FLOOR_Y - 14 };
+  sc.fixed = { x: kx, y: FLOOR_Y - 14 };
   sc.setZoom(2.4);
   for (const id of [me, mate]) A[id].facing = A.aguilus.x > A[id].x ? 1 : -1;
   yield sc.say('pablo', 'No es una pistola de agua...');
@@ -1385,7 +1451,7 @@ function* victoryScript(sc, B, p) {
   // online el golpe final lo puede dar cualquiera de los dos: la pareja es siempre el otro personaje
   const g = sc.g, me = p.char, mate = me === 'pablo' ? 'pancha' : 'pablo', A = sc.actors;
   const gx = clamp(B.x, ARENA.x0 + 50, ARENA.x1 - 30);
-  const ag = sc.actor('aguilus', gx, B.y, { pose: 'hurt', facing: -1, phase: 0 }); // primero: queda detrás en el abrazo
+  const ag = sc.actor('aguilus', gx, B.y, { pose: 'hurt', facing: -1, phase: 0, shoes: true }); // primero: queda detrás en el abrazo
   sc.actor(me, clamp(p.cx, ARENA.x0, ARENA.x1), FLOOR_Y, { facing: gx > p.cx ? 1 : -1, tool: 'water' });
   const mx = clamp(B.mateX ?? p.cx - 16, ARENA.x0, ARENA.x1);
   sc.actor(mate, mx, FLOOR_Y, { facing: gx > mx ? 1 : -1, tool: 'water' });
@@ -1486,25 +1552,86 @@ function* victoryScript(sc, B, p) {
   A.aguilus.pose = 'idle';
   yield sc.wait(0.5);
   yield sc.say('aguilus', 'Ejem. Digo... ¡Esto no termina acá! ¡Hasta el año que viene, cumpleañera!');
+  // ya se va... ¡pero lo frenan!
+  A.aguilus.pose = 'fly';
+  A.aguilus.facing = 1;
+  sc.fly('aguilus', A.aguilus.x + 4, GY - 16, 40);
+  g.sfx('jump');
+  yield sc.wait(0.5);
+  sc.emote('pablo', '!'); sc.emote('pancha', '!');
+  A.pablo.facing = A.pancha.facing = 1;
+  yield sc.say('pablo', '¡Eh, Aguilus! ¿No te estás olvidando de algo?');
+  sc.fly('aguilus', A.aguilus.x, GY, 50);
+  yield sc.arrive('aguilus');
+  Object.assign(A.aguilus, { pose: 'idle', flying: false, facing: -1 });
+  sc.emote('aguilus', '?');
+  yield sc.say('aguilus', '¿Quién, yo? ¿De qué?');
+  yield sc.say('pancha', 'De MIS zapatillas. Las que tenés puestas.');
+  sc.fixed = { x: A.aguilus.x - 8, y: GY - 16 };
+  sc.setZoom(2.6);
+  yield sc.say('aguilus', 'Ah... ¿estas? Bueno, está bien... ¡pero me quedaban re lindas!');
+  // se las saca y las deja en el piso
+  g.sfx('rustle');
+  A.aguilus.shoes = false;
+  const shoes = sc.actor('shoes', A.aguilus.x - 12, GY, { kind: 'shoes' });
+  for (let i = 0; i < 10; i++) g.particles.add({ x: shoes.x + (Math.random() - 0.5) * 12, y: GY - 4, vx: (Math.random() - 0.5) * 30, vy: -20 - Math.random() * 30, life: 0.7, max: 0.7, color: i % 2 ? '#ffffff' : '#ffd34d', star: true, grav: 30 });
+  yield sc.wait(0.7);
+  sc.emote('aguilus', '~');
+  yield sc.say('aguilus', 'Snif... ¡Chau, chau! ¡Hasta el año que viene!');
   A.aguilus.pose = 'fly';
   A.aguilus.facing = 1;
   sc.fly('aguilus', LAND_X + 330, GY - 280, 130);
   g.sfx('jump');
-  yield sc.wait(1.8);
+  yield sc.wait(1.6);
   A.aguilus.hidden = true;
-  A[me].facing = 1; A[mate].facing = -1;
-  yield sc.say('pablo', '¿"Hasta el año que viene"?');
+  // las zapatillas: se acercan... y otra vez el cofre (esta vez, ¡con el regalo!)
+  sc.walk('pablo', shoes.x - 13, 40); sc.walk('pancha', shoes.x + 13, 40);
+  sc.fixed = { x: shoes.x, y: GY - 14 };
+  sc.setZoom(2.4);
+  yield sc.arrive('pablo', 'pancha');
+  A.pablo.facing = shoes.x > A.pablo.x ? 1 : -1;
+  A.pancha.facing = shoes.x > A.pancha.x ? 1 : -1;
+  sc.emote('pancha', '♥');
+  yield sc.say('pancha', '¡Mis zapatillas!');
+  yield chestWait(sc);
+  shoes.hidden = true;
+  if (!g.openedGifts.includes(3)) g.openedGifts.push(3);
+  g.save();
+  yield giftWait(sc, GIFTS.find((gf) => gf.id === 3));
+  // y el final: mirando el horizonte
+  yield* endingScript(sc);
+}
+
+/** el final: a la tarde, en el patio, mirando el horizonte */
+function* endingScript(sc) {
+  const g = sc.g, A = sc.actors, GY = SURFACE * TILE;
+  sc.ui.fade(true);
+  yield sc.wait(1);
+  for (const [id, dx] of [['pablo', -6], ['pancha', 6]]) {
+    Object.assign(A[id], { x: LAND_X + dx, y: GY, facing: 1, tool: null, pose: 'idle', target: null, ty: null, fallTo: null, flying: false, lockFacing: true, hidden: false });
+  }
+  if (A.aguilus) A.aguilus.hidden = true;
+  sc.fixed = { x: LAND_X + 40, y: GY - 6, k: 0.62 };
+  sc.setZoom(1.8, true);
+  sc.snapCam();
+  sc.ui.show('sunset', true);
+  sc.ui.fade(false);
+  sc.caption('Esa tarde, ya con todos los regalos en casa...');
+  yield sc.wait(2.4);
+  sc.caption(null);
+  yield sc.say('pancha', 'Al final recuperamos todos los regalos.');
+  yield sc.say('pablo', 'Los bombones, el reloj... y las zapatillas.');
+  yield sc.say('pancha', '¿Viste que valió la pena cavar hasta el centro de la Tierra?');
+  yield sc.say('pablo', 'Y mojar a un águila mago. Eso no pasa todos los días.');
   yield sc.say('pancha', 'Ya sé dónde vamos a esconder los regalos el año que viene...');
   yield sc.say('pablo', '¿Dónde?');
   yield sc.say('pancha', '¡En la casa rodante de Carlos!');
-  sc.fixed = { x: TRAILER_X + 32, y: GY - TRAILER_H + 30 };
-  sc.setZoom(2.4);
-  yield sc.wait(0.6);
   yield sc.say('carlos', '¡Ja, ni se les ocurra! ¡Y devuélvanme las pistolas de agua!');
-  sc.fixed = { x: LAND_X, y: GY - 12 };
-  sc.setZoom(2.2);
-  yield sc.wait(0.5);
   sc.emote('pancha', '♥'); sc.emote('pablo', '♥');
   yield sc.say('pancha', '¡Feliz cumple para mí!');
-  yield sc.wait(0.8);
+  yield sc.say('pablo', '¡Feliz cumple, Panchi!');
+  yield sc.wait(1.4);
+  sc.ui.fade(true);
+  yield sc.wait(1.1);
+  sc.ui.show('sunset', false);
 }
