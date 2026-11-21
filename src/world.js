@@ -44,6 +44,8 @@ function pickLoot(weights, q) {
 
 const GRASS_HI = [124, 214, 90], GRASS = [79, 154, 50], GRASS_D = [58, 122, 38];
 
+// cuántos bloques a cada lado del cofre es indestructible el piso de su cámara (el resto del piso se rompe)
+const GIFT_FLOOR_HALF = 2;
 // plataforma del fondo del núcleo y el último cofre
 export const CORE_PLATFORM = { c0: 12, c1: 66, r: BOTTOM_ROW - 7 };
 const OBS = LAYERS.length - 1; // índice de la capa de obsidiana
@@ -203,11 +205,12 @@ export class World {
         }
       }
       for (let rr = ch.r - 5; rr < ch.r; rr++) for (let cc = ch.c - 6; cc <= ch.c + 6; cc++) mat[rr * w + cc] = T.CRYSTAL;
-      // piso de mármol indestructible debajo del cofre
+      // piso de mármol debajo del cofre: justo abajo del cofre (y un poquito a cada lado) no se rompe;
+      // los costados son de mármol quebradizo, que sí se puede romper
       for (let cc = ch.c - 6; cc <= ch.c + 6; cc++) {
         if (cc < EDGE || cc >= w - EDGE || ch.r >= BOTTOM_ROW) continue;
         const i = ch.r * w + cc;
-        tiles[i] = mat[i] = T.GIFTFLOOR;
+        tiles[i] = mat[i] = Math.abs(cc - ch.c) <= GIFT_FLOOR_HALF ? T.GIFTFLOOR : T.GIFTSLAB;
         loot[i] = 0;
         this.fillTileSubs(cc, ch.r, 1);
       }
@@ -493,6 +496,34 @@ export class World {
       }
     }
     return removed;
+  }
+
+  /**
+   * Abre un hueco rectangular (en px), como si lo hubieran cavado: saca la tierra (y el cristal) que se pueda cavar.
+   * Lo usa "Ver otra vez la escena de las aguilitas" para dejar lugar junto al primer cofre y un túnel para escapar.
+   */
+  clearBox(x0, y0, x1, y1) {
+    const { sw, sub, w } = this;
+    const sx0 = Math.max(0, Math.floor(x0 / SUB)), sx1 = Math.min(sw - 1, Math.floor(x1 / SUB));
+    const sy0 = Math.max(0, Math.floor(y0 / SUB)), sy1 = Math.min(this.sh - 1, Math.floor(y1 / SUB));
+    const touched = new Set();
+    for (let sy = sy0; sy <= sy1; sy++) for (let sx = sx0; sx <= sx1; sx++) {
+      const j = sy * sw + sx;
+      if (!sub[j]) continue;
+      const ti = (sy >> 2) * w + (sx >> 2);
+      if (!isDiggable(this.tiles[ti])) continue;
+      sub[j] = 0; this.subDug[j] = 1; touched.add(ti);
+    }
+    const cols = new Set();
+    for (const ti of touched) {
+      const c = ti % w, r = (ti / w) | 0;
+      const before = this.tiles[ti];
+      this.recount(c, r);
+      if (before !== T.AIR && this.tiles[ti] === T.AIR) this.markTileDug(c, r);
+      this.markDirty(c, r);
+      cols.add(c);
+    }
+    for (const c of cols) this.updateSkyTop(c);
   }
 
   markTileDug(c, r) {

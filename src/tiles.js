@@ -21,6 +21,7 @@ export const T = {
   OBSIDIAN: 15, // roca negrísima de los 1000 m para abajo
   COREFLOOR: 16, // plataforma de roca del núcleo (no se rompe)
   CORE: 17,    // solo de fondo: el magma del núcleo (nunca es sólido)
+  GIFTSLAB: 18, // mármol de los costados del piso de los cofres (este sí se rompe)
 };
 
 export const LAYER_TILES = [T.DIRT, T.CLAY, T.STONE, T.GRANITE, T.BASALT, T.ABYSS, T.OBSIDIAN];
@@ -37,6 +38,7 @@ DEF[T.BEDROCK] = { name: 'Roca madre', hard: 9999, pal: ['#050407', '#100e15', '
 DEF[T.CONCRETE] = { name: 'Cemento', hard: 9999, pal: ['#5f5b56', '#8a8680', '#a29e98', '#b9b5ae', '#d2cec7'], style: 'concrete' };
 DEF[T.PAVER] = { name: 'Baldosa', hard: 9999, pal: ['#6f665b', '#a89c8a', '#cfc4b2', '#e3dacb', '#efe8dc'], style: 'paver' };
 DEF[T.GIFTFLOOR] = { name: 'Mármol', hard: 9999, pal: ['#6e3a52', '#d9a6bd', '#f3d6e2', '#fdeef4', '#e6b33c'], style: 'giftfloor' };
+DEF[T.GIFTSLAB] = { name: 'Mármol quebradizo', hard: 2, pal: ['#6e3a52', '#c995ad', '#ebc9d8', '#f7e3ec', '#c9a24a'], style: 'giftslab' };
 DEF[T.GRAVEL] = { name: 'Grava', hard: 1, pal: ['#3f3a33', '#6c665c', '#8b8478', '#aaa396', '#cfc8b9'], style: 'gravel' };
 DEF[T.OBSIDIAN] = { name: 'Obsidiana', hard: 24, pal: ['#07050a', '#15111c', '#1f1a28', '#2e2638', '#ff7a2e'], style: 'obsidian' };
 DEF[T.COREFLOOR] = { name: 'Roca del núcleo', hard: 9999, pal: ['#140806', '#2a1410', '#3d1f17', '#5a3022', '#ff9a3c'], style: 'corefloor' };
@@ -206,6 +208,18 @@ function genTex(id, v) {
       for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) if (r() < 0.18) px(i, j, P[2]);
       const vy = 2 + (v % 4);
       for (let i = 0; i < 8; i++) px(i, Math.max(0, Math.min(7, vy + Math.round(Math.sin((i + v * 3) * 0.9)))), P[4]);
+      x.fillStyle = P[1]; x.fillRect(7, 0, 1, 8);
+      break;
+    }
+    case 'giftslab': {
+      // el mismo mármol, más apagado y con rajaduras: se puede romper
+      x.fillStyle = P[3]; x.fillRect(0, 0, 8, 8);
+      for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) if (r() < 0.2) px(i, j, P[2]);
+      const vy = 2 + (v % 4);
+      for (let i = 0; i < 8; i += 2) px(i, Math.max(0, Math.min(7, vy + Math.round(Math.sin((i + v * 3) * 0.9)))), P[4]);
+      // rajadura en zigzag
+      let cx = 1 + (v % 3) * 2;
+      for (let j = 0; j < 8; j++) { px(cx, j, P[1]); if (j % 2) cx = Math.max(0, Math.min(7, cx + (((v + j) % 3) - 1))); }
       x.fillStyle = P[1]; x.fillRect(7, 0, 1, 8);
       break;
     }

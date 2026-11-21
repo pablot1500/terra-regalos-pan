@@ -2,7 +2,7 @@
 // caja de diálogo y guión. El guión es una función generadora: cada `yield` espera a que termine lo anterior.
 import { getCharFrames, CHAR_PAL, CHAR_W, CHAR_H, drawText, DOG, POPI, ICON_URL, charPortrait, drawDrill, drawWaterGun, drawArmShovel } from './sprites.js';
 import { drawAguilus, aguilusPortrait, AG_H } from './aguilus.js';
-import { eagletSprites } from './boss.js';
+import { eagletFrame } from './eagletart.js';
 import { clamp, pixelLine } from './util.js';
 import { TILE, SURFACE } from './config.js';
 import { T } from './tiles.js';
@@ -342,7 +342,7 @@ export class Scene {
       let sx, sy, headY;
       if (a.kind === 'eaglet') {
         // aguilita: aleteando (y en el lugar, sube y baja un poquito)
-        const fr = eagletSprites()[a.facing > 0 ? 'right' : 'left'][Math.floor((this.t + a.phase) * 10) % 2];
+        const fr = eagletFrame(a.facing, this.t + a.phase);
         const bob = a.target === null && a.ty === null ? Math.round(Math.sin((this.t + a.phase) * 4) * 2) : 0;
         ctx.drawImage(fr, Math.round(snap(a.x) - camX - 7), Math.round(snap(a.y) - camY - 5 + bob));
         continue;

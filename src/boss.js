@@ -7,7 +7,8 @@ import { CORE_PLATFORM } from './world.js';
 import { drawAguilus, AG_H } from './aguilus.js';
 import { DIG_ZONE, TRAILER_X, TRAILER_H } from './structures.js';
 import { mulberry32 } from './rng.js';
-import { clamp, fmtMoney, makeCanvas, flipH, outlined } from './util.js';
+import { clamp, fmtMoney, makeCanvas } from './util.js';
+import { eagletStyleSprites, eagletStyle, eagletFrame } from './eagletart.js';
 
 const FLOOR_Y = CORE_PLATFORM.r * TILE;
 const ARENA = { x0: (CORE_PLATFORM.c0 + 2) * TILE, x1: (CORE_PLATFORM.c1 - 1) * TILE };
@@ -105,27 +106,8 @@ const FEATHER = (() => {
 // ------------------------------------------------------------
 //  Aguilitas: las ayudantes de Aguilus (chiquitas, con las alas violetas)
 // ------------------------------------------------------------
-function paintEaglet(up) {
-  const [c, x] = makeCanvas(12, 9);
-  const P = (a, b, w, h, col) => { x.fillStyle = col; x.fillRect(a, b, w, h); };
-  P(0, 4, 2, 1, '#5a3218'); P(1, 5, 2, 1, '#5a3218');           // cola
-  P(2, 3, 6, 3, '#8a5530'); P(3, 6, 4, 1, '#5a3218');           // cuerpo
-  P(7, 1, 3, 3, '#f2e3c4'); P(7, 4, 2, 1, '#f2e3c4');           // cabeza blanca
-  P(9, 2, 1, 1, '#1d1012');                                      // ojo
-  P(10, 2, 2, 1, '#f2c14e'); P(10, 3, 1, 1, '#c98a2a');         // pico
-  P(4, 7, 1, 1, '#f2c14e'); P(6, 7, 1, 1, '#f2c14e');           // patitas
-  if (up) { P(3, 1, 4, 2, '#a374dc'); P(2, 0, 3, 1, '#c9a6ff'); }
-  else { P(3, 5, 4, 2, '#a374dc'); P(2, 7, 2, 1, '#c9a6ff'); P(3, 3, 4, 1, '#6a3fa6'); }
-  return outlined(c, '#22142b');
-}
-let EAGLET = null;
-export function eagletSprites() {
-  if (!EAGLET) {
-    const up = paintEaglet(true), down = paintEaglet(false);
-    EAGLET = { right: [up, down], left: [flipH(up), flipH(down)] };
-  }
-  return EAGLET;
-}
+/** los cuadros de la aguilita en la versión elegida (en Configuración → Dibujos de las aguilitas) */
+export function eagletSprites() { return eagletStyleSprites(eagletStyle()); }
 
 const HIT_LINES = ['¡AIAA!', '¡MIS PLUMAS!', '¡ESTOY EMPAPADO!', '¡AGUA NO!', '¡PUAJ!', '¡ESTÁ FRÍA!', '¡MI TÚNICA!'];
 const BOT_CHEERS = ['¡TOMÁ!', '¡MOJADO!', '¡DALE!', '¡CUIDADO!', '¡AGUA VA!', '¡VAMOS!'];
@@ -800,7 +782,6 @@ export class Boss {
     m.vx = (Math.abs(vx) > 1 ? Math.sign(vx) : out) * (50 + Math.random() * 40);
     m.vy = -110; m.spin = (Math.random() < 0.5 ? -1 : 1) * (9 + Math.random() * 5); m.bounced = false;
     g.sfx('peep');
-    g.addText(m.x, m.y - 6, '¡PÍO!', '#e8e3d6');
     for (let i = 0; i < 6; i++) g.particles.add({ x: m.x, y: m.y, vx: (Math.random() - 0.5) * 50, vy: -Math.random() * 40, life: 0.8, max: 0.8, color: Math.random() < 0.5 ? '#a374dc' : '#8a5530', size: 1, grav: 60 });
   }
 
@@ -1026,10 +1007,9 @@ export class Boss {
       ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
     }
     // aguilitas
-    const E = eagletSprites();
     for (const m of this.minions) {
       const x = m.x - camX, y = m.y - camY;
-      const fr = E[m.facing > 0 ? 'right' : 'left'][Math.floor(t * 10 + m.ph) % 2];
+      const fr = eagletFrame(m.facing, t, m.ph);
       if (m.state === 'dead') {
         ctx.save();
         ctx.translate(Math.round(x), Math.round(y));

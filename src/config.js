@@ -85,10 +85,15 @@ export const EAGLETS = {
   ceil: 270,        // metros: no suben más arriba que esto
   speed: 62,        // velocidad persiguiendo (el jetpack del primer nivel sube a 85: se puede escapar)
   swoop: 150,       // velocidad de la picada
+  standoff: 110,    // a qué distancia se quedan midiéndote entre ataque y ataque
+  retreat: 130,     // velocidad con la que se alejan después de atacar
+  retreatTo: 170,   // hasta qué distancia se alejan después de atacar (antes de volver a medirte)
+  measure: 0.75,    // segundos que se quedan frenadas, midiéndote, antes de tirarse
+  wait: [2, 3.6],   // segundos que te miden (de lejos) antes de volver a atacar
   dmg: 8,           // daño de un picotazo
   hp: 4,            // gotitas de agua para bajarlas
   max: 5,           // cuántas puede haber a la vez como mucho (empieza con 2 y suma una cada 300 m)
-  every: [5, 9],    // segundos entre una y otra (más seguido cuanto más hondo)
+  every: [16, 26],  // segundos entre una y otra (un poco más seguido cuanto más hondo)
 };
 
 export const HP_MAX = 100;

@@ -8,7 +8,7 @@ import {
 import { initTiles, T } from './tiles.js';
 import { hash2 } from './rng.js';
 import { initSprites, drawChest, drawGiftBox, drawTorch, DOG } from './sprites.js';
-import { World } from './world.js';
+import { World, rowForDepth } from './world.js';
 import { Structures, DOG_POS, PATIO, TRAILER_X, TRAILER_H, DIG_ZONE } from './structures.js';
 import { Background } from './background.js';
 import { CoreBackdrop } from './core.js';
@@ -333,8 +333,40 @@ class Game {
     this.toast(this.tool === 'gun' ? '¡Pistola de agua en la mano!' : `De vuelta con ${dig}`, 'tool', 'good');
   }
 
+  /**
+   * Configuración → "Ver otra vez la escena de las aguilitas": lleva al primer cofre y repite la escena, sin tocar
+   * lo cavado ni lo comprado (solo abre lugar junto al cofre y un túnel para escapar). Después salen aguilitas
+   * inmunes al agua y hay que escapar para arriba, como la primera vez.
+   */
+  replayEaglets() {
+    if (this.net.role) { this.toast('La escena se puede repetir solo jugando sin conexión', null, 'warn'); return; }
+    if (this.state === 'title' || this.state === 'splash') {
+      if (!this.savedData) { this.toast('Primero empezá una partida', null, 'warn'); return; }
+      if (!(this.savedData.gifts || []).includes(1)) { this.toast('Primero abrí el primer regalo', null, 'warn'); return; }
+      this.state = 'title-done'; // sin la bajada de cámara del título: directo a la escena
+      this.continueGame();
+    }
+    for (const id of ['screen-settings', 'screen-pause', 'screen-controls', 'screen-songs', 'screen-sfx', 'screen-agui-art']) this.ui.show(id, false);
+    if (this.state === 'paused') this.resume();
+    if (this.state !== 'play') return;
+    if (!this.openedGifts.includes(1)) { this.toast('Primero abrí el primer regalo', null, 'warn'); return; }
+    const ch = this.world.chests.find((c) => c.id === 1);
+    if (!ch) return;
+    const p = this.players[0], W = this.world;
+    const x = ch.c * TILE, floor = ch.r * TILE;
+    // lugar al lado del cofre y un túnel hasta un poco arriba del techo de las aguilitas, para poder escapar
+    W.clearBox(x - 22, floor - 26, x + 14, floor - 1);
+    W.clearBox(x - 22, rowForDepth(EAGLETS.ceil - 14) * TILE, x - 6, floor - 1);
+    p.x = x - 17; p.y = floor - p.h; p.vx = 0; p.vy = 0; p.peakY = p.y;
+    p.hovering = false; p.dead = false; p.digging = false;
+    p.energy = Math.max(p.energy, this.stats.energyMax * 0.6);
+    for (const pl of this.players) if (pl.ai) pl.ai.place(p, true);
+    this.eaglets.clear();
+    this.startEagletScene(p, { immune: true });
+  }
+
   /** después del primer regalo: aparecen las aguilitas (escena), y hay que escapar para arriba */
-  startEagletScene(p) {
+  startEagletScene(p, { immune = false } = {}) {
     this.aguiMet = true;
     p.vx = 0; p.vy = 0; p.digging = false; p.hovering = false;
     // bajan una detrás de otra por el túnel que vinieron cavando: el punto libre más alto arriba del personaje
@@ -351,7 +383,7 @@ class Game {
       onEnd: () => {
         // las mismas aguilitas de la escena salen a perseguir (desde donde quedaron)
         const pts = spots || caves.map((c) => ({ x: c.x, y: c.y }));
-        for (const s of pts) this.eaglets.spawn(s.x, s.y, { nextT: 1.2 + Math.random() * 1.2 });
+        for (const s of pts) this.eaglets.spawn(s.x, s.y, { nextT: 1.2 + Math.random() * 1.2, immune });
         this.eaglets.spawnT = 4;
         this.toast(`¡Escapá para arriba! Las aguilitas no suben más arriba de los ${EAGLETS.ceil} m`, null, 'warn');
         this.save();
@@ -1068,7 +1100,7 @@ class Game {
   backButton(screen) {
     const ids = {
       'screen-settings': 'settings-ok', 'screen-controls': 'controls-ok', 'screen-songs': 'songs-ok',
-      'screen-sfx': 'sfx-ok', 'screen-online': 'on-close', 'screen-shop': 'shop-close',
+      'screen-sfx': 'sfx-ok', 'screen-agui-art': 'agui-art-ok', 'screen-online': 'on-close', 'screen-shop': 'shop-close',
       'screen-gift': 'gift-ok', 'screen-pause': 'btn-resume',
     };
     if (ids[screen.id]) return document.getElementById(ids[screen.id]);

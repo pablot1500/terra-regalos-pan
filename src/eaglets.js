@@ -4,7 +4,7 @@
 // Acá también vuelan las gotitas de la pistola cuando se usa fuera de la pelea con Aguilus.
 import { EAGLETS, BOSS, TILE } from './config.js';
 import { rowForDepth, SUB } from './world.js';
-import { eagletSprites } from './boss.js';
+import { eagletFrame } from './eagletart.js';
 import { clamp } from './util.js';
 
 const CORE_Y = () => rowForDepth(1490) * TILE; // en el núcleo no hay aguilitas sueltas (ahí está Aguilus)
@@ -54,6 +54,9 @@ export class Eaglets {
   spawn(x, y, opts = {}) {
     this.list.push({
       x, y, vx: 0, vy: 0, st: 'chase', t: 0, nextT: 1.6 + Math.random() * 1.6, hp: EAGLETS.hp,
+      // dónde se queda midiendo: ángulo alrededor del personaje (más bien arriba) y distancia
+      ang: -Math.PI / 2 + (Math.random() - 0.5) * 2.4, dir: Math.random() < 0.5 ? -1 : 1,
+      rad: EAGLETS.standoff * (0.85 + Math.random() * 0.35),
       flash: 0, ph: Math.random() * 6, facing: 1, stuck: 0, cd: 0, alpha: 1, waitT: 0, rot: 0, spin: 0, ...opts,
     });
     for (let i = 0; i < 5; i++) this.g.particles.add({ x, y, vx: (Math.random() - 0.5) * 40, vy: (Math.random() - 0.5) * 40, life: 0.5, max: 0.5, color: 'rgba(220,200,255,0.7)', size: 2, grav: 0, smoke: true });
@@ -69,7 +72,7 @@ export class Eaglets {
     if (!p.dead && !fight && p.depth > EAGLETS.from && p.y < CORE_Y()) {
       this.spawnT -= dt;
       if (this.spawnT <= 0) {
-        const k = Math.min(0.5, (p.depth - EAGLETS.from) / 2400);
+        const k = Math.min(0.3, (p.depth - EAGLETS.from) / 3000);
         this.spawnT = (EAGLETS.every[0] + Math.random() * (EAGLETS.every[1] - EAGLETS.every[0])) * (1 - k);
         const max = Math.min(EAGLETS.max, 2 + Math.floor((p.depth - EAGLETS.from) / 300));
         const alive = this.list.filter((b) => b.st !== 'dead' && b.st !== 'leave').length;
@@ -126,62 +129,123 @@ export class Eaglets {
       this.move(b, dt);
       if (b.waitT > 1.3) {
         b.st = 'leave'; b.vx = (Math.random() - 0.5) * 30; b.vy = 20;
-        if (Math.random() < 0.5) g.addText(b.x, b.y - 6, '¡PÍO!', '#e8e3d6');
       }
       return;
     }
     b.waitT = 0;
     if (b.st === 'chase') {
-      // revolotea alrededor y un poco arriba del personaje, cada una a su ritmo
-      const tx = p.cx + Math.sin(b.t * 1.3 + b.ph) * 30, ty = p.cy - 20 + Math.sin(b.t * 2.1 + b.ph) * 8;
+      // se queda midiendo a distancia: revolotea lejos, más bien arriba y a un costado, y se va corriendo de lugar.
+      // En los túneles angostos se queda en el punto libre más lejano de esa dirección (no contra la tierra)
+      b.ang += dt * 0.35 * b.dir;
+      b.scanT = (b.scanT || 0) - dt;
+      let room = this.room(p, b.ang, b.rad);
+      if (room < 40 && b.scanT <= 0) { b.scanT = 0.6; b.ang = this.openAngle(p, b.ang, b.rad); room = this.room(p, b.ang, b.rad); }
+      const tx = p.cx + Math.cos(b.ang) * room, ty = p.cy + Math.sin(b.ang) * room + Math.sin(b.t * 2.1 + b.ph) * 4;
       const ex = tx - b.x, ey = ty - b.y, ed = Math.hypot(ex, ey) || 1;
-      const sp = EAGLETS.speed * Math.min(1, ed / 30 + 0.35);
-      b.vx += ((ex / ed) * sp - b.vx) * Math.min(1, dt * 3);
-      b.vy += ((ey / ed) * sp - b.vy) * Math.min(1, dt * 3);
+      const sp = EAGLETS.speed * Math.min(1, ed / 40 + 0.15);
+      b.vx += ((ex / ed) * sp - b.vx) * Math.min(1, dt * 2.5);
+      b.vy += ((ey / ed) * sp - b.vy) * Math.min(1, dt * 2.5);
       b.nextT -= dt;
-      if (b.nextT <= 0 && dist < 95) { b.st = 'aim'; b.t = 0; }
+      // cuando le toca, si te ve (sin tierra en el medio) y no está demasiado lejos, se frena a medirte
+      if (b.nextT <= 0 && dist < EAGLETS.retreatTo * 1.3 && this.sees(b, p)) { b.st = 'aim'; b.t = 0; }
     } else if (b.st === 'aim') {
-      // se frena un instante (titila) y se tira en picada
-      b.vx *= Math.max(0, 1 - dt * 8); b.vy *= Math.max(0, 1 - dt * 8);
-      if (b.t >= 0.45) {
-        const d = dist || 1;
+      // se frena y te mide desde lejos (titila con el "!"), se echa un poquito para atrás y se tira en picada
+      const d = dist || 1;
+      const back = b.t > EAGLETS.measure * 0.55 ? 28 : 0; // al final toma impulso para atrás
+      b.vx += ((-dx / d) * back - b.vx) * Math.min(1, dt * 7);
+      b.vy += ((-dy / d) * back - b.vy) * Math.min(1, dt * 7);
+      if (dx) b.facing = dx > 0 ? 1 : -1;
+      if (b.t >= EAGLETS.measure) {
         b.vx = (dx / d) * EAGLETS.swoop; b.vy = (dy / d) * EAGLETS.swoop;
+        b.swoopT = d / EAGLETS.swoop + 0.3; // hasta pasarte un poquito
         b.st = 'swoop'; b.t = 0;
         g.audio.play('swoosh');
       }
     } else if (b.st === 'swoop') {
-      if (b.t > 0.8) { b.st = 'rise'; b.t = 0; b.vy = -70; b.vx *= 0.4; }
-    } else if (b.st === 'rise') {
-      b.vy = Math.min(b.vy + 60 * dt, -20);
-      if (b.t > 0.5) { b.st = 'chase'; b.t = 0; b.nextT = 1.8 + Math.random() * 1.6; }
+      if (b.t > b.swoopT) this.retreat(b, p);
+    } else if (b.st === 'retreat') {
+      // después del ataque se aleja bastante (hacia donde haya lugar) y recién ahí vuelve a medirte
+      const ex = b.rx - b.x, ey = b.ry - b.y, ed = Math.hypot(ex, ey) || 1;
+      b.vx += ((ex / ed) * EAGLETS.retreat - b.vx) * Math.min(1, dt * 4);
+      b.vy += ((ey / ed) * EAGLETS.retreat - b.vy) * Math.min(1, dt * 4);
+      if (ed < 10 || dist > EAGLETS.retreatTo || b.t > 2.2) {
+        b.st = 'chase'; b.t = 0; b.nextT = EAGLETS.wait[0] + Math.random() * (EAGLETS.wait[1] - EAGLETS.wait[0]);
+        b.ang = Math.atan2(b.y - p.cy, b.x - p.cx); // sigue midiendo desde donde quedó
+        b.vx *= 0.5; b.vy *= 0.5;
+      }
     }
     const hit = this.move(b, dt);
-    if (hit && b.st === 'swoop') { b.st = 'rise'; b.t = 0; b.vy = -60; }
+    if (hit && b.st === 'swoop') this.retreat(b, p);
     // si se queda trabada contra la tierra mucho rato, se vuelve a su cueva
-    if (hit && Math.hypot(b.vx, b.vy) < 25) b.stuck += dt; else b.stuck = Math.max(0, b.stuck - dt);
+    if (hit && b.st === 'chase' && Math.hypot(b.vx, b.vy) < 25) b.stuck += dt; else b.stuck = Math.max(0, b.stuck - dt);
     if (b.stuck > 2.5) { b.st = 'leave'; b.vx = 0; b.vy = 10; }
-    if (Math.abs(b.vx) > 6) b.facing = b.vx > 0 ? 1 : -1;
-    // picotazo
-    if ((b.st === 'chase' || b.st === 'swoop') && b.cd <= 0 && !p.dead && p.hurtT <= 0
+    if (b.st !== 'aim' && Math.abs(b.vx) > 6) b.facing = b.vx > 0 ? 1 : -1;
+    // picotazo (solo en la picada)
+    if (b.st === 'swoop' && b.cd <= 0 && !p.dead && p.hurtT <= 0
       && Math.abs(p.cx - b.x) < p.w / 2 + 4 && Math.abs(p.cy - b.y) < p.h / 2 + 3) {
       const s = Math.sign(dx) || 1;
       p.hurt(EAGLETS.dmg, 'eaglet');
       p.vx = s * 120; p.vy = Math.min(p.vy, -80);
-      b.cd = 1.2; b.st = 'rise'; b.t = 0; b.vy = -90; b.vx = -s * 60;
+      b.cd = 1.2;
+      this.retreat(b, p);
     }
+  }
+
+  /** se aleja del personaje después de atacar: hacia donde haya más lugar, de preferencia para arriba y para atrás */
+  retreat(b, p) {
+    const away = Math.atan2(b.y - p.cy, b.x - p.cx);
+    let best = null, bestS = -1;
+    for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2;
+      const r = this.room(p, a, EAGLETS.retreatTo);
+      const s = r * (1.2 - Math.sin(a) * 0.35) * (1.3 + Math.cos(a - away) * 0.5);
+      if (s > bestS) { bestS = s; best = { a, r }; }
+    }
+    b.rx = p.cx + Math.cos(best.a) * best.r; b.ry = p.cy + Math.sin(best.a) * best.r;
+    const ex = b.rx - b.x, ey = b.ry - b.y, ed = Math.hypot(ex, ey) || 1;
+    b.vx = (ex / ed) * EAGLETS.retreat; b.vy = (ey / ed) * EAGLETS.retreat;
+    b.st = 'retreat'; b.t = 0;
+  }
+
+  /** cuánto lugar libre hay desde el personaje en la dirección a (hasta max) */
+  room(p, a, max) {
+    const c = Math.cos(a), s = Math.sin(a);
+    let d = 8;
+    while (d < max && this.free(p.cx + c * (d + 4), p.cy + s * (d + 4)) && p.cy + s * (d + 4) > this.ceilY + 6) d += 4;
+    return Math.max(8, d - 4);
+  }
+
+  /** la dirección con más lugar para quedarse midiendo (prefiere arriba y cerca de la que tenía) */
+  openAngle(p, cur, max) {
+    let best = cur, bestS = -1;
+    for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2;
+      const s = this.room(p, a, max) * (1.15 - Math.sin(a) * 0.3) * (1.2 + Math.cos(a - cur) * 0.3);
+      if (s > bestS) { bestS = s; best = a; }
+    }
+    return best;
+  }
+
+  /** ¿la ve? (no hay tierra entre la aguilita y el personaje) */
+  sees(b, p) {
+    const W = this.g.world;
+    for (let k = 1; k < 8; k++) {
+      const u = k / 8;
+      if (W.solidPx(b.x + (p.cx - b.x) * u, b.y + (p.cy - b.y) * u)) return false;
+    }
+    return true;
   }
 
   puff(x, y) {
     for (let i = 0; i < 6; i++) this.g.particles.add({ x, y, vx: (Math.random() - 0.5) * 40, vy: -Math.random() * 30, life: 0.5, max: 0.5, color: 'rgba(220,210,230,0.7)', size: 2, grav: -10, smoke: true });
   }
 
-  /** la mojaron: "¡PÍO!", cae dando vueltas y se va */
+  /** la mojaron: hace su ruidito, cae dando vueltas y se va */
   kill(b, vx) {
     const g = this.g;
     b.st = 'dead'; b.t = 0;
     b.vx = (Math.sign(vx) || 1) * 60; b.vy = -90; b.spin = (Math.random() < 0.5 ? -1 : 1) * 10;
     g.audio.play('peep');
-    g.addText(b.x, b.y - 6, '¡PÍO!', '#e8e3d6');
     for (let i = 0; i < 6; i++) g.particles.add({ x: b.x, y: b.y, vx: (Math.random() - 0.5) * 50, vy: -Math.random() * 40, life: 0.8, max: 0.8, color: Math.random() < 0.5 ? '#a374dc' : '#8a5530', size: 1, grav: 60 });
   }
 
@@ -220,6 +284,7 @@ export class Eaglets {
       for (const b of this.list) {
         if (b.st === 'dead' || b.st === 'leave' || Math.abs(d.x - b.x) > 6 || Math.abs(d.y - b.y) > 5) continue;
         this.splash(d.x, d.y);
+        if (b.immune) { hit = true; break; } // las de la escena repetida: el agua no les hace nada
         b.flash = 0.1;
         if (--b.hp <= 0) this.kill(b, d.vx);
         hit = true; break;
@@ -236,10 +301,10 @@ export class Eaglets {
 
   // ---- dibujo ----
   draw(ctx, camX, camY) {
-    const E = eagletSprites(), t = this.g.time;
+    const t = this.g.time;
     for (const b of this.list) {
       const x = b.x - camX, y = b.y - camY;
-      const fr = E[b.facing > 0 ? 'right' : 'left'][Math.floor(t * 10 + b.ph) % 2];
+      const fr = eagletFrame(b.facing, t, b.ph);
       if (b.st === 'dead') {
         ctx.save();
         ctx.translate(Math.round(x), Math.round(y));
