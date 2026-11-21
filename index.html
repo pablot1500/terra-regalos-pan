@@ -220,18 +220,20 @@
       </div>
     </div>
 
-    <!-- Elegir el dibujo del regalo final (las zapatillas) -->
-    <div id="screen-giftart" class="screen modal hidden">
+    <!-- Escenas: ver cualquier momento importante sin tocar la partida -->
+    <div id="screen-scenes" class="screen modal hidden">
       <div class="panel pause">
-        <h2>Regalo final</h2>
-        <p class="hint">Elegí el dibujo de las zapatillas: es el que aparece al abrir el último cofre.</p>
-        <div id="giftart-list" class="giftart-list"></div>
+        <h2>Escenas</h2>
+        <p class="hint">Para ver cada momento cuando quieras. No cambia tu partida: al terminar (o con "Volver a mi partida") seguís donde estabas.</p>
+        <div id="scenes-list" class="scenes-list"></div>
         <div class="row">
-          <button class="btn small alt" id="giftart-preview">Ver cómo queda</button>
-          <button class="btn" id="giftart-ok">Listo</button>
+          <button class="btn" id="scenes-ok">Listo</button>
         </div>
       </div>
     </div>
+
+    <!-- mientras se ve una escena de prueba -->
+    <button id="demo-bar" class="btn small hidden">◀ Volver a mi partida</button>
 
     <!-- Efectos de sonido (para escucharlos uno por uno) -->
     <div id="screen-sfx" class="screen modal hidden">
@@ -258,11 +260,7 @@
           <button class="btn small alt" id="s-songs">Escuchar canciones</button>
           <button class="btn small alt" id="s-sfx">Efectos de sonido</button>
         </div>
-        <div class="row">
-          <button class="btn small alt" id="s-agui">Ver otra vez la escena de las aguilitas</button>
-          <button class="btn small alt" id="s-lava">Ver otra vez la escena de la lava</button>
-        </div>
-        <button class="btn small alt" id="s-giftart">Dibujo del regalo final</button>
+        <button class="btn small alt" id="s-scenes">Escenas</button>
         <p class="hint">Con el compañero prendido, el otro personaje te acompaña, ayuda a cavar y charlan cada tanto.</p>
         <div class="vols">
           <label><span>Música</span><input type="range" id="vol-music" min="0" max="100" step="5"><output></output></label>

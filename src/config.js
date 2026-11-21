@@ -268,9 +268,9 @@ export const GIFTS = [
   },
   {
     // el último está en el núcleo: en la plataforma de abajo de todo (por ahora no se abre)
-    // art: 'zapatillas' = las zapatillas (src/giftart.js; el dibujo se elige en Configuración)
+    // art: 'zapatillas' = el par de zapatillas (src/giftart.js)
     id: 3, depth: 1500, headline: '¡¡El regalo final!!', art: 'zapatillas', title: 'Zapatillas!!!', final: true, core: true,
-    text: 'Unas zapatillas nuevas para la cumpleañera, para seguir corriendo aventuras.',
+    text: 'Unas zapatillas estilo retro para la cumpleañera.',
   },
 ];
 

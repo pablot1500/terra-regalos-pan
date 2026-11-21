@@ -265,9 +265,8 @@ export function gift2Url() {
 }
 
 // ------------------------------------------------------------
-//  Tercer regalo: unas zapatillas blancas de malla, con plateado, rayas y el cuello negro (4 dibujos para elegir)
+//  Tercer regalo: un par de zapatillas estilo retro, blancas de malla, con plateado, rayas y el cuello negro
 // ------------------------------------------------------------
-const GIFT3_KEY = 'terra-regalos-pan:regalo3';
 // el contorno de la capellada (de costado, la punta a la derecha), en proporciones del ancho y el alto
 const UPPER = [[0.04, 0.74], [0.025, 0.3], [0.05, 0.12], [0.1, 0.05], [0.17, 0.12], [0.24, 0.17], [0.3, 0.09], [0.35, 0.06],
   [0.41, 0.15], [0.5, 0.23], [0.62, 0.32], [0.74, 0.41], [0.86, 0.48], [0.95, 0.56], [0.985, 0.66], [0.97, 0.74]];
@@ -343,14 +342,7 @@ function shoe(x, ox, oy, W, H) {
   }
 }
 
-/** 1: de costado */
-function paintShoeSide() {
-  const [c, x] = makeCanvas(64, 36);
-  shoe(x, 1, 1, 62, 34);
-  sparkle(x, 59, 8); sparkle(x, 6, 33);
-  return outlined(c, OUTLINE);
-}
-/** 2: el par, una atrás de la otra */
+/** el par, una atrás de la otra */
 function paintShoePair() {
   const [c, x] = makeCanvas(56, 31);
   shoe(x, 0, 0, 56, 31);
@@ -364,51 +356,12 @@ function paintShoePair() {
   sparkle(x2, 4, 8); sparkle(x2, 66, 40);
   return c2;
 }
-/** 3: en su caja de zapatillas, con papel de seda */
-function paintShoeBox() {
-  const [c, x] = makeCanvas(70, 50);
-  // tapa apoyada atrás
-  rect(x, 6, 0, 60, 12, '#1d1d24'); rect(x, 7, 1, 58, 10, '#2c2c36'); rect(x, 7, 1, 58, 1, '#4a4a58');
-  rect(x, 30, 4, 12, 3, '#d9dbe2'); // el logo de la tapa (una etiqueta blanca)
-  // caja
-  rect(x, 0, 16, 70, 34, '#15151b'); rect(x, 1, 17, 68, 32, '#24242d');
-  // papel de seda blanco arrugado asomando
-  for (let i = 2; i < 68; i++) { const h = 3 + Math.round(Math.sin(i * 0.7) * 1.5 + Math.sin(i * 0.23) * 1); for (let j = 0; j < h; j++) px(x, i, 18 + j, j === 0 ? '#ffffff' : (i + j) % 3 ? '#eceef3' : '#d7dae2'); }
-  // la zapatilla adentro (se ve la parte de arriba)
-  const [s, sx] = makeCanvas(60, 32);
-  shoe(sx, 0, 0, 60, 32);
-  x.drawImage(outlined(s, OUTLINE), 4, 5, 62, 34, 4, 2, 62, 34);
-  // frente de la caja (tapa la suela)
-  rect(x, 0, 34, 70, 16, '#15151b'); rect(x, 1, 35, 68, 14, '#2c2c36'); rect(x, 1, 35, 68, 1, '#4a4a58');
-  rect(x, 4, 40, 18, 5, '#d9dbe2'); rect(x, 5, 41, 7, 1, '#5d6670'); rect(x, 5, 43, 12, 1, '#5d6670');
-  sparkle(x, 64, 22); sparkle(x, 8, 14);
-  return outlined(c, OUTLINE);
+let url3 = null;
+/** el dibujo del tercer regalo: el par de zapatillas (data URL) */
+export function gift3Url() {
+  if (!url3) url3 = paintShoePair().toDataURL();
+  return url3;
 }
-/** 4: bien de cerca, más grande y con más detalle */
-function paintShoeBig() {
-  const [c, x] = makeCanvas(88, 50);
-  shoe(x, 1, 1, 86, 48);
-  sparkle(x, 82, 10); sparkle(x, 8, 46); sparkle(x, 60, 4);
-  return outlined(c, OUTLINE);
-}
-
-export const GIFT3_OPTIONS = [
-  { name: 'De costado', paint: paintShoeSide },
-  { name: 'El par', paint: paintShoePair },
-  { name: 'En su caja', paint: paintShoeBox },
-  { name: 'Bien de cerca', paint: paintShoeBig },
-];
-const cache3 = [];
-/** el dibujo del tercer regalo (data URL); sin número, el elegido */
-export function gift3Url(i = gift3Choice()) {
-  if (!cache3[i]) cache3[i] = GIFT3_OPTIONS[i].paint().toDataURL();
-  return cache3[i];
-}
-export function gift3Choice() {
-  try { const v = Number(localStorage.getItem(GIFT3_KEY)); if (v >= 0 && v < GIFT3_OPTIONS.length) return v; } catch { /* nada */ }
-  return 0;
-}
-export function setGift3Choice(i) { try { localStorage.setItem(GIFT3_KEY, String(i)); } catch { /* nada */ } }
 
 /** una zapatilla suelta (para los primeros planos de las escenas): canvas sin contorno de W x H */
 export function shoeCanvas(W, H) {

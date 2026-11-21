@@ -190,7 +190,10 @@ export class Boss {
         Object.assign(A[this.mateId], { y: FLOOR_Y, fallTo: null });
         sc.flashback = false;
       },
-      onEnd: (skipped, sc) => this.startFight(sc, p),
+      onEnd: (skipped, sc) => {
+        if (this.demoStop === 'bossIntro') { this.g.exitDemo(); return; } // Configuración → Escenas: solo el comienzo
+        this.startFight(sc, p);
+      },
     });
   }
 
@@ -236,6 +239,7 @@ export class Boss {
 
   defeat(p) {
     if (this.state !== 'fight') return;
+    if (this.demoStop === 'fight') { this.state = 'scene'; this.releaseBot(); this.g.ui.setBossBar(null); this.g.exitDemo(); return; } // solo la pelea
     this.state = 'scene';
     const other = this.fighters().find((f) => f !== p);
     this.mateX = other ? other.cx : p.cx - 16;
@@ -250,6 +254,7 @@ export class Boss {
 
   finish(p, sc, skipped) {
     const g = this.g;
+    if (g.demo) { this.state = 'done'; g.exitDemo(); return; } // Configuración → Escenas: de vuelta a la partida
     this.state = 'done';
     this.losses = 0;
     this.shoes = false;
@@ -1598,8 +1603,22 @@ function* victoryScript(sc, B, p) {
   if (!g.openedGifts.includes(3)) g.openedGifts.push(3);
   g.save();
   yield giftWait(sc, GIFTS.find((gf) => gf.id === 3));
-  // y el final: mirando el horizonte
+  // y el final: mirando el horizonte (en Configuración → Escenas, "Final de la pelea" corta acá)
+  if (B.demoStop === 'bossEnd') return;
   yield* endingScript(sc);
+}
+
+/** solo el final (Configuración → Escenas → Final del juego) */
+export function startOutro(g, onEnd) {
+  g.startScene(function* outro(sc) {
+    const GY = SURFACE * TILE;
+    sc.actor('pablo', LAND_X - 6, GY, { facing: 1 });
+    sc.actor('pancha', LAND_X + 6, GY, { facing: 1 });
+    sc.fixed = { x: LAND_X + 40, y: GY - 6, k: 0.62 };
+    sc.setZoom(1.8, true);
+    sc.snapCam();
+    yield* endingScript(sc);
+  }, { onEnd });
 }
 
 /** el final: a la tarde, en el patio, mirando el horizonte */

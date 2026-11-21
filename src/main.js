@@ -21,7 +21,7 @@ import { introScript, popiScript, carlosScript, eagletScript, carlosGunScript, l
 import { Eaglets } from './eaglets.js';
 import { playChestOpen, stopChestOpen } from './chestopen.js';
 import { hideCutin } from './cutin.js';
-import { Boss } from './boss.js';
+import { Boss, startOutro } from './boss.js';
 import { BuddyAI } from './buddy.js';
 import { Chatter } from './chatter.js';
 import { Net } from './net.js';
@@ -321,8 +321,108 @@ class Game {
         this.ui.show('touch', this.ui.isTouch);
         this.state = 'play';
         if (onEnd) onEnd(skipped, sc);
+        // modo prueba de una escena suelta: al terminar, de vuelta a la partida
+        if (this.demo && this.demoAuto && !this.scene) setTimeout(() => { if (this.demo && !this.scene) this.exitDemo(); }, 0);
       },
     });
+  }
+
+  // ------------------------------------------------------------
+  //  Configuración → Escenas: ver cualquier escena sin tocar la partida
+  // ------------------------------------------------------------
+  /**
+   * Guarda la partida, y mientras dura la prueba no se guarda nada; al volver (botón "Volver a mi partida",
+   * o solo al terminar la escena) se carga otra vez la partida tal como estaba.
+   */
+  startDemo(kind) {
+    if (this.net.role) { this.toast('Las escenas se pueden ver solo jugando sin conexión', null, 'warn'); return; }
+    if (this.demo) this.exitDemo(true);
+    for (const id of ['screen-settings', 'screen-pause', 'screen-controls', 'screen-songs', 'screen-sfx', 'screen-scenes']) this.ui.show(id, false);
+    if (this.state === 'paused') this.resume();
+    if (['play', 'shop', 'gift'].includes(this.state)) this.save();
+    this.demoSave = this.savedData ? JSON.parse(JSON.stringify(this.savedData)) : null;
+    this.demo = true;
+    this.demoAuto = false;
+    if (this.state === 'title' || this.state === 'splash' || this.state === 'intro' || this.state === 'descend') {
+      if (this.scene && this.state === 'intro') this.endIntro();
+      this.state = 'title-done';
+      if (this.savedData) this.continueGame(); else this.startNew();
+    }
+    if (this.state === 'shop') this.closeShop();
+    if (this.state !== 'play') { this.exitDemo(true); return; }
+    this.ui.show('demo-bar', true);
+    const p = this.players[0], GY = SURFACE * TILE;
+    const put = (x, fy) => {
+      p.x = x - p.w / 2; p.y = fy - p.h; p.vx = 0; p.vy = 0; p.peakY = p.y;
+      p.hovering = false; p.digging = false; p.dead = false; p.downed = false; p.hp = HP_MAX;
+      for (const pl of this.players) if (pl.ai) pl.ai.place(p, true);
+    };
+    const stay = 'Tocá "Volver a mi partida" cuando quieras seguir donde estabas';
+    switch (kind) {
+      case 'carlos': // la primera vez en la ventanita: el equipo de Carlos
+        put(TRAILER_X + 22, GY); this.demoAuto = true; this.startCarlosScene(p); break;
+      case 'popi': // Popi sale del arbusto
+        this.popi = null; put((DIG_ZONE.c0 + 3) * TILE, GY); this.demoAuto = true; this.startPopiScene(p); break;
+      case 'gift1': case 'gift2': { // la apertura del cofre y el cartel del regalo
+        const gift = GIFTS.find((gf) => gf.id === (kind === 'gift1' ? 1 : 2));
+        this.state = 'gift';
+        playChestOpen(this.audio, () => { this.ui.giftCb = () => this.exitDemo(); this.ui.showGift(gift); });
+        break;
+      }
+      case 'eaglets':
+        if (!this.openedGifts.includes(1)) this.openedGifts.push(1);
+        this.replayEaglets(); this.toast(stay, null, 'good'); break;
+      case 'gun': // Carlos les da la pistola de agua
+        put(TRAILER_X + 22, GY); this.demoAuto = true; this.startGunScene(p); break;
+      case 'lava':
+        this.replayLava(); this.toast(stay, null, 'good'); break;
+      case 'bossIntro': case 'fight': case 'bossEnd': {
+        this.kitGiven = true; this.gunGiven = true;
+        if (this.boss) this.boss.releaseBot();
+        const B = this.boss = new Boss(this, false);
+        B.demoStop = kind;
+        put(B.homeX - 80, B.floorY);
+        this.cam.x = p.cx - this.vw / 2; this.cam.y = p.cy - this.vh / 2;
+        if (kind === 'fight') B.startFight({ actors: { aguilus: { x: B.homeX } } }, p);
+        else if (kind === 'bossEnd') { B.state = 'fight'; B.x = B.homeX - 30; B.y = B.floorY - 80; B.defeat(p); }
+        // bossIntro: la escena arranca sola al pisar la plataforma
+        break;
+      }
+      case 'outro':
+        startOutro(this, () => this.exitDemo()); break;
+      default: this.exitDemo(true);
+    }
+  }
+
+  /** termina la prueba: vuelve a cargar la partida tal como estaba */
+  exitDemo(quiet = false) {
+    if (!this.demo) return;
+    this.demo = false; this.demoAuto = false;
+    this.ui.show('demo-bar', false);
+    hideCutin(); stopChestOpen(); this.ui.show('sunset', false); this.ui.fade(false);
+    this.ui.giftCb = null;
+    for (const id of ['screen-gift', 'screen-msg', 'screen-pause']) this.ui.show(id, false);
+    if (this.scene) { this.scene = null; this.ui.setIntro(false); this.ui.show('hud', true); this.ui.show('touch', this.ui.isTouch); }
+    if (this.boss) this.boss.releaseBot();
+    this.ui.setBossBar(null);
+    this.audio.jet(false);
+    const d = this.demoSave;
+    this.demoSave = null;
+    if (d) {
+      this.savedData = d;
+      store.save(d);
+      this.state = 'title-done';
+      this.continueGame();
+      if (!quiet) this.toast('De vuelta en tu partida, donde estabas', null, 'good');
+    } else {
+      // no había partida: al título
+      this.savedData = null;
+      store.clear();
+      this.freshGame();
+      this.state = 'title';
+      this.ui.setPlaying(false);
+      this.ui.updateTitle();
+    }
   }
 
   /** primera vez en la ventanita: Carlos les da la pala, el jetpack y la batería */
@@ -354,7 +454,7 @@ class Game {
       this.state = 'title-done'; // sin la bajada de cámara del título: directo a la escena
       this.continueGame();
     }
-    for (const id of ['screen-settings', 'screen-pause', 'screen-controls', 'screen-songs', 'screen-sfx', 'screen-giftart']) this.ui.show(id, false);
+    for (const id of ['screen-settings', 'screen-pause', 'screen-controls', 'screen-songs', 'screen-sfx']) this.ui.show(id, false);
     if (this.state === 'paused') this.resume();
     if (this.state !== 'play') return;
     if (!this.openedGifts.includes(1)) { this.toast('Primero abrí el primer regalo', null, 'warn'); return; }
@@ -517,6 +617,7 @@ class Game {
   }
 
   save() {
+    if (this.demo) return; // viendo una escena de prueba: no se toca la partida
     if (!['play', 'shop', 'paused', 'gift'].includes(this.state) || this.net.isGuest) return;
     const d = this.serialize();
     this.savedData = d;
@@ -1177,7 +1278,7 @@ class Game {
   backButton(screen) {
     const ids = {
       'screen-settings': 'settings-ok', 'screen-controls': 'controls-ok', 'screen-songs': 'songs-ok',
-      'screen-sfx': 'sfx-ok', 'screen-giftart': 'giftart-ok', 'screen-online': 'on-close', 'screen-shop': 'shop-close',
+      'screen-sfx': 'sfx-ok', 'screen-scenes': 'scenes-ok', 'screen-online': 'on-close', 'screen-shop': 'shop-close',
       'screen-gift': 'gift-ok', 'screen-pause': 'btn-resume',
     };
     if (ids[screen.id]) return document.getElementById(ids[screen.id]);
