@@ -683,15 +683,6 @@ button.pad-focus::after {
 @media (prefers-reduced-motion: reduce) { .pad-focus, button.pad-focus::after { animation: none; } }
 
 /* menú de efectos de sonido: botones numerados en dos columnas */
-.opt-title { margin-top: 14px; }
-.opt-cell { display: flex; flex-direction: column; gap: 3px; }
-.tune-vol { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
-.tune-vol input { flex: 1; min-width: 0; accent-color: var(--pink); }
-.tune-vol output { min-width: 38px; text-align: right; }
-.tune-text {
-  width: 100%; box-sizing: border-box; resize: vertical; font-family: var(--font); font-size: 12px; line-height: 1.35;
-  background: var(--ink); color: var(--cream); border: 3px solid var(--panel-hi); padding: 6px 8px; user-select: text; -webkit-user-select: text;
-}
 .sfx-list { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; align-items: start; }
 .sfx-list .sfx { text-align: left; font-size: 13px; padding: 6px 8px; }
 .sfx-list .sfx b { color: #0e2a40; margin-right: 2px; }

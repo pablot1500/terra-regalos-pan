@@ -239,27 +239,9 @@ export class Audio {
       case 'break': this.noise(0.16, { vol: 0.4, freq: 1100 }); this.tone(160, 0.1, { type: 'triangle', vol: 0.25, slide: 70 }); break;
       case 'clink': this.tone(1800, 0.08, { type: 'triangle', vol: 0.18 }); this.tone(2400, 0.06, { type: 'square', vol: 0.05, delay: 0.02 }); break;
       case 'coin': this.tone(988, 0.07, { vol: 0.12 }); this.tone(1319, 0.14, { vol: 0.12, delay: 0.06 }); break;
-      case 'bill': // fajo de billetes que se hojea (frrrt) y campanita
-        for (let i = 0; i < 4; i++) this.noise(0.035, { vol: 0.16, freq: 3800, type: 'highpass', delay: i * 0.03 });
-        this.tone(1319, 0.09, { type: 'triangle', vol: 0.13, delay: 0.12 }); this.tone(1760, 0.18, { type: 'triangle', vol: 0.13, delay: 0.17 });
-        break;
-      // opciones nuevas para juntar billetes (para elegir en el menú Efectos de sonido)
-      case 'bill2': // billete que se estira de golpe (flap) y un brillito
+      case 'bill': // billete que se estira de golpe (flap) y un brillito
         this.noise(0.03, { vol: 0.3, freq: 1400, type: 'bandpass' }); this.noise(0.025, { vol: 0.18, freq: 5200, type: 'highpass', delay: 0.005 });
         [2637, 3136, 3951].forEach((f, i) => this.tone(f, 0.07, { type: 'triangle', vol: 0.07, delay: 0.06 + i * 0.035 }));
-        break;
-      case 'bill3': // billete que vuela (whoosh que sube) y se atrapa con un pop
-        [900, 1500, 2400, 3600].forEach((f, i) => this.noise(0.05, { vol: 0.1, freq: f, type: 'bandpass', delay: i * 0.025 }));
-        this.tone(520, 0.08, { type: 'sine', vol: 0.2, slide: 1250, delay: 0.1 }); this.tone(1250, 0.12, { type: 'triangle', vol: 0.08, delay: 0.17 });
-        break;
-      case 'bill4': // contar billetes: paf, paf, paf y ding
-        for (let i = 0; i < 3; i++) this.noise(0.04, { vol: 0.34, freq: 1700, type: 'bandpass', delay: i * 0.075 });
-        this.tone(1568, 0.2, { type: 'square', vol: 0.07, delay: 0.24 }); this.tone(1568, 0.25, { type: 'triangle', vol: 0.14, delay: 0.24 });
-        break;
-      case 'bill5': // shh de papel suave y un acorde de campanitas que brilla
-        this.noise(0.14, { vol: 0.1, freq: 4200, type: 'highpass' });
-        this.tone(1047, 0.3, { type: 'sine', vol: 0.09, delay: 0.04 }); this.tone(1568, 0.3, { type: 'sine', vol: 0.08, delay: 0.04 });
-        this.tone(2093, 0.25, { type: 'triangle', vol: 0.06, delay: 0.11 });
         break;
       case 'gold': [784, 988, 1175, 1568].forEach((f, i) => this.tone(f, 0.12, { vol: 0.1, delay: i * 0.05 })); break;
       case 'gem': [1047, 1319, 1568, 2093, 2637].forEach((f, i) => this.tone(f, 0.18, { type: 'triangle', vol: 0.14, delay: i * 0.05 })); break;
@@ -313,16 +295,6 @@ export class Audio {
         this.tone(70, 1.5, { type: 'triangle', vol: 0.45, slide: 35 });
         break;
     }
-  }
-
-  /** prueba una opción del menú (efecto de código) a un volumen dado */
-  previewOpt(key, vol) {
-    if (!this.ctx || !this.sfxOn) return;
-    const out = this.ctx.createGain();
-    out.gain.value = vol;
-    out.connect(this.sfx);
-    this.dest = out;
-    try { this.playCode(key); } finally { this.dest = null; }
   }
 
   /** prueba un efecto grabado a un volumen dado (para elegir opciones en el menú) */
