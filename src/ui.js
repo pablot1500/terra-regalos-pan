@@ -255,8 +255,8 @@ export class UI {
     $('q-auto').setAttribute('aria-pressed', String(v));
     try { localStorage.setItem('terra-regalos-pan:autodig', v ? '1' : '0'); } catch { /* nada */ }
     if (on === undefined) {
-      const how = this.isTouch ? 'un toque en CAVAR empieza, otro frena' : 'un click empieza a cavar, otro click frena';
-      this.toast(v ? `Cavado automático: ${how}` : 'Cavado automático desactivado', 'good');
+      const how = this.hint('un click empieza a cavar, otro click frena', null, 'un toque en CAVAR empieza, otro frena');
+      this.toast(v ? (how ? `Cavado automático: ${how}` : 'Cavado automático activado') : 'Cavado automático desactivado', 'good');
     }
   }
 
@@ -364,6 +364,30 @@ export class UI {
   }
 
   show(id, on = true) { $(id).classList.toggle('hidden', !on); }
+
+  /** textos del taller que nombran teclas: con joystick, los botones del control */
+  padKeys(s) {
+    if (this.ctl() !== 'pad') return s;
+    return s.replace(/\(E\)/g, '(X)').replace(/con S\b/g, 'con LT');
+  }
+
+  /** con qué se está jugando ahora: 'pad' (joystick), 'touch' (pantalla) o 'keys' (teclado y mouse) */
+  ctl() {
+    if (this.g.input.lastDevice === 'pad') return 'pad';
+    return this.isTouch ? 'touch' : 'keys';
+  }
+
+  /** elige el texto según el control: `keys` (teclado), `pad` (joystick) y `touch` (pantalla; si falta, usa `keys`) */
+  hint(keys, pad, touch = keys) {
+    const c = this.ctl();
+    return c === 'pad' ? pad : c === 'touch' ? touch : keys;
+  }
+
+  /** marca en el <body> si se juega con joystick (para la pantalla de Controles) */
+  syncPadClass() {
+    const pad = this.g.input.lastDevice === 'pad';
+    if (pad !== this.padClass) { this.padClass = pad; document.body.classList.toggle('pad', pad); }
+  }
 
   setPlaying(on) {
     this.show('hud', on);
@@ -527,7 +551,7 @@ export class UI {
       card.innerHTML = `
         <div class="up-ico"><img src="${ICON_URL[id]}" alt=""></div>
         <div><h4>${it.name} · ${fmtMoney(it.price)}</h4><p class="desc">${it.desc}</p></div>
-        <p class="have">Tienen: ${g.inv[id]} · tecla T</p>
+        <p class="have">Tienen: ${g.inv[id]}${this.hint(' · tecla T', ' · botón Y', '')}</p>
       `;
       const row = document.createElement('div');
       row.className = 'buy-row';
@@ -553,7 +577,7 @@ export class UI {
       card.innerHTML = `
         <div class="up-ico"><img src="${(st ? POPI.right.idleA : DOG.happyA).toDataURL()}" alt="" style="width:36px;height:26px"></div>
         <div><h4>Popi</h4><p class="desc">Tu perro salchicha. Con su casquito y su mini jetpack camina, salta y vuela solo detrás tuyo, y te ayuda a cavar los bloques de al lado. No gasta energía ni se lastima.</p></div>
-        <p class="have">${withMe ? 'Está con vos' : other ? `Está con ${otherName}` : 'Te espera en el patio (acercate y apretá E, o tocá POPI)'}</p>
+        <p class="have">${withMe ? 'Está con vos' : other ? `Está con ${otherName}` : `Te espera en el patio (${this.hint('acercate y apretá E', 'acercate y apretá X', 'acercate y tocá POPI')})`}</p>
       `;
       const b = document.createElement('button');
       b.className = 'btn buy' + (withMe ? ' alt' : '');
@@ -578,9 +602,9 @@ export class UI {
       const pips = up.levels.slice(1).map((_, i) => `<div class="pip ${i < lvl ? 'on' : ''}"></div>`).join('');
       card.innerHTML = `
         <div class="up-ico"><img src="${icon}" alt=""></div>
-        <div><h4>${tier || up.name}</h4>${tier ? `<p class="tier">${up.name}</p>` : ''}<p class="desc">${up.desc}</p></div>
+        <div><h4>${tier || up.name}</h4>${tier ? `<p class="tier">${up.name}</p>` : ''}<p class="desc">${this.padKeys(up.desc)}</p></div>
         <div class="pips">${pips}</div>
-        <div class="vals"><span class="now">${up.label(val)}</span>${next ? `<span class="next">→ ${up.label(next[0])}${nextTier && nextTier !== tier ? ` · ${nextTier}` : ''}</span>` : '<span class="next">¡Al máximo!</span>'}</div>
+        <div class="vals"><span class="now">${this.padKeys(up.label(val))}</span>${next ? `<span class="next">→ ${this.padKeys(up.label(next[0]))}${nextTier && nextTier !== tier ? ` · ${nextTier}` : ''}</span>` : '<span class="next">¡Al máximo!</span>'}</div>
       `;
       const btn = document.createElement('button');
       btn.className = 'btn buy';

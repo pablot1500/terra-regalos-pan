@@ -239,9 +239,9 @@ export class Boss {
     this.state = 'fight';
     this.castT = 1.4; this.attack = null; this.attackN = 0;
     this.g.ui.setBossBar(this.hp / BOSS.hp);
-    g.toast(g.ui.isTouch
-      ? 'Joystick derecho: apuntar y tirar agua · Izquierdo: moverte (para arriba, volar)'
-      : g.input.padSeen ? 'Stick derecho: apuntar · RT: tirar agua · A: saltar' : 'Apuntá con el mouse y mantené el click para tirar agua', null, 'good');
+    g.toast(g.ui.hint('Apuntá con el mouse y mantené el click para tirar agua',
+      'Stick derecho: apuntar · RT: tirar agua · A: saltar',
+      'Joystick derecho: apuntar y tirar agua · Izquierdo: moverte (para arriba, volar)'), null, 'good');
   }
 
   defeat(p) {
@@ -293,7 +293,7 @@ export class Boss {
     if (p === this.local) g.toast(`¡Caíste! ${mate} te puede levantar`, null, 'warn');
     else if (!p.remote) {
       g.addText(p.cx, p.y - 8, '¡AYUDA!', '#ff9ccc');
-      g.tip('revive', g.ui.isTouch || g.input.padSeen ? `¡${CHARACTERS[p.char].name} cayó! Acercate y tocá REVIVIR (o X) varias veces` : `¡${CHARACTERS[p.char].name} cayó! Acercate y apretá E varias veces para levantarla`);
+      g.tip('revive', `¡${CHARACTERS[p.char].name} cayó! Acercate y ${g.ui.hint('apretá E', 'apretá X', 'tocá REVIVIR')} varias veces para levantarla`);
     }
   }
 
@@ -1311,8 +1311,7 @@ function* encounterScript(sc, B, p) {
   yield sc.say('pablo', 'No es una pistola de agua...');
   yield sc.say('pancha', '¡Es una SÚPER pistola de agua!');
   yield* epicIntro(sc, B, me, mate, mid);
-  const touch = g.ui.isTouch || g.input.padSeen;
-  yield sc.say(mate, `¡Y si alguno cae, el otro lo levanta! ${touch ? 'Tocá REVIVIR' : 'Apretá E'} varias veces al lado.`);
+  yield sc.say(mate, `¡Y si alguno cae, el otro lo levanta! ${g.ui.hint('Apretá E', 'Apretá X', 'Tocá REVIVIR')} varias veces al lado.`);
 }
 
 /** cuando vuelven a bajar después de que los noqueó: Aguilus los gasta (versión corta del interruptor) */

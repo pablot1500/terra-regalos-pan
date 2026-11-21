@@ -103,6 +103,7 @@ export class Input {
       el.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         el.setPointerCapture(e.pointerId);
+        this.lastDevice = 'touch';
         if (prop === 'dig' && this.autoDig) {
           // cavado automático: un toque empieza, otro toque frena
           this.touch.dig = !this.touch.dig;

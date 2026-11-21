@@ -755,6 +755,7 @@ class Game {
     const inp = this.input.read(this.cam.x, this.cam.y);
     const p = this.players[0];
     if (this.input.pad.on) this.padUI(inp);
+    this.ui.syncPadClass();
     // música: la de la intro (y su parte de acción), la del menú en el título, y en el juego según la profundidad
     this.audio.setScene(this.state === 'intro' ? this.introMusic : this.state === 'title' ? MENU_ZONE : null);
 
@@ -812,17 +813,17 @@ class Game {
         const mateName = CHARACTERS[p.char === 'pablo' ? 'pancha' : 'pablo'].name;
         this.ui.setActButton(fallen ? 'REVIVIR' : null);
         this.ui.setPrompt(p.downed ? `¡Caíste! Esperá que ${mateName} te levante`
-          : fallen ? (this.ui.isTouch ? 'Tocá REVIVIR varias veces' : this.input.lastDevice === 'pad' ? 'Apretá X varias veces para levantarl' + (fallen.char === 'pablo' ? 'o' : 'a') : 'Apretá E varias veces para levantarl' + (fallen.char === 'pablo' ? 'o' : 'a')) : null);
+          : fallen ? this.ui.hint('Apretá E', 'Apretá X', 'Tocá REVIVIR') + ' varias veces' + (this.ui.ctl() === 'touch' ? '' : ' para levantarl' + (fallen.char === 'pablo' ? 'o' : 'a')) : null);
         if (inp.interact && fallen) this.boss.reviveTap(p, fallen);
       } else if (nearDog) {
-        this.ui.setPrompt(this.ui.isTouch ? null : 'Presioná E para llevar a Popi');
+        this.ui.setPrompt(this.ui.hint('Presioná E para llevar a Popi', 'Apretá X para llevar a Popi', null));
         this.ui.setActButton('POPI');
         if (inp.interact) this.togglePopi();
         this.tip('popi', '¡Es Popi! Te puede acompañar y ayudar a cavar');
       } else if (p.inShop && !this.kitGiven) {
         // la primera vez: Carlos les da el equipo
         if (enteredShop) this.addText(TRAILER_X + 31, SURFACE * TILE - TRAILER_H + 20, '¡HOLA!', '#fff4e0');
-        this.ui.setPrompt(this.ui.isTouch ? null : 'Presioná E para hablar con Carlos');
+        this.ui.setPrompt(this.ui.hint('Presioná E para hablar con Carlos', 'Apretá X para hablar con Carlos', null));
         this.ui.setActButton('CARLOS');
         if (inp.interact) {
           if (guest) this.toast('Carlos habla con quien creó la sala: esperá que pase por la ventanita', null, 'warn');
@@ -836,7 +837,7 @@ class Game {
       } else if (p.inShop) {
         // Carlos saluda desde la ventanita
         if (enteredShop) this.addText(TRAILER_X + 31, SURFACE * TILE - TRAILER_H + 20, '¡HOLA!', '#fff4e0');
-        this.ui.setPrompt(this.ui.isTouch ? null : 'Presioná E para comprar en la ventanita');
+        this.ui.setPrompt(this.ui.hint('Presioná E para comprar en la ventanita', 'Apretá X para comprar en la ventanita', null));
         this.ui.setActButton('TALLER');
         if (inp.interact) this.openShop();
         this.tip('shop', 'Este es el Taller rodante: por la ventanita se compran las mejoras');
@@ -975,15 +976,15 @@ class Game {
       return;
     }
     if (p.x > 27 * TILE && p.depth < 2) {
-      this.tip('dig', this.ui.isTouch ? 'Cavá en el cantero del medio del patio: joystick abajo o CAVAR' : 'Cavá en el cantero del medio del patio: click hacia donde quieras (o J + dirección)');
+      this.tip('dig', 'Cavá en el cantero del medio del patio: ' + this.ui.hint('click hacia donde quieras (o J + dirección)', 'stick derecho hacia donde quieras (o stick izquierdo abajo)', 'joystick abajo o CAVAR'));
     }
-    if (p.depth > 14) this.tip('jet', this.ui.isTouch ? 'Para subir: mantené SALTAR y volás con el jetpack' : 'Para subir: mantené Espacio y volás con el jetpack');
+    if (p.depth > 14) this.tip('jet', `Para subir: mantené ${this.ui.hint('Espacio', 'A', 'SALTAR')} y volás con el jetpack`);
     if (p.energy < this.stats.energyMax * 0.3 && p.depth > 4) this.tip('energy', 'Energía baja: volvé al departamento a descansar');
     if (this.money >= 60 && this.upgrades.pala === 0) this.tip('afford', '¡Ya te alcanza para mejorar la pala en el Taller!');
-    if (p.depth > 30) this.tip('torch', this.ui.isTouch ? 'Tip: en el Taller venden antorchas para iluminar' : 'Tip: en el Taller venden antorchas (se ponen con T)');
+    if (p.depth > 30) this.tip('torch', this.ui.hint('Tip: en el Taller venden antorchas (se ponen con T)', 'Tip: en el Taller venden antorchas (se ponen con Y)', 'Tip: en el Taller venden antorchas para iluminar'));
     if (p.depth > 990) this.tip('lava', 'Cuidado con la lava: quema, y si cavás por debajo se derrama');
-    if (this.stats.hover && p.depth > 4) this.tip('hover', this.ui.isTouch ? 'Tu jetpack tiene modo vuelo: tocá VOLAR para prenderlo o apagarlo' : 'Tu jetpack tiene modo vuelo: tocá E para prenderlo o apagarlo');
-    if (p.depth > 40) this.tip('fall', this.ui.isTouch ? 'Ojo con las caídas: para bajar despacio mantené SALTAR + joystick abajo' : 'Ojo con las caídas: mantené S para bajar despacio con el jetpack');
+    if (this.stats.hover && p.depth > 4) this.tip('hover', `Tu jetpack tiene modo vuelo: ${this.ui.hint('apretá E', 'apretá X', 'tocá VOLAR')} para prenderlo o apagarlo`);
+    if (p.depth > 40) this.tip('fall', this.ui.hint('Ojo con las caídas: mantené S para bajar despacio con el jetpack', 'Ojo con las caídas: mantené LT para bajar despacio con el jetpack', 'Ojo con las caídas: para bajar despacio mantené SALTAR + joystick abajo'));
   }
 
   /** destellos de los minerales de las capas profundas (se ven aunque esté oscuro) */

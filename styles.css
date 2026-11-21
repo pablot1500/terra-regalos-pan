@@ -348,6 +348,9 @@ body.touch .inv kbd { display: none; }
 .ctl-touch { display: none; }
 body.touch .ctl-touch { display: block; }
 body.touch .ctl-desk { display: none; }
+.ctl-pad { display: none; }
+body.pad .ctl-pad { display: block; }
+body.pad .ctl-desk, body.pad .ctl-touch { display: none; }
 #msg-text { white-space: pre-line; font-size: 17px; }
 
 #fade { position: absolute; inset: 0; background: #0b0810; opacity: 0; pointer-events: none; z-index: 15; transition: opacity 0.6s; }
