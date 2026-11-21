@@ -334,9 +334,7 @@ class Game {
   switchTool() {
     if (!this.gunGiven) return;
     this.tool = this.tool === 'gun' ? 'dig' : 'gun';
-    this.audio.play(this.tool === 'gun' ? 'pump' : 'ui');
-    const dig = this.upgrades.pala >= 3 ? 'el taladro' : 'la pala';
-    this.toast(this.tool === 'gun' ? '¡Pistola de agua en la mano!' : `De vuelta con ${dig}`, 'tool', 'good');
+    this.audio.play(this.tool === 'gun' ? 'pump' : 'ui'); // (sin cartel: alcanza con el sonido y la herramienta en la mano)
   }
 
   /**

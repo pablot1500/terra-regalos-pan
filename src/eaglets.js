@@ -297,6 +297,8 @@ export class Eaglets {
       }
       // la lava: el agua la enfría y se vuelve roca de lava (que se puede picar)
       if (!hit && g.world.lavaAtPx(d.x, d.y)) { this.coolAt(d.x, d.y); hit = true; }
+      // pega en la costra de roca de lava: el frío pasa a través y sigue enfriando la lava de abajo y de al lado
+      if (!hit && g.world.cooledAtPx(d.x, d.y)) { this.coolAt(d.x, d.y, true); hit = true; }
       if (!hit && g.world.solidPx(d.x, d.y)) { this.splash(d.x, d.y); hit = true; }
       if (hit || d.t > BOSS.waterLife) d.dead = true;
     }
@@ -304,9 +306,16 @@ export class Eaglets {
   }
 
   /** una gotita cae en la lava: chisporrotea, larga vapor y la enfría alrededor */
-  coolAt(x, y) {
+  coolAt(x, y, crust = false) {
     const g = this.g;
-    const cells = g.world.coolLava(x, y, 4.5);
+    // en la lava: un óvalo de 7 px de costado y 12 para abajo. En la costra, el frío la atraviesa:
+    // enfría la lava que quedó debajo (o al costado), así tiro a tiro se vuelve piedra todo el charco
+    let cells;
+    if (crust) {
+      const under = g.world.lavaUnderCrust(x, y);
+      if (!under) { this.splash(x, y); return; }
+      cells = g.world.coolLava(under.x, under.y, 9, 14); // (el vapor sale por donde pegó)
+    } else cells = g.world.coolLava(x, y, 7, 12);
     if (cells.length && g.net.linked) g.net.send('cool', { q: cells });
     const now = performance.now();
     if (now - (this.steamAt || 0) > 140) { this.steamAt = now; g.audio.play('steam'); }

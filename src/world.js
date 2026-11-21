@@ -635,6 +635,29 @@ export class World {
     return n;
   }
 
+  /** ¿este punto (px) es roca de lava (lava que ya enfriaron)? */
+  cooledAtPx(x, y) {
+    const sx = Math.floor(x / SUB), sy = Math.floor(y / SUB);
+    if (sx < 0 || sy < 0 || sx >= this.sw || sy >= this.sh) return false;
+    const q = sy * this.sw + sx;
+    return !!(this.cooled[q] && this.sub[q]);
+  }
+
+  /**
+   * Desde un punto de la costra de roca de lava, la lava más cercana que quedó debajo (o un poco al costado),
+   * pasando solo por roca de lava. Así cada tiro en la costra sigue enfriando hacia abajo. Devuelve {x, y} o null.
+   */
+  lavaUnderCrust(x, y, maxDown = 70) {
+    for (const dx of [0, -4, 4, -8, 8, -12, 12]) {
+      for (let d = 0; d <= maxDown; d += 2) {
+        const px = x + dx, py = y + d;
+        if (this.lavaAtPx(px, py)) return { x: px, y: py };
+        if (!this.cooledAtPx(px, py) && this.solidPx(px, py)) break; // roca de verdad: por ahí no pasa
+      }
+    }
+    return null;
+  }
+
   /** ¿hay lava en este punto (px)? */
   lavaAtPx(x, y) {
     const sx = Math.floor(x / SUB), sy = Math.floor(y / SUB);
@@ -687,16 +710,20 @@ export class World {
   }
 
   /**
-   * El agua enfría la lava: las sub-celdas de lava en un radio (px) se vuelven roca de lava, que se puede picar.
+   * El agua enfría la lava: las sub-celdas de lava alrededor de (x, y) se vuelven roca de lava, que se puede picar.
+   * Enfría un óvalo que va más hondo que ancho (r de costado, `down` para abajo, un poco para arriba): así cada
+   * tiro hace un pozo de piedra y los siguientes, que pegan en esa costra, siguen enfriando lo de abajo.
    * En la caverna del núcleo no (ahí la lava es el mar de la pelea). Devuelve las sub-celdas que cambiaron.
    */
-  coolLava(x, y, r) {
-    const { sw, lava } = this, out = [];
+  coolLava(x, y, r, down = r) {
+    const { sw, lava } = this, out = [], up = r * 0.7;
     const sx0 = Math.max(1, Math.floor((x - r) / SUB)), sx1 = Math.min(sw - 2, Math.floor((x + r) / SUB));
-    const sy0 = Math.max(this.lavaRow0, Math.floor((y - r) / SUB)), sy1 = Math.min(this.sh - 2, Math.floor((y + r) / SUB));
+    const sy0 = Math.max(this.lavaRow0, Math.floor((y - up) / SUB)), sy1 = Math.min(this.sh - 2, Math.floor((y + down) / SUB));
     for (let sy = sy0; sy <= sy1; sy++) for (let sx = sx0; sx <= sx1; sx++) {
       const q = sy * sw + sx;
-      if (!lava[q] || (sx * SUB + 1 - x) ** 2 + (sy * SUB + 1 - y) ** 2 > r * r) continue;
+      if (!lava[q]) continue;
+      const dx = (sx * SUB + 1 - x) / r, dy = sy * SUB + 1 - y, ry = dy > 0 ? down : up;
+      if (dx * dx + (dy / ry) ** 2 > 1) continue;
       if (this.mat[(sy >> 2) * this.w + (sx >> 2)] === T.CORE) continue;
       out.push(q);
     }
