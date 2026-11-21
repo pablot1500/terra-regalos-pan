@@ -15,8 +15,12 @@ function paintShoes() {
   R(18, 0, 124, 22, '#4a3070'); R(18, 0, 124, 4, '#2e1c4a');
   for (let i = 18; i < 142; i += 6) R(i + 2, 4, 1, 16, '#3c2560');      // pliegues
   R(18, 20, 124, 3, '#a374dc'); R(18, 23, 124, 1, '#22142b');           // el ribete
-  // las patitas (flaquitas, de pájaro)
-  for (const lx of [44, 98]) { R(lx, 24, 5, 24, '#c9a26b'); R(lx, 24, 2, 24, '#e0be86'); R(lx + 4, 24, 1, 24, '#8a6a3c'); }
+  // las patas (de pájaro, pero no tan flaquitas), con las escamitas
+  for (const lx of [36, 90]) {
+    R(lx, 24, 11, 26, '#c9a26b'); R(lx, 24, 3, 26, '#e0be86'); R(lx + 9, 24, 2, 26, '#8a6a3c');
+    for (let y = 28; y < 48; y += 5) R(lx + 3, y, 6, 1, '#a9844f');
+    R(lx - 1, 24, 13, 2, '#22142b');
+  }
   // las zapatillas
   const s = shoeCanvas(66, 36);
   x.drawImage(s, 82, 44);
@@ -24,20 +28,21 @@ function paintShoes() {
   return c;
 }
 
-/** la cara de Panchi bien de cerca, enojada (con la venita) */
+/** Panchi de cerca (la cabeza y medio torso), enojada (con la venita) */
 function paintPancha() {
   const [c, x] = makeCanvas(W, H);
   const f = getCharFrames('pancha').right.idle;
   x.imageSmoothingEnabled = false;
-  // la cabeza (las primeras filas del personaje), bien grande
-  const head = 12, sc = 5;
-  x.drawImage(f, 0, 0, CHAR_W, head, Math.round(W / 2 - (CHAR_W * sc) / 2), 4, CHAR_W * sc, head * sc);
+  // la cabeza y la mitad del torso, centrada en la cara (lo de abajo queda cortado por el borde)
+  const rows = 18, sc = 5, x0 = Math.round(W / 2 - (CHAR_W * sc) / 2);
+  x.drawImage(f, 0, 0, CHAR_W, rows, x0, 6, CHAR_W * sc, rows * sc);
   // la venita de enojo
   const R = (a, b, w, h, col) => { x.fillStyle = col; x.fillRect(a, b, w, h); };
-  const vx = 112, vy = 10;
+  const vx = x0 + CHAR_W * sc + 2, vy = 10;
   for (const [a, b] of [[0, 2], [1, 1], [2, 0], [4, 0], [5, 1], [6, 2], [0, 4], [1, 5], [2, 6], [4, 6], [5, 5], [6, 4]]) R(vx + a * 2, vy + b * 2, 2, 2, '#ff2d4f');
   // "!!"
-  R(24, 14, 4, 16, '#ffffff'); R(24, 34, 4, 4, '#ffffff'); R(32, 10, 4, 16, '#ffffff'); R(32, 30, 4, 4, '#ffffff');
+  const ex = x0 - 22;
+  R(ex, 14, 4, 16, '#ffffff'); R(ex, 34, 4, 4, '#ffffff'); R(ex + 8, 10, 4, 16, '#ffffff'); R(ex + 8, 30, 4, 4, '#ffffff');
   return c;
 }
 
@@ -81,9 +86,9 @@ export function showCutin(kind) {
       x.closePath(); x.fill();
     }
     x.globalAlpha = 1;
-    // el dibujo, con un temblor fuerte al principio y uno chiquito después
-    const sh = t < 0.35 ? 3 : 0.6;
-    x.drawImage(art, Math.round(Math.sin(t * 70) * sh), Math.round(Math.cos(t * 53) * sh));
+    // el dibujo: un sacudón cortito al entrar y después quieto (así se entiende)
+    const sh = t < 0.18 ? 1 : 0;
+    x.drawImage(art, Math.round(Math.sin(t * 70) * sh), 0);
     raf = requestAnimationFrame(frame);
   };
   raf = requestAnimationFrame(frame);

@@ -1310,13 +1310,13 @@ function* encounterScript(sc, B, p) {
   sc.setZoom(2);
   yield sc.wait(0.6);
   // primer plano: ¡tiene puestas las zapatillas!
-  g.sfx('boom'); g.shakeAll(6);
+  g.sfx('boom'); g.shakeAll(2);
   showCutin('shoes');
   yield sc.wait(0.6);
   g.sfx('laugh');
   yield sc.say('aguilus', '¡JA! ¡Ahora tu regalo es MÍO! ¿Y? ¿No me quedan divinas?');
   // primer plano: Panchi, furiosa
-  g.sfx('hurt'); g.shakeAll(4);
+  g.sfx('hurt'); g.shakeAll(1);
   showCutin('pancha');
   yield sc.say('pancha', '¡¡NOOO!! ¡Devolveme mis zapatillas, pajarraco!');
   hideCutin();
