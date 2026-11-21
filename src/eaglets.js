@@ -146,8 +146,8 @@ export class Eaglets {
       b.vx += ((ex / ed) * sp - b.vx) * Math.min(1, dt * 2.5);
       b.vy += ((ey / ed) * sp - b.vy) * Math.min(1, dt * 2.5);
       b.nextT -= dt;
-      // cuando le toca, si te ve (sin tierra en el medio) y no está demasiado lejos, se frena a medirte
-      if (b.nextT <= 0 && dist < EAGLETS.retreatTo * 1.3 && this.sees(b, p)) { b.st = 'aim'; b.t = 0; }
+      // cuando le toca, si te ve (sin tierra en el medio), está en la pantalla y no muy lejos, se frena a medirte
+      if (b.nextT <= 0 && dist < EAGLETS.retreatTo * 1.15 && this.onScreen(b) && this.sees(b, p)) { b.st = 'aim'; b.t = 0; }
     } else if (b.st === 'aim') {
       // se frena y te mide desde lejos (titila con el "!"), se echa un poquito para atrás y se tira en picada
       const d = dist || 1;
@@ -224,6 +224,12 @@ export class Eaglets {
       if (s > bestS) { bestS = s; best = a; }
     }
     return best;
+  }
+
+  /** ¿se la ve en la pantalla? (con un margen, para que no cargue desde afuera) */
+  onScreen(b) {
+    const g = this.g, z = g.zoom || 1, m = 14;
+    return b.x > g.cam.x + m && b.x < g.cam.x + g.vw / z - m && b.y > g.cam.y + m && b.y < g.cam.y + g.vh / z - m;
   }
 
   /** ¿la ve? (no hay tierra entre la aguilita y el personaje) */

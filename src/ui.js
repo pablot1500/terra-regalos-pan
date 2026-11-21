@@ -5,7 +5,6 @@ import { fmtMoney } from './util.js';
 import { MusicDirector, GEN } from './music.js';
 import { SFX_LIST } from './audio.js';
 import { gift1Url } from './giftart.js';
-import { EAGLET_STYLES, eagletStyle, setEagletStyle, eagletFrame } from './eagletart.js';
 
 
 const $ = (id) => document.getElementById(id);
@@ -65,9 +64,6 @@ export class UI {
     $('s-sfx').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-sfx', true); this.buildSfxList(); });
     // repetir la escena de las aguilitas (para probar cambios), sin tocar el progreso
     $('s-agui').addEventListener('click', () => { game.audio.unlock(); game.audio.play('ui'); game.replayEaglets(); });
-    // ver las 4 versiones de las aguilitas volando y elegir una
-    $('s-agui-art').addEventListener('click', () => { this.show('screen-settings', false); sub('screen-agui-art', true); this.openEagletArt(); });
-    $('agui-art-ok').addEventListener('click', () => { this.closeEagletArt(); sub('screen-agui-art', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
     $('sfx-ok').addEventListener('click', () => { sub('screen-sfx', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
     // jugar online
     const net = game.net;
@@ -89,7 +85,6 @@ export class UI {
     $('songs-auto').addEventListener('click', () => { if (game.audio.music) game.audio.music.release(); this.refreshSongs(); });
     $('p-songs').addEventListener('click', () => this.refreshSongs());
     this.closeSub = () => {
-      if (!$('screen-agui-art').classList.contains('hidden')) { $('agui-art-ok').click(); return true; }
       for (const id of ['screen-settings', 'screen-controls', 'screen-songs', 'screen-sfx']) if (!$(id).classList.contains('hidden')) { sub(id, false); return true; }
       return false;
     };
@@ -175,55 +170,6 @@ export class UI {
   }
 
   /** lista numerada de todos los efectos de sonido, para escucharlos uno por uno (tal como suenan en el juego) */
-  /** Configuración → Dibujos de las aguilitas: cada versión volando en su cuadrito, y el botón para usarla */
-  openEagletArt() {
-    const list = $('agui-art-list');
-    list.innerHTML = '';
-    const cards = EAGLET_STYLES.map((st, i) => {
-      const card = document.createElement('div');
-      card.className = 'agui-card';
-      const cv = document.createElement('canvas');
-      cv.width = 64; cv.height = 40;
-      const h = document.createElement('h3'); h.textContent = `${i + 1}. ${st.name}`;
-      const p = document.createElement('p'); p.textContent = st.desc;
-      const b = document.createElement('button');
-      b.className = 'btn small alt';
-      b.addEventListener('click', () => { this.g.audio.play('ui'); setEagletStyle(i); mark(); });
-      card.append(cv, h, p, b);
-      list.append(card);
-      return { card, cv, b, ctx: cv.getContext('2d') };
-    });
-    const mark = () => cards.forEach((c, i) => {
-      const on = eagletStyle() === i;
-      c.card.classList.toggle('sel', on);
-      c.b.textContent = on ? '✓ En uso' : 'Usar esta';
-    });
-    mark();
-    const t0 = performance.now();
-    const loop = (now) => {
-      const t = (now - t0) / 1000;
-      cards.forEach((c, i) => {
-        const x = c.ctx;
-        x.imageSmoothingEnabled = false;
-        x.clearRect(0, 0, 64, 40);
-        // vuela de un lado al otro, subiendo y bajando un poquito
-        const k = (t * 0.25 + i * 0.13) % 1, dir = k < 0.5 ? 1 : -1, u = k < 0.5 ? k * 2 : (1 - k) * 2;
-        const px = 8 + u * 24, py = 10 + Math.sin(t * 3 + i) * 3;
-        x.drawImage(eagletFrame(dir, t, i * 2, i), Math.round(px), Math.round(py));
-        // y de cerca, grande, en el lugar
-        x.drawImage(eagletFrame(1, t, 0, i), 0, 0, 14, 11, 34, 14, 28, 22);
-      });
-      this.eagletArtRaf = requestAnimationFrame(loop);
-    };
-    this.closeEagletArt();
-    this.eagletArtRaf = requestAnimationFrame(loop);
-  }
-
-  closeEagletArt() {
-    if (this.eagletArtRaf) cancelAnimationFrame(this.eagletArtRaf);
-    this.eagletArtRaf = 0;
-  }
-
   buildSfxList() {
     const a = this.g.audio, list = $('sfx-list');
     list.innerHTML = '';

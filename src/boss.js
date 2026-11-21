@@ -8,7 +8,7 @@ import { drawAguilus, AG_H } from './aguilus.js';
 import { DIG_ZONE, TRAILER_X, TRAILER_H } from './structures.js';
 import { mulberry32 } from './rng.js';
 import { clamp, fmtMoney, makeCanvas } from './util.js';
-import { eagletStyleSprites, eagletStyle, eagletFrame } from './eagletart.js';
+import { eagletFrame } from './eagletart.js';
 
 const FLOOR_Y = CORE_PLATFORM.r * TILE;
 const ARENA = { x0: (CORE_PLATFORM.c0 + 2) * TILE, x1: (CORE_PLATFORM.c1 - 1) * TILE };
@@ -106,8 +106,6 @@ const FEATHER = (() => {
 // ------------------------------------------------------------
 //  Aguilitas: las ayudantes de Aguilus (chiquitas, con las alas violetas)
 // ------------------------------------------------------------
-/** los cuadros de la aguilita en la versión elegida (en Configuración → Dibujos de las aguilitas) */
-export function eagletSprites() { return eagletStyleSprites(eagletStyle()); }
 
 const HIT_LINES = ['¡AIAA!', '¡MIS PLUMAS!', '¡ESTOY EMPAPADO!', '¡AGUA NO!', '¡PUAJ!', '¡ESTÁ FRÍA!', '¡MI TÚNICA!'];
 const BOT_CHEERS = ['¡TOMÁ!', '¡MOJADO!', '¡DALE!', '¡CUIDADO!', '¡AGUA VA!', '¡VAMOS!'];

@@ -347,7 +347,7 @@ class Game {
       this.state = 'title-done'; // sin la bajada de cámara del título: directo a la escena
       this.continueGame();
     }
-    for (const id of ['screen-settings', 'screen-pause', 'screen-controls', 'screen-songs', 'screen-sfx', 'screen-agui-art']) this.ui.show(id, false);
+    for (const id of ['screen-settings', 'screen-pause', 'screen-controls', 'screen-songs', 'screen-sfx']) this.ui.show(id, false);
     if (this.state === 'paused') this.resume();
     if (this.state !== 'play') return;
     if (!this.openedGifts.includes(1)) { this.toast('Primero abrí el primer regalo', null, 'warn'); return; }
@@ -390,7 +390,7 @@ class Game {
         // las mismas aguilitas de la escena salen a perseguir (desde donde quedaron)
         const pts = spots || caves.map((c) => ({ x: c.x, y: c.y }));
         for (const s of pts) this.eaglets.spawn(s.x, s.y, { nextT: 1.2 + Math.random() * 1.2, immune });
-        this.eaglets.spawnT = 4;
+        this.eaglets.spawnT = EAGLETS.every[0];
         this.toast(`¡Escapá para arriba! Las aguilitas no suben más arriba de los ${EAGLETS.ceil} m`, null, 'warn');
         this.save();
       },
@@ -1106,7 +1106,7 @@ class Game {
   backButton(screen) {
     const ids = {
       'screen-settings': 'settings-ok', 'screen-controls': 'controls-ok', 'screen-songs': 'songs-ok',
-      'screen-sfx': 'sfx-ok', 'screen-agui-art': 'agui-art-ok', 'screen-online': 'on-close', 'screen-shop': 'shop-close',
+      'screen-sfx': 'sfx-ok', 'screen-online': 'on-close', 'screen-shop': 'shop-close',
       'screen-gift': 'gift-ok', 'screen-pause': 'btn-resume',
     };
     if (ids[screen.id]) return document.getElementById(ids[screen.id]);

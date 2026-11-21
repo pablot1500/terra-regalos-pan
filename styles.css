@@ -717,12 +717,3 @@ button.pad-focus::after {
 .sfx-list { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; align-items: start; }
 .sfx-list .sfx { text-align: left; font-size: 13px; padding: 6px 8px; }
 .sfx-list .sfx b { color: #0e2a40; margin-right: 2px; }
-
-/* Configuración → Dibujos de las aguilitas */
-.agui-art { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; text-align: left; }
-.agui-card { background: var(--panel-2, #3a2b45); border: 3px solid var(--ink); padding: 6px; display: flex; flex-direction: column; gap: 4px; }
-.agui-card.sel { border-color: var(--pink); }
-.agui-card canvas { width: 100%; image-rendering: pixelated; background: #1a1220; border: 2px solid var(--ink); }
-.agui-card h3 { margin: 2px 0 0; font-size: 14px; color: var(--gold); text-shadow: 0 2px 0 var(--ink); }
-.agui-card p { margin: 0; font-size: 11px; color: var(--muted); flex: 1; }
-.agui-card .btn { font-size: 12px; }
