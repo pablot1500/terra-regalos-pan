@@ -82,7 +82,7 @@ export class Player {
   }
 
   /** el jetpack nuevo ('hover'): en la pelea y para el compañero automático sigue el clásico */
-  usesHoverJet(arena) { return JET_MODE === 'hover' && !arena && !this.bot; }
+  usesHoverJet(arena) { return JET_MODE === 'hover' && !this.bot; } // (en la pelea también, y ahí es infinito)
 
   /** jetpack nuevo: apagarlo en el aire (E / X / APAGAR) */
   jetOff() {
@@ -317,8 +317,8 @@ export class Player {
       this.jetFlame(dt);
       const moving = jetIy !== 0 || walkIx !== 0;
       const cost = jetIy < 0 ? JET_COST.up : moving ? JET_COST.move : JET_COST.idle;
-      if (!st.infEnergy) this.energy = Math.max(0, this.energy - st.jetCost * cost * dt);
-      if (this.energy <= 0) { this.hovering = false; this.note('¡Sin energía para volar!', 'nojet'); }
+      if (!st.infEnergy && !arena) this.energy = Math.max(0, this.energy - st.jetCost * cost * dt);
+      if (!arena && this.energy <= 0) { this.hovering = false; this.note('¡Sin energía para volar!', 'nojet'); }
       this.peakY = this.y;
     } else if (H) {
       // modo vuelo: sin gravedad, se mueve para donde apuntes y frena enseguida
@@ -335,8 +335,8 @@ export class Player {
       this.peakY = this.y;
     } else {
       // jetpack nuevo: tocar saltar de nuevo en el aire lo prende (frena de a poco y quedás flotando)
-      if (hoverJet && !jetJustOff && inp.jumpPressed && !this.onGround && !inLava && g.kitGiven) {
-        if (this.energy > 0) {
+      if (hoverJet && !jetJustOff && inp.jumpPressed && !this.onGround && !inLava && (g.kitGiven || arena)) {
+        if (this.energy > 0 || arena) {
           this.hovering = true;
           this.peakY = this.y;
           g.audio.play('jump');
@@ -359,7 +359,7 @@ export class Player {
         if (this.vy > st.glide) this.vy = Math.max(st.glide, this.vy - PHYS.jetAccel * dt);
         this.peakY = this.y;
         this.jetFlame(dt);
-      } else if (wantJet && (arena ? this.jetFuel > 0 : this.energy > 0)) {
+      } else if (wantJet && (arena || this.energy > 0)) { // en la pelea, infinito
         this.flying = true;
         this.vy -= PHYS.jetAccel * (arena ? 0.9 : 1) * dt;
         const cap = arena ? BOSS.jetSpeed : st.jetSpeed;
@@ -438,7 +438,7 @@ export class Player {
     }
 
     // ---- agotamiento ----
-    if (this.energy <= 0 && this.depth > 6 && !this.resting) {
+    if (this.energy <= 0 && this.depth > 6 && !this.resting && !arena) { // (en la pelea no se gasta energía)
       this.exhaustT += dt;
       if (this.exhaustT > 0.1 && this.exhaustT - dt <= 0.1) this.note('¡Te quedaste sin energía!', 'noen');
       if (this.exhaustT > 2.5) g.faint(this, 'energy');

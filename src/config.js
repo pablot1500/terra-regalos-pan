@@ -288,20 +288,23 @@ export const BOSS = {
   waterSpeed: 270,
   waterGrav: 90,
   waterLife: 1.1,
-  rockDmg: 14,       // rocas de magma (se apagan con agua)
+  // (los daños son la mitad de los de antes: la pelea se hacía muy difícil)
+  rockDmg: 7,        // rocas de magma (se apagan con agua)
   rockWater: 4,      // gotitas que hacen falta para apagar una roca
-  featherDmg: 10,    // plumas-dardo
-  pillarDmg: 16,     // columnas de fuego que salen del piso
-  diveDmg: 18,       // picada: chocarlo cuando se tira contra el piso
-  waveDmg: 12,       // onda de choque de la picada (se salta)
-  beamDmg: 20,       // rayo violeta (fase 2 en adelante)
+  featherDmg: 5,     // plumas-dardo
+  pillarDmg: 8,      // columnas de fuego que salen del piso
+  diveDmg: 9,        // picada: chocarlo cuando se tira contra el piso
+  waveDmg: 6,        // onda de choque de la picada (se salta)
+  beamDmg: 10,       // rayo violeta (fase 2 en adelante)
+  sweepDmg: 7,       // vendaval: una ráfaga que barre todo el aire (en el piso no pega)
+  magmaDmg: 7,       // piso de lava: el piso de la plataforma quema un ratito (volando no pega)
   minionHp: 8,       // aguilitas: gotitas para bajarlas
-  minionDmg: 8,
+  minionDmg: 4,
   minionCap: [2, 3, 4], // cuántas aguilitas puede haber a la vez en cada fase
   reviveTap: 0.12,   // cuánto carga cada toque de E al revivir al otro
   reviveDecay: 0.16, // cuánto se descarga por segundo si dejás de tocar
   reviveR: 18,       // qué tan cerca hay que estar para revivir
-  jetTime: 0.6,      // en la pelea el jetpack dura poquito (se recarga al pisar)...
-  jetSpeed: 100,     // ...y tiene menos fuerza
-  ceiling: 150,      // techo invisible: no se puede escapar volando
+  jetTime: 0.6,      // (jetpack viejo) en la pelea el jetpack es infinito...
+  jetSpeed: 100,     // ...pero tiene menos fuerza
+  ceiling: 128,      // techo invisible: se vuela hasta la altura de Aguilus, o un poquito más
 };

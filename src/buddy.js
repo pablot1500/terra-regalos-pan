@@ -55,6 +55,9 @@ export class BuddyAI {
     const hop = () => { inp.jump = true; inp.jumpPressed = p.onGround; };
     // ondas de choque que vienen para acá: saltar
     for (const w of B.waves) if (Math.abs(w.x - p.cx) < 26 && Math.sign(p.cx - w.x) === w.dir) hop();
+    // el piso va a quemar: volar un poquito (el jetpack es infinito en la pelea)
+    const at = B.attack;
+    if (at && at.type === 'magma' && at.t > at.wind - 0.45 && at.t < at.wind + at.dur && p.y + p.h > B.floorY - 26) { inp.jump = true; inp.jumpPressed = p.onGround; }
 
     // ---- levantar al que se cayó ----
     const down = B.fighters().find((f) => f !== p && f.downed);

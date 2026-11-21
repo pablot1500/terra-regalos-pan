@@ -232,9 +232,9 @@ export class Boss {
     this.state = 'fight';
     this.castT = 1.4; this.attack = null; this.attackN = 0;
     this.g.ui.setBossBar(this.hp / BOSS.hp);
-    g.toast(g.ui.hint('Apuntá con el mouse y mantené el click para tirar agua',
-      'Stick derecho: apuntar · RT: tirar agua · A: saltar',
-      'Joystick derecho: apuntar y tirar agua · Izquierdo: moverte (para arriba, volar)'), null, 'good');
+    g.toast(g.ui.hint('Apuntá con el mouse y mantené el click para tirar agua · en la pelea el jetpack es infinito: volá con W/S',
+      'Stick derecho: apuntar · RT: tirar agua · A: saltar (en el aire, el jetpack es infinito)',
+      'Joystick derecho: apuntar y tirar agua · Izquierdo: moverte (para arriba, volar: el jetpack es infinito)'), null, 'good');
   }
 
   defeat(p) {
@@ -492,8 +492,13 @@ export class Boss {
     let type;
     if (this.attackN === 2) type = 'summon'; // al principio llama a las aguilitas enseguida
     else {
+      // ataques de aire y de piso: elige más seguido el que castiga dónde está el que apunta
+      // (así conviene volar un rato y bajar otro rato)
+      const air = p.y + p.h < FLOOR_Y - 14;
       const opts = [
-        ['rocks', 1], ['feathers', 1], ['pillars', 0.9], ['dive', ph >= 2 ? 1.1 : 0.7],
+        ['sweep', air ? 1.5 : 0.45], ['magma', air ? 0.35 : 1.4],
+        ['updraft', air ? 1.2 : 0.7], ['eruption', air ? 1.2 : 0.6],
+        ['rocks', 1], ['feathers', 1], ['pillars', air ? 0.5 : 0.9], ['dive', ph >= 2 ? 1.1 : 0.7],
         ['summon', alive < cap ? (alive === 0 ? 1.4 : 0.6) : 0],
         ['beam', ph >= 2 ? 1 : 0], ['meteor', ph >= 3 ? 0.9 : 0],
       ].map(([k, w]) => [k, k === this.lastType ? w * 0.25 : w]);
@@ -524,6 +529,30 @@ export class Boss {
       const o = this.orb();
       this.attack = { type, t: 0, stage: 'aim', free: false, ang: Math.atan2(p.cy - o.y, p.cx - o.x), hits: new Set() };
       g.addText(this.x, this.y - AG_H - 6, '¡!', '#c98cff');
+    } else if (type === 'updraft') {
+      // columnas de fuego que suben del piso hasta el techo (verticales: pegan volando o en el piso)
+      this.attack = { type, t: 0, wind: 1.1, free: true };
+      const xs = [clamp(p.cx, ARENA.x0 + 6, ARENA.x1 - 6)];
+      const n = ph >= 3 ? 4 : ph >= 2 ? 3 : 2;
+      for (let tries = 0; xs.length < n && tries < 40; tries++) {
+        const x = ARENA.x0 + 10 + Math.random() * (ARENA.x1 - ARENA.x0 - 20);
+        if (xs.every((o) => Math.abs(o - x) > 40)) xs.push(x);
+      }
+      for (const x of xs) this.pillars.push({ x, t: -1.1, hit: false, tall: true });
+      g.addText(this.x, this.y - AG_H - 8, '¡COLUMNAS DE FUEGO!', '#ff8a2e');
+    } else if (type === 'eruption') {
+      // erupción: desde los bordes de la plataforma salen bolas de magma en diagonal para arriba
+      this.attack = { type, t: 0, wind: 0.8, free: true, shots: ph >= 3 ? 7 : ph >= 2 ? 6 : 4, next: 0 };
+      g.addText(this.x, this.y - AG_H - 8, '¡ERUPCIÓN!', '#ff6a1a');
+    } else if (type === 'sweep') {
+      // vendaval: avisa con una franja en el aire y después una ráfaga la barre de punta a punta
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      this.attack = { type, t: 0, wind: [1.05, 0.9, 0.8][ph - 1], free: true, dir, x: dir > 0 ? ARENA.x0 - 20 : ARENA.x1 + 20, hits: new Set() };
+      g.addText(this.x, this.y - AG_H - 8, '¡VENDAVAL!', '#e8d8ff');
+    } else if (type === 'magma') {
+      // piso de lava: el piso se pone naranja (aviso) y después quema un ratito: hay que estar volando
+      this.attack = { type, t: 0, wind: [1.2, 1.05, 0.95][ph - 1], dur: [1.3, 1.5, 1.7][ph - 1], free: true, hits: new Set() };
+      g.addText(this.x, this.y - AG_H - 8, '¡EL PISO QUEMA!', '#ffb347');
     } else if (type === 'meteor') {
       this.attack = { type, t: 0, wind: 0.9, free: true };
       g.addText(this.x, this.y - AG_H - 8, '¡LLUVIA DE METEORITOS!', '#ffb347');
@@ -567,7 +596,65 @@ export class Boss {
       }
       if (a.t >= a.wind) this.endAttack();
     } else if (a.type === 'beam') this.updateBeam(dt, p, a);
+    else if (a.type === 'updraft') { if (a.t >= a.wind + 0.9) this.endAttack(); }
+    else if (a.type === 'eruption') this.updateEruption(dt, p, a);
+    else if (a.type === 'sweep') this.updateSweep(dt, a);
+    else if (a.type === 'magma') this.updateMagma(dt, a);
     else this.updateDive(dt, p, a);
+  }
+
+  /** erupción: bolas de magma que salen de los bordes, en diagonal para arriba hacia donde está el objetivo */
+  updateEruption(dt, p, a) {
+    const g = this.g;
+    if (a.t < a.wind) {
+      for (const ex of [PLAT.x0 + 2, PLAT.x1 - 2]) if (Math.random() < 0.5) g.particles.add({ x: ex, y: FLOOR_Y + 2, vx: (Math.random() - 0.5) * 20, vy: -40 - Math.random() * 30, life: 0.4, max: 0.4, color: Math.random() < 0.5 ? '#ffd34d' : '#ff6a1a', size: 1, grav: 120 });
+      return;
+    }
+    a.next -= dt;
+    if (a.next <= 0 && a.shots > 0) {
+      a.shots--; a.next = 0.28;
+      const left = a.shots % 2 === 0, x0 = left ? PLAT.x0 + 4 : PLAT.x1 - 4, y0 = FLOOR_Y - 8;
+      // apunta adonde está (con un poco de error), para que pase por ahí subiendo
+      const tx = clamp(p.cx + (Math.random() - 0.5) * 40, ARENA.x0, ARENA.x1), ty = Math.min(p.cy, FLOOR_Y - 20) - 10;
+      const T = 0.75 + Math.random() * 0.25; // tarda T en llegar a (tx, ty)
+      this.addRock(x0, y0, (tx - x0) / T, (ty - y0 - 0.5 * ROCK_G * T * T) / T);
+      g.sfx('magma');
+    }
+    if (a.shots <= 0 && a.next <= 0) this.endAttack();
+  }
+
+  /** franja del vendaval: todo el aire de la pelea, de un poco arriba del techo hasta un poco arriba de la cabeza */
+  sweepBand() { return { y0: this.ceilY - 12, y1: FLOOR_Y - 30 }; }
+
+  /** vendaval: la ráfaga cruza la plataforma de punta a punta; pega a los que están volando (no a los del piso) */
+  updateSweep(dt, a) {
+    const g = this.g, { y0, y1 } = this.sweepBand();
+    if (a.t < a.wind) {
+      if (Math.random() < 0.5) g.particles.add({ x: a.x, y: y0 + Math.random() * (y1 - y0), vx: a.dir * 40, vy: 0, life: 0.4, max: 0.4, color: 'rgba(232,216,255,0.7)', size: 1, grav: 0 });
+      return;
+    }
+    if (!a.blown) { a.blown = true; g.sfx('swoosh'); }
+    a.x += a.dir * [230, 260, 290][this.phase - 1] * dt;
+    for (let i = 0; i < 3; i++) g.particles.add({ x: a.x - a.dir * Math.random() * 10, y: y0 + Math.random() * (y1 - y0), vx: a.dir * (80 + Math.random() * 60), vy: (Math.random() - 0.5) * 10, life: 0.3, max: 0.3, color: Math.random() < 0.5 ? '#ffffff' : '#c9a6ff', size: 1, grav: 0 });
+    for (const q of this.fighters()) {
+      if (a.hits.has(q) || q.downed || q.dead) continue;
+      if (Math.abs(q.cx - a.x) < 9 && q.y < y1 && q.y + q.h > y0 && this.hurtPlayer(q, BOSS.sweepDmg, a.dir * 150)) a.hits.add(q);
+    }
+    if (a.x < ARENA.x0 - 40 || a.x > ARENA.x1 + 40) this.endAttack();
+  }
+
+  /** piso de lava: aviso y después quema a los que están pisando la plataforma */
+  updateMagma(dt, a) {
+    const g = this.g;
+    if (a.t >= a.wind) {
+      if (!a.lit) { a.lit = true; g.sfx('flame'); g.shakeAll(2); }
+      for (let i = 0; i < 3; i++) g.particles.add({ x: PLAT.x0 + Math.random() * (PLAT.x1 - PLAT.x0), y: FLOOR_Y - 1, vx: (Math.random() - 0.5) * 20, vy: -30 - Math.random() * 50, life: 0.5, max: 0.5, color: Math.random() < 0.5 ? '#ffd34d' : '#ff6a1a', size: 1, grav: 60 });
+      for (const q of this.fighters()) {
+        if (a.hits.has(q) || q.downed || q.dead) continue;
+        if (q.y + q.h >= FLOOR_Y - 3 && this.hurtPlayer(q, BOSS.magmaDmg, 0)) { a.hits.add(q); q.vy = Math.min(q.vy, -160); }
+      }
+    } else if (Math.random() < 0.4) g.particles.add({ x: PLAT.x0 + Math.random() * (PLAT.x1 - PLAT.x0), y: FLOOR_Y - 1, vx: 0, vy: -10 - Math.random() * 10, life: 0.4, max: 0.4, color: '#ff8a2e', size: 1, grav: 0 });
+    if (a.t >= a.wind + a.dur) this.endAttack();
   }
 
   /** rayo violeta: apunta un ratito (una línea finita avisa) y dispara un rayo grueso */
@@ -748,7 +835,7 @@ export class Boss {
         if (Math.random() < 0.25) g.particles.add({ x: c.x + (Math.random() - 0.5) * 10, y: FLOOR_Y - 1, vx: 0, vy: -20 - Math.random() * 20, life: 0.4, max: 0.4, color: '#ff8a2e', size: 1, grav: 0 });
         continue;
       }
-      const h = pillarH(c.t);
+      const h = pillarH(c.t) * (c.tall ? (FLOOR_Y - this.ceilY + 16) / 84 : 1);
       c.hits = c.hits || new Set();
       for (const p of up) {
         if (!c.hits.has(p) && h > 8 && Math.abs(p.cx - c.x) < 6 + p.w / 2 - 1 && p.y + p.h > FLOOR_Y - h) {
@@ -982,10 +1069,11 @@ export class Boss {
         ctx.fillStyle = 'rgba(255,70,40,0.85)';
         ctx.fillRect(x - 6, fy - 1, 12, 1);
         ctx.fillStyle = 'rgba(255,70,40,0.25)';
-        ctx.fillRect(x - 6, fy - 26, 1, 25); ctx.fillRect(x + 5, fy - 26, 1, 25);
+        const wh = c.tall ? Math.round(FLOOR_Y - this.ceilY + 10) : 25; // las altas avisan hasta el techo
+        ctx.fillRect(x - 6, fy - wh - 1, 1, wh); ctx.fillRect(x + 5, fy - wh - 1, 1, wh);
         continue;
       }
-      const h = Math.round(pillarH(c.t));
+      const h = Math.round(pillarH(c.t) * (c.tall ? (FLOOR_Y - this.ceilY + 16) / 84 : 1));
       for (let yy = 0; yy < h; yy += 2) {
         const u = yy / Math.max(1, h), wob = Math.round(Math.sin(t * 24 + yy * 0.35) * 1.2);
         const w = Math.max(3, Math.round(14 * (1 - u * 0.6)));
@@ -1002,6 +1090,33 @@ export class Boss {
       ctx.fillStyle = '#ff8a2e'; ctx.fillRect(x - 2, fy - 5, 5, 2); ctx.fillRect(x - 1 + w.dir, fy - 6, 2, 1);
     }
     const a = this.attack;
+    // vendaval: la franja de aviso y la ráfaga
+    if (a && a.type === 'sweep') {
+      const { y0, y1 } = this.sweepBand(), x0 = Math.round(PLAT.x0 - camX), w = PLAT.x1 - PLAT.x0;
+      if (a.t < a.wind) {
+        if (Math.floor(a.t * 8) % 2 === 0) { ctx.fillStyle = 'rgba(201,160,255,0.16)'; ctx.fillRect(x0, Math.round(y0 - camY), w, y1 - y0); }
+        ctx.fillStyle = 'rgba(232,216,255,0.6)';
+        ctx.fillRect(x0, Math.round(y1 - camY), w, 1);
+      } else {
+        const x = Math.round(a.x - camX);
+        for (let y = Math.round(y0 - camY); y < Math.round(y1 - camY); y += 3) {
+          ctx.fillStyle = (y >> 1) % 3 ? 'rgba(255,255,255,0.75)' : 'rgba(201,166,255,0.8)';
+          ctx.fillRect(x - a.dir * (4 + ((y * 7) % 9)), y, 6 + ((y * 5) % 7), 1);
+        }
+      }
+    }
+    // piso de lava: el piso se pone naranja (titila de aviso) y después quema
+    if (a && a.type === 'magma') {
+      const x0 = Math.round(PLAT.x0 - camX), w = PLAT.x1 - PLAT.x0;
+      if (a.t < a.wind) {
+        if (Math.floor(a.t * 10) % 2 === 0) { ctx.fillStyle = 'rgba(255,120,30,0.55)'; ctx.fillRect(x0, fy - 2, w, 2); }
+      } else {
+        ctx.fillStyle = `rgba(255,90,20,${0.75 + Math.sin(t * 20) * 0.15})`; ctx.fillRect(x0, fy - 3, w, 3);
+        ctx.fillStyle = 'rgba(255,220,90,0.9)';
+        for (let i = 0; i < w; i += 6) ctx.fillRect(x0 + i + Math.round(Math.sin(t * 9 + i) * 2), fy - 4, 2, 1);
+        ctx.fillStyle = 'rgba(255,120,30,0.18)'; ctx.fillRect(x0, fy - 14, w, 11);
+      }
+    }
     // aviso de la picada
     if (a && a.type === 'dive' && a.stage === 'aim' && Math.floor(a.t * 10) % 2 === 0) {
       const x = Math.round(a.tx - camX);

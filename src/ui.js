@@ -510,7 +510,7 @@ export class UI {
     const depth = Math.floor(p.depth);
     if (L.depth !== depth) {
       L.depth = depth;
-      $('depth-num').textContent = `${showM(depth)} m`;
+      $('depth-num').textContent = `${showM(Math.min(depth, MAX_DEPTH))} m`; // en el núcleo marca 3000, como el regalo
       $('gauge-you').style.top = Math.min(100, (depth / MAX_DEPTH) * 100) + '%';
       $('gauge-fill').style.height = Math.min(100, (depth / MAX_DEPTH) * 100) + '%';
       let name = 'Superficie';
