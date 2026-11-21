@@ -992,9 +992,9 @@ class Game {
     }
     const jump = this.ui.hint('Espacio', 'A', 'SALTAR');
     if (p.depth > 14) this.tip('jet', JET_MODE === 'hover'
-      ? `Jetpack: en el aire, tocá ${jump} otra vez y quedás flotando. Mantené ${jump} (o arriba) para subir`
+      ? `Jetpack: en el aire, tocá ${jump} otra vez y quedás flotando; con ${this.ui.hint('W', 'el stick', 'el joystick')} subís. ${jump} de nuevo lo apaga`
       : `Para subir: mantené ${jump} y volás con el jetpack`);
-    if (JET_MODE === 'hover' && p.hovering && p.depth > 4) this.tip('jetoff', `Con el jetpack prendido te movés para todos lados. Para apagarlo en el aire: ${this.ui.hint('E', 'X', 'APAGAR')}`);
+    if (JET_MODE === 'hover' && p.hovering && p.depth > 4) this.tip('jetoff', `Con el jetpack prendido te movés para todos lados. Para apagarlo en el aire: ${jump} otra vez (o ${this.ui.hint('E', 'X', 'APAGAR')})`);
     if (p.energy < this.stats.energyMax * 0.3 && p.depth > 4) this.tip('energy', 'Energía baja: volvé al departamento a descansar');
     if (this.money >= 60 && this.upgrades.pala === 0) this.tip('afford', '¡Ya te alcanza para mejorar la pala en el Taller!');
     if (p.depth > 30) this.tip('torch', this.ui.hint('Tip: en el Taller venden antorchas (se ponen con T)', 'Tip: en el Taller venden antorchas (se ponen con Y)', 'Tip: en el Taller venden antorchas para iluminar'));

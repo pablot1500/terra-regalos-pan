@@ -256,6 +256,8 @@ export class Input {
       sx: T.dig ? T.sx : padAim && !this.fightMode ? P.rx : sx,
       sy: T.dig ? T.sy : padAim && !this.fightMode ? P.ry : sy,
       aimOn, ax, ay,
+      // el botón de saltar (Espacio, A o SALTAR, sin la W): prende y apaga el jetpack en el aire
+      jetPressed: e('Space') || e('t-jump') || e('pad-a'),
       digPressed: e('KeyJ') || e('KeyK') || e('KeyX') || e('t-dig') || e('pad-rt'),
       downPressed: e('t-down') || e('pad-sdown') || e('pad-down'),
       mouseDig: this.mouse.down || !!this.mouse.latched || !!this.touchAim,

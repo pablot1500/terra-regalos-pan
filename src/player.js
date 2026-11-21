@@ -279,6 +279,9 @@ export class Player {
     this.sprinting = !!inp.sprint && walkIx !== 0;
     const hoverJet = this.usesHoverJet(arena);
     if (this.hovering && !hoverJet && (!st.hover || arena)) this.hovering = false;
+    // jetpack nuevo: tocar saltar otra vez en el aire lo apaga (y no se vuelve a prender en este mismo toque)
+    let jetJustOff = false;
+    if (hoverJet && this.hovering && !this.onGround && inp.jetPressed) { this.jetOff(); jetJustOff = true; }
     // J: jetpack nuevo prendido · H: modo vuelo del jetpack clásico
     const J = hoverJet && this.hovering ? st.jet : null;
     const H = !hoverJet && this.hovering ? HOVER[st.hover] : null;
@@ -301,8 +304,9 @@ export class Player {
     const inLava = this.game.world.lavaInRect(this.x, this.y, this.w, this.h) > 0;
     let jetIy = 0;
     if (J) {
-      // jetpack nuevo prendido: sin gravedad; arriba (o mantener saltar) sube, abajo baja y suelto queda flotando quieto
-      jetIy = (inp.up || inp.jump ? -1 : 0) + (inp.down || inp.glide ? 1 : 0);
+      // jetpack nuevo prendido: sin gravedad; arriba sube, abajo baja y suelto queda flotando quieto
+      // (saltar no sube: tocarlo otra vez apaga el jetpack)
+      jetIy = (inp.up ? -1 : 0) + (inp.down || inp.glide ? 1 : 0);
       const spr = this.sprinting ? 1.35 : 1;
       const wantV = jetIy < 0 ? -J.up * spr : jetIy > 0 ? J.down * spr : 0;
       this.vy = approach(this.vy, wantV, jetRate(this.vy, wantV, this.vy > 0 ? J.down : J.up, J), dt);
@@ -328,7 +332,7 @@ export class Player {
       this.peakY = this.y;
     } else {
       // jetpack nuevo: tocar saltar de nuevo en el aire lo prende (frena de a poco y quedás flotando)
-      if (hoverJet && inp.jumpPressed && !this.onGround && !inLava && g.kitGiven) {
+      if (hoverJet && !jetJustOff && inp.jumpPressed && !this.onGround && !inLava && g.kitGiven) {
         if (this.energy > 0) {
           this.hovering = true;
           this.peakY = this.y;
