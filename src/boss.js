@@ -119,7 +119,7 @@ function paintEaglet(up) {
   return outlined(c, '#22142b');
 }
 let EAGLET = null;
-function eagletSprites() {
+export function eagletSprites() {
   if (!EAGLET) {
     const up = paintEaglet(true), down = paintEaglet(false);
     EAGLET = { right: [up, down], left: [flipH(up), flipH(down)] };
@@ -876,7 +876,8 @@ export class Boss {
       if (!firing) { f.gunCd = Math.max(0, (f.gunCd || 0) - dt); continue; }
       f.gunCd = (f.gunCd || 0) - dt;
       while (f.gunCd <= 0) {
-        f.gunCd += 1 / BOSS.fireRate;
+        // cada pistola tira según su mejora del taller (como mínimo 6 por segundo, para que la pelea no sea eterna)
+        f.gunCd += 1 / Math.max(6, g.gunGiven ? g.stats.gunRate : BOSS.fireRate);
         const a = Math.atan2(f.aim.y, f.aim.x) + (Math.random() - 0.5) * 0.07;
         const v = BOSS.waterSpeed * (0.95 + Math.random() * 0.1);
         this.water.push({ x: f.cx + f.aim.x * 9, y: f.cy - 2 + f.aim.y * 9, vx: Math.cos(a) * v + f.vx * 0.3, vy: Math.sin(a) * v, t: 0, by: f });
@@ -1171,6 +1172,18 @@ function* transform(sc, ids, quick = false) {
   yield sc.wait(0.5);
 }
 
+/** sacan las pistolas de agua de Carlos (las que ya tenían) */
+function* drawGuns(sc, ids) {
+  const g = sc.g, A = sc.actors;
+  g.sfx('pump');
+  for (const id of ids) {
+    const a = A[id];
+    a.tool = 'water'; a.gunAng = 0.3;
+    for (let i = 0; i < 8; i++) g.particles.add({ x: a.x + a.facing * 6, y: a.y - 10, vx: (Math.random() - 0.5) * 60, vy: -20 - Math.random() * 50, life: 0.6, max: 0.6, color: i % 2 ? '#7fd8ff' : '#ffffff', size: 1, grav: 200 });
+  }
+  yield sc.wait(0.5);
+}
+
 /** cinemática de pelea: primeros planos de los tres y "¡A PELEAR!" */
 function* epicIntro(sc, B, me, mate, mid) {
   const g = sc.g, A = sc.actors, ag = A.aguilus;
@@ -1284,6 +1297,26 @@ function* encounterScript(sc, B, p) {
   A[mate].facing = -A[me].facing;
   yield sc.say('pablo', '¿Y ahora qué hacemos? ¡Él vuela y nosotros tenemos taladros!');
   sc.emote('pancha', '!');
+  if (g.gunGiven) {
+    // ya tienen las pistolas de agua de Carlos (desde las aguilitas)
+    yield sc.say('pancha', '¡Las pistolas de agua de Carlos! Si a las aguilitas no les gusta el agua...');
+    yield sc.say('pablo', '...¡a su jefe tampoco! ¡Pistolas afuera!');
+    yield* drawGuns(sc, [me, mate]);
+    for (const id of [me, mate]) { A[id].facing = A.aguilus.x > A[id].x ? 1 : -1; A[id].gunAng = -0.2; }
+    sc.fixed = { x: B.homeX, y: SKY_Y - 10 };
+    sc.setZoom(2.2);
+    g.sfx('laugh');
+    yield sc.say('aguilus', '¡JUA, JUA, JUA! ¿Me van a ganar con una pistolita de agua?');
+    sc.fixed = { x: (meX + mateX) / 2, y: FLOOR_Y - 14 };
+    sc.setZoom(2.4);
+    for (const id of [me, mate]) A[id].facing = A.aguilus.x > A[id].x ? 1 : -1;
+    yield sc.say('pablo', 'No es una pistola de agua...');
+    yield sc.say('pancha', '¡Es una SÚPER pistola de agua!');
+    yield* epicIntro(sc, B, me, mate, mid);
+    yield sc.say(mate, `¡Y si alguno cae, el otro lo levanta! ${g.ui.hint('Apretá E', 'Apretá X', 'Tocá REVIVIR')} varias veces al lado.`);
+    return;
+  }
+  // llegaron hasta acá sin pasar por el taller después de las aguilitas: el interruptor secreto de Carlos
   yield sc.say('pancha', '¡Acordate lo que nos dijo Carlos!');
   yield sc.say('pablo', '¿Carlos? ¿Qué nos dijo Carlos?');
   yield* flashback(sc, B, me, mate);
@@ -1298,6 +1331,7 @@ function* encounterScript(sc, B, p) {
   yield sc.say('pablo', '¿Este botoncito rojo del taladro que dice "NO TOCAR"?');
   yield sc.say('pancha', '¡Sí! ¡Tocalo!');
   yield* transform(sc, [me, mate]);
+  g.gunGiven = true; // desde ahora la tienen (y se puede mejorar en el taller)
   for (const id of [me, mate]) { A[id].facing = A.aguilus.x > A[id].x ? 1 : -1; A[id].gunAng = -0.2; }
   sc.emote(me, '!'); sc.emote(mate, '!');
   yield sc.say('pablo', '¡Wow!');
@@ -1355,8 +1389,8 @@ function* rematchScript(sc, B, p) {
   ]));
   sc.fixed = { x: (meX + mateX) / 2, y: FLOOR_Y - 14 };
   sc.setZoom(2.4);
-  yield sc.say(mate, '¡No le hagas caso! ¡Interruptor secreto, de nuevo!');
-  yield* transform(sc, [me, mate], true);
+  yield sc.say(mate, '¡No le hagas caso! ¡Pistolas afuera!');
+  yield* drawGuns(sc, [me, mate]);
   sc.actors.aguilus.pose = 'fly';
   sc.fly('aguilus', B.homeX, SKY_Y, 55);
   g.sfx('charge');

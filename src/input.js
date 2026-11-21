@@ -142,6 +142,7 @@ export class Input {
     btn('t-dig', 'dig');
     btn('t-act', null);
     btn('t-torch', null);
+    btn('t-tool', null);
   }
 
   /** un joystick en pantalla: `zones` = [[elemento, flotante]] donde se puede apoyar el pulgar */
@@ -264,7 +265,9 @@ export class Input {
       mouseAim: this.mouseSeen && this.lastDevice === 'mouse',
       mx: (this.touchAim ? this.touchAim.x : this.mouse.x) + camX,
       my: (this.touchAim ? this.touchAim.y : this.mouse.y) + camY,
-      interact: e('KeyE') || e('Enter') || e('t-act') || e('pad-x') || e('pad-b'),
+      interact: e('KeyE') || e('Enter') || e('t-act') || e('pad-x'),
+      // cambiar de herramienta (pala/taladro ↔ pistola de agua): Q, B del joystick o el botón de la pantalla
+      toolPressed: e('KeyQ') || e('pad-b') || e('t-tool'),
       musicPressed: e('KeyM'),
       sfxPressed: e('KeyN'),
       autoPressed: e('KeyB') || e('pad-lb'),

@@ -3,7 +3,7 @@ import {
   TILE, SURFACE, WORLD_W, WORLD_H, DEFAULT_SEED, UPGRADES, ITEMS, GIFTS, HP_MAX,
   DEATH_MONEY_PENALTY, ENDING_TEXT, CHARACTERS, BRUSH_R, SUPPLIES, TORCH, DIG,
   CORE_ROW, BOTTOM_ROW,
-  JET_MODE, JET_HOVER,
+  JET_MODE, JET_HOVER, EAGLETS,
 } from './config.js';
 import { initTiles, T } from './tiles.js';
 import { hash2 } from './rng.js';
@@ -17,7 +17,8 @@ import { Particles, Pickups, FloatTexts } from './entities.js';
 import { Player } from './player.js';
 import { Popi } from './popi.js';
 import { Scene } from './scene.js';
-import { introScript, popiScript, carlosScript } from './intro.js';
+import { introScript, popiScript, carlosScript, eagletScript, carlosGunScript } from './intro.js';
+import { Eaglets } from './eaglets.js';
 import { Boss } from './boss.js';
 import { BuddyAI } from './buddy.js';
 import { Chatter } from './chatter.js';
@@ -43,9 +44,9 @@ const GLINT = {
 function computeStats(u) {
   const v = (id) => UPGRADES.find((x) => x.id === id).levels[u[id]][0];
   return {
-    power: v('pala'),
-    brush: v('ancho'),
-    brushR: BRUSH_R[v('ancho')],
+    power: v('pala').p,
+    brush: v('pala').b,
+    brushR: BRUSH_R[v('pala').b],
     energyMax: Number.isFinite(v('bateria')) ? v('bateria') : 1000,
     infEnergy: !Number.isFinite(v('bateria')),
     armor: v('armadura').a,
@@ -56,7 +57,9 @@ function computeStats(u) {
     hover: JET_MODE === 'hover' ? 0 : v('motor').h || 0, // modo vuelo con E (solo en el jetpack clásico)
     jet: JET_HOVER[u.motor] || JET_HOVER[0],          // jetpack nuevo: velocidades y manejo del nivel
     lightR: v('casco'),
-    reach: DIG.reachMult * (1 + DIG.reachPerUpgrade * (u.pala + u.ancho)),
+    reach: DIG.reachMult * (1 + DIG.reachPerUpgrade * (u.pala + v('pala').b)),
+    gunRate: v('pistola').r,   // pistola de agua: tiros por segundo
+    gunCost: v('pistola').e,   // y energía por tiro
   };
 }
 
@@ -131,6 +134,10 @@ class Game {
     this.popi = null;
     this.kitGiven = false; // la pala, el jetpack y la batería: se los da Carlos la primera vez que van al taller
     this.popiMet = false; // Popi sale del arbusto grande la primera vez que pisan el cantero (después abre el taller)
+    this.aguiMet = false; // después del primer regalo aparecen las aguilitas (primer encuentro con escena)
+    this.gunGiven = false; // la pistola de agua: Carlos se la da cuando vuelven escapando de las aguilitas
+    this.tool = 'dig';     // herramienta en la mano: 'dig' (pala o taladro) o 'gun' (pistola de agua)
+    this.eaglets = new Eaglets(this);
     this.players = [new Player(this, this.charId)];
     this.boss = new Boss(this, false);
     this.net.hookWorld(this.world);
@@ -164,6 +171,13 @@ class Game {
     this.money = d.money || 0;
     const du = d.upgrades || {};
     for (const u of UPGRADES) this.upgrades[u.id] = clamp(du[u.id] || 0, 0, u.levels.length - 1);
+    // partidas viejas: la pala ancha era una mejora aparte; ahora es parte de la herramienta de cavar,
+    // así que se devuelve lo que se gastó en ella
+    if (du.ancho > 0) {
+      const back = [0, 150, 800, 3000, 9000, 21000, 45000].slice(1, du.ancho + 1).reduce((a, b) => a + b, 0);
+      this.money += back;
+      this.pendingTip = ['ancho', `La pala ancha ahora es parte de la herramienta de cavar: te devolvimos ${fmtMoney(back)}`];
+    }
     // partidas viejas: motor y eficiencia del jetpack eran mejoras separadas
     if (du.eficiencia) this.upgrades.motor = clamp(Math.max(du.motor || 0, du.eficiencia), 0, UPGRADES.find((u) => u.id === 'motor').levels.length - 1);
     this.stats = computeStats(this.upgrades);
@@ -177,6 +191,9 @@ class Game {
     this.popiMet = !!d.popi || !!d.popiMet;
     // partidas de antes de la escena de Carlos: si ya tenían algo, ya tienen el equipo
     this.kitGiven = !!d.kitGiven || this.popiMet || Object.values(this.upgrades).some((v) => v > 0) || (this.counters.best || 0) > 20;
+    this.aguiMet = !!d.aguiMet;
+    this.gunGiven = !!d.gunGiven;
+    this.tool = this.gunGiven && d.tool === 'gun' ? 'gun' : 'dig';
     this.boss = new Boss(this, !!d.bossDone, d.bossLosses || 0);
     this.torches = Array.isArray(d.torches)
       ? d.torches.filter((t) => t && Number.isFinite(t.x) && Number.isFinite(t.y)).map((t) => ({ x: t.x, y: t.y, seed: Number.isFinite(t.seed) ? t.seed : Math.random() * 10 }))
@@ -307,6 +324,55 @@ class Game {
     });
   }
 
+  /** pala/taladro ↔ pistola de agua */
+  switchTool() {
+    if (!this.gunGiven) return;
+    this.tool = this.tool === 'gun' ? 'dig' : 'gun';
+    this.audio.play(this.tool === 'gun' ? 'pump' : 'ui');
+    const dig = this.upgrades.pala >= 3 ? 'el taladro' : 'la pala';
+    this.toast(this.tool === 'gun' ? '¡Pistola de agua en la mano!' : `De vuelta con ${dig}`, 'tool', 'good');
+  }
+
+  /** después del primer regalo: aparecen las aguilitas (escena), y hay que escapar para arriba */
+  startEagletScene(p) {
+    this.aguiMet = true;
+    p.vx = 0; p.vy = 0; p.digging = false; p.hovering = false;
+    // bajan una detrás de otra por el túnel que vinieron cavando: el punto libre más alto arriba del personaje
+    let top = null;
+    for (let y = p.cy - 12, miss = 0; y > p.cy - 220 && miss < 3; y -= 4) {
+      const x = [p.cx, p.cx - 5, p.cx + 5].find((xx) => this.eaglets.free(xx, y));
+      if (x === undefined) { miss++; continue; }
+      miss = 0; top = { x, y };
+    }
+    if (!top || p.cy - top.y < 40) top = this.eaglets.findCave(p, true, true) || this.eaglets.findCave(p, true) || { x: p.cx, y: p.cy - 80 };
+    const caves = [0, 1, 2].map((i) => ({ x: top.x + (i - 1) * 2, y: top.y }));
+    let spots = null;
+    this.startScene((sc) => eagletScript(sc, p, caves, (s) => { spots = s; }), {
+      onEnd: () => {
+        // las mismas aguilitas de la escena salen a perseguir (desde donde quedaron)
+        const pts = spots || caves.map((c) => ({ x: c.x, y: c.y }));
+        for (const s of pts) this.eaglets.spawn(s.x, s.y, { nextT: 1.2 + Math.random() * 1.2 });
+        this.eaglets.spawnT = 4;
+        this.toast(`¡Escapá para arriba! Las aguilitas no suben más arriba de los ${EAGLETS.ceil} m`, null, 'warn');
+        this.save();
+      },
+    });
+  }
+
+  /** volvieron escapando de las aguilitas: Carlos les da la súper pistola de agua */
+  startGunScene(p) {
+    p.vx = 0; p.digging = false;
+    const done = () => {
+      this.gunGiven = true;
+      this.tool = 'gun';
+      this.toast(this.ui.hint('Q cambia entre la pala y la pistola · click para tirar agua',
+        'B cambia entre la pala y la pistola · stick derecho apunta y tira agua',
+        'CAMBIAR alterna pala y pistola · tocá la pantalla para tirar agua'), null, 'good');
+      this.save();
+    };
+    this.startScene((sc) => carlosGunScript(sc, p), { onSkip: done, onEnd: (skipped) => { if (!skipped) done(); } });
+  }
+
   /** la primera vez que pisan el cantero (ya equipados), Popi sale del arbusto y se suma a la aventura */
   startPopiScene(p) {
     this.popiMet = true;
@@ -351,6 +417,9 @@ class Game {
       popi: !!this.popi && this.popi.owner === this.players[0],
       popiMet: !!this.popiMet,
       kitGiven: !!this.kitGiven,
+      aguiMet: !!this.aguiMet,
+      gunGiven: !!this.gunGiven,
+      tool: this.tool,
       bossDone: !!(this.boss && this.boss.state === 'done'),
       bossLosses: this.boss ? this.boss.losses : 0,
       player: p ? { char: p.char, x: p.x, y: p.y, hp: p.hp, energy: p.energy } : null,
@@ -525,6 +594,7 @@ class Game {
   /** compra una mejora (la plata y las mejoras son del equipo) */
   doBuy(id) {
     const up = UPGRADES.find((u) => u.id === id);
+    if (!up || (up.unlock === 'gun' && !this.gunGiven)) return null; // la pistola se mejora recién cuando la tienen
     const lvl = this.upgrades[id];
     if (lvl >= up.levels.length - 1) return null;
     const cost = up.levels[lvl + 1][1];
@@ -664,6 +734,8 @@ class Game {
     this.state = 'play';
     this.cine = null;
     this.save();
+    // el primer regalo: ahí nomás aparecen las aguilitas de Aguilus
+    if (ch && ch.gift.id === 1 && !this.aguiMet && !this.net.isGuest) { this.startEagletScene(this.players[0]); return; }
     if (ch && ch.gift.final) {
       const mins = Math.floor(this.counters.playTime / 60);
       this.state = 'paused';
@@ -692,11 +764,13 @@ class Game {
     for (let i = 0; i < 14; i++) this.particles.add({ x: player.cx, y: player.cy, vx: (Math.random() - 0.5) * 60, vy: -Math.random() * 60, life: 0.8, max: 0.8, color: '#ffffff', star: true, grav: 40 });
     setTimeout(() => this.ui.fade(true), 400);
     setTimeout(() => {
-      const title = reason === 'energy' ? '¡Sin energía!' : reason === 'lava' ? '¡Te quemaste!' : '¡Auch!';
+      const title = reason === 'energy' ? '¡Sin energía!' : reason === 'lava' ? '¡Te quemaste!' : reason === 'eaglet' ? '¡Te picotearon!' : '¡Auch!';
       const text = (reason === 'energy'
         ? 'Te quedaste sin energía bajo tierra y te desmayaste.\nAlguien te rescató y te llevó a casa.'
         : reason === 'lava'
           ? 'Estuviste demasiado tiempo en la lava y te desmayaste.\nTe despertaste en casa.'
+          : reason === 'eaglet'
+            ? 'Las aguilitas te picotearon hasta dejarte K.O.\nTe despertaste en casa.'
           : 'Te caíste demasiado fuerte y quedaste K.O.\nTe despertaste en casa.')
         + (lost > 0 ? `\n\nPerdiste ${fmtMoney(lost)} en el camino.` : '');
       this.ui.showMsg(title, text, [{
@@ -781,7 +855,11 @@ class Game {
       const fight = !!(this.boss && this.boss.fighting);
       const busy = !!(this.boss && this.boss.state === 'scene');
       this.input.fightMode = fight;
-      this.ui.setFightControls(fight && this.ui.isTouch);
+      // herramienta en la mano: Q / B / CAMBIAR alterna entre la pala (o taladro) y la pistola de agua
+      if (inp.toolPressed && !fight) this.switchTool();
+      p.tool = this.gunGiven ? this.tool : 'dig';
+      this.ui.setFightControls((fight || p.tool === 'gun') && this.ui.isTouch);
+      this.ui.setToolButton(this.gunGiven && !fight, p.tool);
       for (const pl of this.players) {
         if (pl.remote) { this.net.stepPuppet(pl, dt); continue; }
         if (!pl.ai) { pl.update(dt, inp); continue; }
@@ -792,6 +870,7 @@ class Game {
         if (on) pl.update(dt, pl.ai.input(dt, p));
       }
       if (!guest) this.chatter.update(dt);
+      this.eaglets.update(dt);
       if (this.popi) { if (guest) this.popi.anim += dt; else this.popi.update(dt); }
       // Popi espera en el patio: al acercarte te ladra y te lo podés llevar
       // si ya bajaron sin pasar por las escenas (por ejemplo, con "Pelear con Aguilus" de la pausa),
@@ -802,6 +881,9 @@ class Game {
       const feet = p.y + p.h - SURFACE * TILE;
       const onCantero = feet > -7 * TILE && feet < 2 * TILE && p.cx > DIG_ZONE.c0 * TILE && p.cx < (DIG_ZONE.c1 + 1) * TILE;
       if (this.kitGiven && !this.popiMet && !guest && !p.dead && onCantero) this.startPopiScene(p);
+      // partidas que ya habían abierto el primer regalo antes de que existieran las aguilitas:
+      // aparecen la primera vez que vuelven a bajar de los 300 m
+      else if (!this.aguiMet && this.openedGifts.includes(1) && !guest && !p.dead && p.onGround && p.depth > EAGLETS.from + 2 && !(this.boss && this.boss.fighting)) this.startEagletScene(p);
       const nearDog = this.popiMet && !this.popi && Math.abs(p.cx - (DOG_POS.x + 10)) < 22 && Math.abs(p.y + p.h - (DOG_POS.y + 14)) < 12;
       if (nearDog && !this.wasNearDog) {
         this.audio.play('bark');
@@ -832,6 +914,15 @@ class Game {
         if (inp.interact) {
           if (guest) this.toast('Carlos habla con quien creó la sala: esperá que pase por la ventanita', null, 'warn');
           else this.startCarlosScene(p);
+        }
+      } else if (p.inShop && this.aguiMet && !this.gunGiven) {
+        // volvieron escapando de las aguilitas: Carlos les da la pistola de agua
+        if (enteredShop) this.addText(TRAILER_X + 31, SURFACE * TILE - TRAILER_H + 20, '¿QUÉ PASÓ?', '#fff4e0');
+        this.ui.setPrompt(this.ui.hint('Presioná E para hablar con Carlos', 'Apretá X para hablar con Carlos', null));
+        this.ui.setActButton('CARLOS');
+        if (inp.interact) {
+          if (guest) this.toast('Carlos habla con quien creó la sala: esperá que pase por la ventanita', null, 'warn');
+          else this.startGunScene(p);
         }
       } else if (p.inShop && !this.popiMet) {
         // ya tienen el equipo, pero el taller abre recién después de lo de Popi
@@ -1125,8 +1216,9 @@ class Game {
         ctx.fillRect(Math.round(cx + Math.cos(a) * R - camX), Math.round(cy + Math.sin(a) * R - camY), 1, 1);
       }
     }
-    // mira del mouse (en la pelea, una mira de agua más grande)
-    if (this.state === 'play' && this.boss && this.boss.fighting && !this.ui.isTouch && this.input.mouseSeen && this.input.lastDevice !== 'pad') {
+    // mira del mouse (en la pelea o con la pistola en la mano, una mira de agua más grande)
+    const gunAim = (this.boss && this.boss.fighting) || (this.players[0] && this.players[0].tool === 'gun');
+    if (this.state === 'play' && gunAim && !this.ui.isTouch && this.input.mouseSeen && this.input.lastDevice !== 'pad') {
       const mx = Math.round(this.input.mouse.x), my = Math.round(this.input.mouse.y);
       ctx.fillStyle = 'rgba(29,20,32,0.75)';
       for (const [a, b, w, h] of [[-5, -1, 3, 3], [3, -1, 3, 3], [-1, -5, 3, 3], [-1, 3, 3, 3]]) ctx.fillRect(mx + a, my + b, w, h);
@@ -1178,6 +1270,7 @@ class Game {
     this.pickups.draw(ctx, camX, camY, t);
     const inGame = !['splash', 'title', 'intro', 'scene', 'remoteScene'].includes(this.state);
     if (this.boss && inGame) this.boss.draw(ctx, camX, camY);
+    if (inGame) this.eaglets.draw(ctx, camX, camY);
     if (this.scene) this.scene.draw(ctx, camX, camY);
     if (this.popi && inGame) this.popi.draw(ctx, camX, camY);
     // el compañero se dibuja primero: el personaje que manejás siempre queda adelante
@@ -1187,6 +1280,7 @@ class Game {
     this.drawGlints(ctx, camX, camY, vw, vh, t);
     this.texts.draw(ctx, camX, camY);
     if (this.boss && inGame) this.boss.drawOverlay(ctx, camX, camY);
+    if (inGame) this.eaglets.drawOverlay(ctx, camX, camY);
     if (inGame) this.chatter.draw(ctx, camX, camY, vw);
 
     if (inGame) this.ui.updateHUD();

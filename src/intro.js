@@ -278,3 +278,86 @@ export function* popiScript(sc, p) {
   sc.emote('popi', '♥'); sc.emote(me, '♥'); sc.emote(mate, '♥');
   yield sc.wait(0.9);
 }
+
+/** la herramienta de cavar que tienen ahora (para mostrarla en las escenas) */
+const digTool = (g) => (g.upgrades.pala >= 3 ? 'drill' : 'shovel');
+
+/**
+ * Justo después del primer regalo (a 300 m): se escucha algo... ¡y aparecen las aguilitas de Aguilus,
+ * bajando por los túneles! Sin con qué defenderse, solo queda escapar para arriba.
+ * `caves`: de dónde salen; `report(spots)`: dónde quedaron (ahí arrancan a perseguir en el juego).
+ */
+export function* eagletScript(sc, p, caves, report) {
+  const g = sc.g, A = sc.actors, W = g.world;
+  const me = p.char, mate = me === 'pablo' ? 'pancha' : 'pablo';
+  const fy = p.y + p.h, x0 = p.cx;
+  // el otro al lado, donde haya piso (si no, atrás)
+  let mx = x0 - 6;
+  for (const dx of [-12, 12, -9, 9]) if (W.solidPx(x0 + dx, fy + 1) && !W.solidPx(x0 + dx, fy - 8)) { mx = x0 + dx; break; }
+  sc.actor(me, x0, fy, { facing: mx < x0 ? -1 : 1, tool: digTool(g) });
+  sc.actor(mate, mx, fy, { facing: mx < x0 ? 1 : -1, alpha: 0, tool: digTool(g) });
+  sc.fixed = { x: x0, y: fy - 16 };
+  sc.setZoom(2.4);
+  sc.snapCam();
+  yield sc.wait(0.6);
+  g.sfx('peep');
+  sc.emote(me, '?'); sc.emote(mate, '?');
+  yield sc.say(mate, '¿Escuchaste eso?');
+  yield sc.say(me, 'Debe ser el eco... ¿no? Hay eco acá abajo, ¿no?');
+  // aparecen por los túneles y se acercan revoloteando
+  caves.forEach((c, i) => sc.actor('eaglet' + i, c.x, c.y, { kind: 'eaglet', facing: c.x < x0 ? 1 : -1 }));
+  const spots = caves.map((c, i) => ({ x: x0 + (i - 1) * 18, y: fy - 32 - (i % 2) * 7 }));
+  sc.fixed = { x: x0, y: fy - 34 };
+  sc.setZoom(1.5);
+  g.sfx('peep');
+  spots.forEach((s, i) => sc.fly('eaglet' + i, s.x, s.y, 95 - i * 18)); // a distinta velocidad: llegan una detrás de otra
+  yield sc.arrive(...caves.map((_, i) => 'eaglet' + i));
+  g.sfx('surprise');
+  sc.emote(me, '!'); sc.emote(mate, '!');
+  A[me].facing = A[mate].facing = 1;
+  sc.fixed = { x: x0, y: fy - 24 };
+  sc.setZoom(2.2);
+  yield sc.say(me, '¡¿Aguilitas?! ¡Son las ayudantes de Aguilus!');
+  g.sfx('peep');
+  yield sc.say(mate, '¡Y vienen para acá! ¡Con la pala no les hacemos nada!');
+  yield sc.say(me, '¡A subir! ¡Rápido, con el jetpack!');
+  report(caves.map((_, i) => ({ x: A['eaglet' + i].x, y: A['eaglet' + i].y })));
+}
+
+/**
+ * Vuelven al taller escapando de las aguilitas: Carlos dice que es "normal" y les da la súper pistola de agua,
+ * que va enchufada a la batería (cada tiro gasta un poquito de energía).
+ */
+export function* carlosGunScript(sc, p) {
+  const g = sc.g, A = sc.actors;
+  const me = p.char, mate = me === 'pablo' ? 'pancha' : 'pablo';
+  const WIN = TRAILER_X + 31;
+  const x0 = clamp(p.cx, TRAILER_X + 10, TRAILER_X + 50);
+  sc.actor(me, x0, FLOOR, { facing: WIN > x0 ? 1 : -1, tool: digTool(g) });
+  sc.actor(mate, x0 - 14, FLOOR, { facing: 1, alpha: 0, tool: digTool(g) });
+  sc.fixed = { x: WIN - 4, y: FLOOR - 26 };
+  sc.setZoom(2.2);
+  sc.snapCam();
+  yield sc.wait(0.4);
+  yield sc.say('pancha', '¡Carlos! ¡Allá abajo había unos pájaros que nos quisieron picotear!');
+  yield sc.say('pablo', 'Subimos volando del susto. Bueno... literalmente volando.');
+  yield sc.say('carlos', '¿Pájaros? Ah, las aguilitas. Sí, sí, normal. Todos los años lo mismo.');
+  sc.emote('pablo', '?');
+  yield sc.say('pablo', '¿Cómo que normal?');
+  yield sc.say('carlos', 'Tranquilos, que no les gusta nada el agua. Tomen, usen esto.');
+  // ¡pistolas de agua!
+  g.audio.play('magic');
+  yield sc.wait(0.4);
+  g.sfx('pump');
+  for (const id of [me, mate]) {
+    A[id].tool = 'water'; A[id].gunAng = 0.3;
+    for (let i = 0; i < 10; i++) g.particles.add({ x: A[id].x + A[id].facing * 6, y: A[id].y - 10, vx: (Math.random() - 0.5) * 60, vy: -20 - Math.random() * 50, life: 0.6, max: 0.6, color: i % 2 ? '#7fd8ff' : '#ffffff', size: 1, grav: 200 });
+  }
+  yield sc.wait(0.7);
+  yield sc.say('carlos', 'Súper pistola de agua. Va enchufada a la batería: cada chorrito gasta un poquito de energía.');
+  yield sc.say('pancha', '¿Una pistola de agua... eléctrica?');
+  yield sc.say('carlos', 'Tecnología del barrio, querida. Si se quedan sin batería, a casa a cargar.');
+  yield sc.say('carlos', 'Y cuando junten plata, me la traen y se la mejoro: que tire más rápido.');
+  for (const id of [me, mate]) A[id].gunAng = -0.4;
+  yield sc.say('pablo', '¡Ahora sí! ¡Que vengan esas aguilitas!');
+}

@@ -74,7 +74,8 @@ export class Player {
     this.burnT = 0;           // para mostrar de a ratos el daño de la lava
     this.burnAcc = 0;
     this.jetFuel = 0;         // en la pelea el jetpack dura poquito
-    this.firing = false;      // pelea con Aguilus: tirando agua con la súper pistola
+    this.firing = false;      // tirando agua con la pistola (en la pelea con Aguilus o con la pistola en la mano)
+    this.tool = 'dig';        // herramienta en la mano: 'dig' (pala o taladro) o 'gun' (pistola de agua)
     this.gunCd = 0; this.gunKick = 0;
     this.downed = false;      // pelea: se quedó sin vida y espera que el otro lo levante
     this.revive = 0;          // barrita de revivir (0 a 1)
@@ -244,7 +245,9 @@ export class Player {
 
     // ---- apuntar ----
     let aim = null;
-    if (arena) {
+    // con la pistola de agua en la mano no se cava: se apunta y se tira agua (como en la pelea)
+    const gunMode = !arena && this.tool === 'gun' && g.gunGiven && !this.bot;
+    if (arena || gunMode) {
       const gun = this.readGun(inp, ix);
       this.firing = gun.fire;
       this.aim = gun.aim;
@@ -266,7 +269,7 @@ export class Player {
 
     let walkIx = ix;
     let target = null;
-    if (aim && !arena) {
+    if (aim && !arena && !gunMode) {
       target = this.findTarget(aim);
       if (!target) aim = null;
       else if (!isDiggable(target.hit.t)) {
@@ -403,8 +406,8 @@ export class Player {
       g.particles.add({ x: this.cx - Math.sign(this.vx) * 3, y: this.y + this.h, vx: -Math.sign(this.vx) * (10 + Math.random() * 20), vy: -10 - Math.random() * 15, life: 0.35, max: 0.35, color: 'rgba(220,205,180,0.7)', size: 1, grav: 40 });
     }
 
-    // ---- cavar (en la pelea, la pistola dispara desde boss.js) ----
-    if (arena) {
+    // ---- cavar (en la pelea la pistola dispara desde boss.js; con la pistola en la mano, desde eaglets.js) ----
+    if (arena || gunMode) {
       this.digging = false; this.digPoint = null; this.digProg = 0; this.tooHard = false;
     } else this.updateDig(dt, aim, target);
 
@@ -651,8 +654,8 @@ export class Player {
 
     ctx.drawImage(frames[frame], sx, sy);
 
-    // pelea final: la súper pistola de agua apuntando
-    if (this.game.boss && this.game.boss.fighting) {
+    // la súper pistola de agua apuntando (en la pelea final o cuando la tenés en la mano)
+    if ((this.game.boss && this.game.boss.fighting) || (this.tool === 'gun' && this.game.gunGiven && kit)) {
       const a = this.aim || this.lastAim || { x: this.facing, y: 0 };
       const ang = Math.atan2(a.y, Math.abs(a.x) < 0.05 ? 0.05 : a.x * this.facing);
       drawWaterGun(ctx, sx, sy, this.facing, bob, ang, this.char, this.gunKick || 0);

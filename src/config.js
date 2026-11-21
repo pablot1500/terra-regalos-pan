@@ -77,6 +77,20 @@ export const LAVA = {
   tick: 1 / 40,     // cada cuánto se mueve el líquido
 };
 
+// ---- Aguilitas en el pozo (desde el primer regalo) ----
+// Salen de las cuevas y los huecos ya cavados, de los 300 m para abajo, y persiguen; no suben más arriba de `ceil`
+// (el primer cofre está justo a 300 m: con el techo un poco más arriba hay un tramo para escaparse).
+export const EAGLETS = {
+  from: 300,        // metros: de acá para abajo aparecen
+  ceil: 270,        // metros: no suben más arriba que esto
+  speed: 62,        // velocidad persiguiendo (el jetpack del primer nivel sube a 85: se puede escapar)
+  swoop: 150,       // velocidad de la picada
+  dmg: 8,           // daño de un picotazo
+  hp: 4,            // gotitas de agua para bajarlas
+  max: 5,           // cuántas puede haber a la vez como mucho (empieza con 2 y suma una cada 300 m)
+  every: [5, 9],    // segundos entre una y otra (más seguido cuanto más hondo)
+};
+
 export const HP_MAX = 100;
 export const REST = { energyPerSec: 110, hpPerSec: 70 };
 export const DEATH_MONEY_PENALTY = 0.1; // pierden 10% de la plata si se desmayan/mueren
@@ -88,7 +102,7 @@ export const DIG = {
   energyCost: [0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35], // energía por palazo según el nivel de pala
   reach: 6,          // px de alcance más allá del borde del personaje
   reachMult: 1.3,    // multiplicador del alcance total (+30%)
-  reachPerUpgrade: 0.10, // +10% de alcance por cada mejora de fuerza o de pala ancha
+  reachPerUpgrade: 0.10, // +10% de alcance por cada nivel de fuerza o de ancho de la herramienta
 };
 
 // cáscara de cristal de las cámaras de regalo: se pica de a poquito, sin importar la pala
@@ -155,17 +169,16 @@ export const LAYER_LOOT = [
 // levels: [valor, costo]. El nivel 0 es el inicial (gratis).
 export const UPGRADES = [
   {
+    // pala, pico y taladro en una sola mejora (antes la pala ancha era aparte):
+    // p = fuerza (qué tan duro rompe y qué tan rápido cava), b = ancho del palazo (índice de BRUSH_R)
     id: 'pala', name: 'Herramienta de cavar', icon: 'shovel',
-    desc: 'Más fuerza: rompe materiales más duros, cava más rápido y llega un poco más lejos.',
-    levels: [[1, 0], [2, 60], [4, 330], [7, 1350], [11, 4800], [16, 15000], [24, 36000], [34, 80000]],
-    label: (v) => `Fuerza ${v}`,
+    desc: 'Más fuerza y más ancha: rompe materiales más duros, cava más rápido, saca más tierra de un palazo y llega más lejos.',
+    levels: [
+      [{ p: 1, b: 0 }, 0], [{ p: 2, b: 0 }, 60], [{ p: 4, b: 1 }, 480], [{ p: 7, b: 2 }, 2150],
+      [{ p: 11, b: 3 }, 7800], [{ p: 16, b: 4 }, 24000], [{ p: 24, b: 5 }, 57000], [{ p: 34, b: 6 }, 125000],
+    ],
+    label: (v) => `Fuerza ${v.p} · ${['Normal', 'Ancha', 'Muy ancha', 'Enorme', 'Gigante', 'Colosal', 'Descomunal'][v.b]}`,
     tiers: ['Pala de hierro', 'Pala de acero', 'Pala de oro', 'Taladro', 'Taladro turbo', 'Taladro de diamante', 'Mega taladro del amor', 'Taladro cósmico'],
-  },
-  {
-    id: 'ancho', name: 'Pala ancha', icon: 'wide',
-    desc: 'Cava más área de un solo palazo y llega un poco más lejos.',
-    levels: [[0, 0], [1, 150], [2, 800], [3, 3000], [4, 9000], [5, 21000], [6, 45000]],
-    label: (v) => ['Ancha', 'Muy ancha', 'Enorme', 'Gigante', 'Colosal', 'Titánica', 'Descomunal'][v],
   },
   {
     id: 'bateria', name: 'Batería', icon: 'battery',
@@ -202,6 +215,18 @@ export const UPGRADES = [
     label: (v) => `Luz ${Math.round(v * 2)} m`,
     tiers: ['Linterna chiquita', 'Casco de minero', 'Casco con LED', 'Casco reflector', 'Casco faro', 'Casco solar', 'Casco de estrella'],
   },
+  {
+    // la súper pistola de agua: se desbloquea cuando Carlos se la da (después de las aguilitas, a los 300 m).
+    // r = tiros por segundo, e = energía por tiro. La fuerza de cada gotita es siempre la misma.
+    id: 'pistola', name: 'Pistola de agua', icon: 'gun', unlock: 'gun',
+    desc: 'Tira más rápido y gasta menos batería por tiro. Cada gotita moja igual: lo que mejora es la cadencia.',
+    levels: [
+      [{ r: 3, e: 0.6 }, 0], [{ r: 4, e: 0.5 }, 300], [{ r: 5, e: 0.42 }, 1200], [{ r: 6.5, e: 0.35 }, 4000],
+      [{ r: 8, e: 0.28 }, 11000], [{ r: 10, e: 0.22 }, 26000], [{ r: 12, e: 0.16 }, 55000],
+    ],
+    label: (v) => `${String(v.r).replace('.', ',')} tiros/seg · ${String(v.e).replace('.', ',')} por tiro`,
+    tiers: ['Pistolita de agua', 'Pistola de agua', 'Súper pistola', 'Hidro pistola', 'Hidro cañón', 'Tormenta de agua', 'Diluvio del amor'],
+  },
 ];
 
 // ---- Consumibles (precio fijo, sin límite de cantidad) ----
@@ -233,9 +258,9 @@ export const ENDING_TEXT = '¡Le ganamos a Aguilus y rescatamos los regalos!\n¡
 
 // Pelea con Aguilus en el fondo del núcleo (con las súper pistolas de agua)
 export const BOSS = {
-  hp: 500,           // vida de Aguilus: cada gotita de agua le saca 1
+  hp: 750,           // vida de Aguilus: cada gotita de agua le saca 1 (750: llegan con la pistola mejorada, que tira más rápido)
   phases: [0.66, 0.33], // fracción de vida donde se enoja (fase 2) y se pone furioso (fase 3)
-  fireRate: 8,       // gotitas por segundo de cada pistola
+  fireRate: 8,       // gotitas por segundo si no tienen la mejora de la pistola (en la pelea se usa la del taller)
   waterSpeed: 270,
   waterGrav: 90,
   waterLife: 1.1,

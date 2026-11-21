@@ -184,7 +184,7 @@ export class Net {
       x: r1(p.x), y: r1(p.y), vx: r1(p.vx), vy: r1(p.vy), f: p.facing,
       g: p.onGround ? 1 : 0, fl: p.flying ? 1 : 0, d: p.digging ? 1 : 0, th: p.tooHard ? 1 : 0, dead: p.dead ? 1 : 0,
       h: p.hurtT > 0 ? 1 : 0, hv: p.hovering ? 1 : 0, hp: Math.round(p.hp),
-      fi: p.firing ? 1 : 0, dn: p.downed ? 1 : 0, rv: r1(p.revive || 0),
+      fi: p.firing ? 1 : 0, dn: p.downed ? 1 : 0, rv: r1(p.revive || 0), tl: p.tool === 'gun' ? 1 : 0,
       a: p.aim ? [r1(p.aim.x), r1(p.aim.y)] : null,
       dp: p.digPoint ? [r1(p.digPoint.cx), r1(p.digPoint.cy), p.digPoint.R] : null, pr: r1(p.digProg || 0),
     };
@@ -196,6 +196,7 @@ export class Net {
     if (far || p.tx === undefined) { p.x = s.x; p.y = s.y; }
     p.vx = s.vx; p.vy = s.vy; p.facing = s.f;
     p.onGround = !!s.g; p.flying = !!s.fl; p.digging = !!s.d; p.tooHard = !!s.th; p.dead = !!s.dead; p.hovering = !!s.hv;
+    p.tool = s.tl ? 'gun' : 'dig';
     if (s.h && !p.netHurt) p.hurtT = 0.8;
     p.netHurt = !!s.h;
     p.hp = s.hp;
@@ -262,7 +263,7 @@ export class Net {
       pk: g.pickups.list.map((k) => [Math.round(k.x), Math.round(k.y), k.item]),
       po: g.popi ? [r1(g.popi.x), r1(g.popi.y), g.popi.facing, g.popi.onGround ? 1 : 0, g.popi.digging ? 1 : 0, g.popi.flying ? 1 : 0, g.popi.owner === g.players[0] ? 'h' : 'g'] : null,
       ch: g.chatter.netState(g.players[0]),
-      pm: g.popiMet ? 1 : 0, kg: g.kitGiven ? 1 : 0,
+      pm: g.popiMet ? 1 : 0, kg: g.kitGiven ? 1 : 0, am: g.aguiMet ? 1 : 0, gg: g.gunGiven ? 1 : 0,
       b: B ? this.bossState(B) : null,
     };
     if (this.sentTorchVer !== this.torchVer) {
@@ -419,7 +420,7 @@ export class Net {
     } else g.popi = null;
     if (g.state === 'shop' && before !== g.popiState()) g.ui.renderShop();
     g.chatter.remoteState = s.ch;
-    g.popiMet = !!s.pm; g.kitGiven = !!s.kg;
+    g.popiMet = !!s.pm; g.kitGiven = !!s.kg; g.aguiMet = !!s.am; g.gunGiven = !!s.gg;
     if (s.b) this.applyBoss(s.b);
   }
 

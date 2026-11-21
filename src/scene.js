@@ -2,6 +2,7 @@
 // caja de diálogo y guión. El guión es una función generadora: cada `yield` espera a que termine lo anterior.
 import { getCharFrames, CHAR_PAL, CHAR_W, CHAR_H, drawText, DOG, POPI, ICON_URL, charPortrait, drawDrill, drawWaterGun, drawArmShovel } from './sprites.js';
 import { drawAguilus, aguilusPortrait, AG_H } from './aguilus.js';
+import { eagletSprites } from './boss.js';
 import { clamp, pixelLine } from './util.js';
 import { TILE, SURFACE } from './config.js';
 import { T } from './tiles.js';
@@ -214,7 +215,7 @@ export class Scene {
           for (let i = 0; i < 5; i++) this.g.particles.add({ x: a.x + (Math.random() - 0.5) * 8, y: a.y, vx: (Math.random() - 0.5) * 40, vy: -Math.random() * 20, life: 0.4, max: 0.4, color: 'rgba(210,190,160,0.8)', size: 1, grav: 60 });
         }
       }
-      if (a.flying && a.id !== 'aguilus' && (a.target !== null || a.ty !== null) && Math.random() < 0.5) {
+      if (a.flying && a.id !== 'aguilus' && !a.kind && (a.target !== null || a.ty !== null) && Math.random() < 0.5) {
         // humito del jetpack
         this.g.particles.add({ x: a.x - a.facing * 5, y: a.y - 4, vx: (Math.random() - 0.5) * 10, vy: 30 + Math.random() * 20, life: 0.4, max: 0.4, color: 'rgba(230,220,210,0.6)', size: 2, grav: -10, smoke: true });
       }
@@ -339,7 +340,13 @@ export class Scene {
       if (a.hidden) continue;
       ctx.globalAlpha = a.alpha ?? 1;
       let sx, sy, headY;
-      if (a.id === 'popi') {
+      if (a.kind === 'eaglet') {
+        // aguilita: aleteando (y en el lugar, sube y baja un poquito)
+        const fr = eagletSprites()[a.facing > 0 ? 'right' : 'left'][Math.floor((this.t + a.phase) * 10) % 2];
+        const bob = a.target === null && a.ty === null ? Math.round(Math.sin((this.t + a.phase) * 4) * 2) : 0;
+        ctx.drawImage(fr, Math.round(snap(a.x) - camX - 7), Math.round(snap(a.y) - camY - 5 + bob));
+        continue;
+      } else if (a.id === 'popi') {
         // Popi con su casquito: camina, salta o mueve la cola
         const set = POPI[a.facing > 0 ? 'right' : 'left'];
         const moving = a.target !== null || a.ty !== null;

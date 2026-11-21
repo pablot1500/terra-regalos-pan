@@ -551,6 +551,7 @@ const ICON_PAL = {
   y: '#ffd23f', Y: '#fff3a8', d: '#c8871a', o: '#7a4c0d',
   w: '#a8703f', s: '#9aa3ad', S: '#e8eef3',
   G: '#5be36b', g: '#2e9e44', k: '#3a3f45',
+  b: '#4fb3ff', B: '#bfeaff', p: '#ff6fae', P: '#ffb3d6', c: '#7fd8ff',
   a: '#6e7f91', A: '#b8c6d4',
   b: '#4a5260', p: '#ff7eb6', P: '#d9578f',
   l: '#7cd65a', L: '#3e9b3e',
@@ -571,6 +572,7 @@ const ICONS = {
   note: ['...ccc', '...c.c', '...c.c', '...c.c', '.ccc.c', 'cccc.c', '.cc.cc', '....cc'],
   speaker: ['...c....', '..cc..c.', 'cccc.c.c', 'cccc.c.c', 'cccc.c.c', '..cc..c.', '...c....'],
   autodig: ['..www..', '...w...', '...w...', '..sss..', '.sSsss.', '.sSsss.', '..sss..', 'y.y.y.y'],
+  gun: ['..bbb.....', '.bBBBb....', 'pppppppppy', 'pPPPPPPPpy', 'pppppppppy', '...pk.....', '...pk.....', '....k.....', '......c.c.', '.....c.c..'],
 };
 export const ICON_URL = {};
 let c_;

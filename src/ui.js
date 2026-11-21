@@ -619,6 +619,20 @@ export class UI {
 
     section('Mejoras');
     for (const up of UPGRADES) {
+      if (up.unlock === 'gun' && !g.gunGiven) {
+        // todavía bloqueada: se ve el lugar, pero no qué es
+        const card = document.createElement('div');
+        card.className = 'up locked';
+        card.innerHTML = `
+          <div class="up-ico"><span class="lock" aria-hidden="true">?</span></div>
+          <div><h4>???</h4><p class="desc">Todavía no la tienen. Se desbloquea más adelante, allá abajo...</p></div>
+        `;
+        const btn = document.createElement('button');
+        btn.className = 'btn buy'; btn.textContent = 'Bloqueada'; btn.disabled = true;
+        card.appendChild(btn);
+        list.appendChild(card);
+        continue;
+      }
       const lvl = g.upgrades[up.id];
       const max = lvl >= up.levels.length - 1;
       const [val] = up.levels[lvl];
@@ -734,6 +748,15 @@ export class UI {
   }
 
   /** controles táctiles de la pelea final: sin CAVAR ni antorcha, con el joystick de apuntar */
+  /** botón táctil para cambiar de herramienta (aparece cuando ya tienen la pistola) */
+  setToolButton(has, tool) {
+    const k = has ? tool : 'none';
+    if (this.last.toolBtn === k) return;
+    this.last.toolBtn = k;
+    this.show('t-tool', has);
+    if (has) $('t-tool-ico').src = tool === 'gun' ? ICON_URL['pala_' + Math.min(this.g.upgrades.pala, 7)] : ICON_URL.gun;
+  }
+
   setFightControls(on) {
     if (this.last.fight === on) return;
     this.last.fight = on;
