@@ -214,16 +214,17 @@ export const TORCH = { radius: 14 };           // en bloques
 // Textos de prueba: después los cambiamos por los regalos de verdad.
 export const GIFTS = [
   {
-    id: 1, depth: 300, title: 'Primer regalo',
-    text: 'Acá va a ir la primera sorpresa.\n(Texto de prueba: después lo cambiamos por el regalo de verdad.)',
+    // art: 'ferrero' = el dibujo de la caja de bombones (se elige en Configuración → Dibujo del primer regalo)
+    id: 1, depth: 300, headline: '¡¡El primer regalo!!', art: 'ferrero', title: 'Bombones Ferrero Rocher',
+    text: '¡Una caja de Ferrero Rocher para la cumpleañera! ♥',
   },
   {
-    id: 2, depth: 800, title: 'Segundo regalo',
+    id: 2, depth: 800, headline: '¡¡El segundo regalo!!', title: 'Segundo regalo',
     text: 'Acá va a ir la segunda sorpresa.\n(Texto de prueba.)',
   },
   {
     // el último está en el núcleo: en la plataforma de abajo de todo (por ahora no se abre)
-    id: 3, depth: 1500, title: 'El regalo final', final: true, core: true,
+    id: 3, depth: 1500, headline: '¡¡El regalo final!!', title: 'El regalo final', final: true, core: true,
     text: 'Acá va a ir la última sorpresa.\n(Texto de prueba.)',
   },
 ];

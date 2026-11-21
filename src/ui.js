@@ -4,6 +4,7 @@ import { ICON_URL, DOG, POPI, charPortrait } from './sprites.js';
 import { fmtMoney } from './util.js';
 import { MusicDirector, GEN } from './music.js';
 import { SFX_LIST } from './audio.js';
+import { GIFT1_OPTIONS, gift1Url, gift1Choice, setGift1Choice } from './giftart.js';
 
 
 const $ = (id) => document.getElementById(id);
@@ -17,7 +18,7 @@ export class UI {
 
     document.querySelectorAll('img[data-icon]').forEach((img) => { img.src = ICON_URL[img.dataset.icon]; });
     document.querySelector('.shop-cat').src = charPortrait('carlos', 1).toDataURL(); // Carlos atiende el taller
-    document.querySelector('.gift-img').src = ICON_URL.giftBig;
+    $('gift-img').src = ICON_URL.giftBig;
     this.setupTitle();
 
     // marcas de regalos en el medidor de profundidad
@@ -61,6 +62,10 @@ export class UI {
     // escuchar las canciones y los efectos de sonido desde Configuración
     $('s-songs').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-songs', true); this.refreshSongs(); });
     $('s-sfx').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-sfx', true); this.buildSfxList(); });
+    // elegir el dibujo del primer regalo
+    $('s-giftart').addEventListener('click', () => { this.show('screen-settings', false); sub('screen-giftart', true); this.buildGiftArt(); });
+    $('giftart-ok').addEventListener('click', () => { sub('screen-giftart', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
+    $('giftart-preview').addEventListener('click', () => { game.audio.play('ui'); this.show('screen-giftart', false); this.showGift(GIFTS[0], true); });
     $('sfx-ok').addEventListener('click', () => { sub('screen-sfx', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
     // jugar online
     const net = game.net;
@@ -82,7 +87,7 @@ export class UI {
     $('songs-auto').addEventListener('click', () => { if (game.audio.music) game.audio.music.release(); this.refreshSongs(); });
     $('p-songs').addEventListener('click', () => this.refreshSongs());
     this.closeSub = () => {
-      for (const id of ['screen-settings', 'screen-controls', 'screen-songs', 'screen-sfx']) if (!$(id).classList.contains('hidden')) { sub(id, false); return true; }
+      for (const id of ['screen-settings', 'screen-controls', 'screen-songs', 'screen-sfx', 'screen-giftart']) if (!$(id).classList.contains('hidden')) { sub(id, false); return true; }
       return false;
     };
     $('btn-new').addEventListener('click', () => { game.audio.unlock(); game.requestNewGame(); });
@@ -100,7 +105,11 @@ export class UI {
     $('btn-duo').addEventListener('click', () => { game.audio.play('ui'); game.setDuo(!game.duo); this.refreshAudioBtns(); });
     $('shop-close').addEventListener('click', () => game.closeShop());
     $('screen-shop').addEventListener('click', (e) => { if (e.target.id === 'screen-shop') game.closeShop(); });
-    $('gift-ok').addEventListener('click', () => game.closeGift());
+    $('gift-ok').addEventListener('click', () => {
+      // vista previa desde el menú: vuelve a la lista de dibujos
+      if (this.giftPreview) { this.giftPreview = false; this.show('screen-gift', false); this.show('screen-giftart', true); this.buildGiftArt(); return; }
+      game.closeGift();
+    });
     this.refreshAudioBtns();
     for (const k of ['music', 'sfx', 'jet']) {
       const el = $('vol-' + k), out = el.nextElementSibling;
@@ -667,12 +676,76 @@ export class UI {
   }
 
   // ---------- Regalo ----------
-  showGift(gift) {
-    $('gift-kicker').textContent = `¡Regalo encontrado a ${gift.depth} m!`;
+  /** el cartel del regalo; con `preview` es la vista previa desde el menú (no toca la partida) */
+  showGift(gift, preview = false) {
+    this.giftPreview = preview;
+    // titular grande con las letras saltando de a una
+    const hl = $('gift-headline');
+    hl.innerHTML = '';
+    [...(gift.headline || '¡¡Un regalo!!')].forEach((ch, i) => {
+      const s = document.createElement('span');
+      s.textContent = ch === ' ' ? '\u00a0' : ch;
+      s.style.animationDelay = (0.25 + i * 0.04) + 's';
+      hl.appendChild(s);
+    });
+    // el dibujo: la caja de bombones elegida o el paquete de regalo
+    const img = $('gift-img');
+    if (gift.art === 'ferrero') {
+      const k = gift1Choice();
+      img.src = gift1Url(k);
+      img.classList.add('art');
+      img.alt = 'Caja de bombones Ferrero Rocher';
+      const probe = new Image();
+      probe.onload = () => { img.style.setProperty('--w', probe.width); img.style.setProperty('--h', probe.height); };
+      probe.src = img.src;
+    } else {
+      img.src = ICON_URL.giftBig; img.classList.remove('art'); img.alt = '';
+      img.style.removeProperty('--w'); img.style.removeProperty('--h');
+    }
+    // reinicia las animaciones (aparece con un rebote)
+    img.classList.remove('pop'); hl.classList.remove('go'); void img.offsetWidth; img.classList.add('pop'); hl.classList.add('go');
+    $('gift-kicker').textContent = `Encontrado a ${gift.depth} m`;
     $('gift-title').textContent = gift.title;
     $('gift-text').textContent = gift.text;
-    $('gift-ok').textContent = gift.final ? '¡Gracias!' : '¡Seguir cavando!';
+    $('gift-ok').textContent = preview ? 'Volver' : gift.final ? '¡Gracias!' : '¡Seguir cavando!';
+    this.confetti();
     this.show('screen-gift', true);
+  }
+
+  /** papel picado cayendo en el cartel del regalo */
+  confetti() {
+    const box = $('gift-confetti');
+    box.innerHTML = '';
+    const cols = ['#ff7ac8', '#ffd34d', '#8fe9ff', '#86e3a8', '#ffffff', '#ff8a72'];
+    for (let i = 0; i < 28; i++) {
+      const s = document.createElement('i');
+      s.style.left = (Math.random() * 100) + '%';
+      s.style.background = cols[i % cols.length];
+      s.style.animationDelay = (Math.random() * 1.6) + 's';
+      s.style.animationDuration = (2.2 + Math.random() * 1.6) + 's';
+      s.style.setProperty('--dx', ((Math.random() - 0.5) * 80) + 'px');
+      s.style.setProperty('--r', ((Math.random() - 0.5) * 720) + 'deg');
+      box.appendChild(s);
+    }
+  }
+
+  /** las 4 opciones de dibujo del primer regalo, para elegir */
+  buildGiftArt() {
+    const list = $('giftart-list');
+    const cur = gift1Choice();
+    list.innerHTML = '';
+    GIFT1_OPTIONS.forEach((o, i) => {
+      const b = document.createElement('button');
+      b.className = 'giftart-opt' + (i === cur ? ' on' : '');
+      b.setAttribute('aria-pressed', String(i === cur));
+      b.innerHTML = `<img src="${gift1Url(i)}" alt=""><span><b>${i + 1}.</b> ${o.name}</span>`;
+      b.addEventListener('click', () => {
+        this.g.audio.play('ui');
+        setGift1Choice(i);
+        for (const el of list.children) { const on = el === b; el.classList.toggle('on', on); el.setAttribute('aria-pressed', String(on)); }
+      });
+      list.appendChild(b);
+    });
   }
 
   // ---------- Mensajes ----------
