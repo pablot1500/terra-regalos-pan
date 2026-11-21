@@ -3,7 +3,16 @@ import { UPGRADES, GIFTS, CHARACTERS, LAYERS, MAX_DEPTH, HP_MAX, SUPPLIES } from
 import { ICON_URL, DOG, POPI, charPortrait } from './sprites.js';
 import { fmtMoney } from './util.js';
 import { MusicDirector, GEN } from './music.js';
-import { SFX_LIST } from './audio.js';
+import { SFX_LIST, sfxVolOf } from './audio.js';
+
+// opciones de sonido para juntar billetes (la 0 es la que suena hoy): [clave, descripción, volumen inicial]
+const BILL_OPTIONS = [
+  ['bill', 'Billetes actual: fajo que se hojea', sfxVolOf('bill')],
+  ['bill2', 'Billete que se estira (flap) y brillito', 1],
+  ['bill3', 'Billete que vuela (whoosh) y pop', 1],
+  ['bill4', 'Contar billetes: paf, paf, paf y ding', 1],
+  ['bill5', 'Shh de papel y acorde de campanitas', 1],
+];
 
 
 const $ = (id) => document.getElementById(id);
@@ -61,6 +70,12 @@ export class UI {
     // escuchar las canciones y los efectos de sonido desde Configuración
     $('s-songs').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-songs', true); this.refreshSongs(); });
     $('s-sfx').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-sfx', true); this.buildSfxList(); });
+    $('opt-copy').addEventListener('click', () => {
+      const txt = $('opt-tune').value;
+      const fail = () => { $('opt-tune').select(); this.toast('Seleccioné el texto: copialo a mano', 'warn'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => this.toast('Copiado: pegámelo en el chat', 'good'), fail);
+      else fail();
+    });
     $('sfx-ok').addEventListener('click', () => { sub('screen-sfx', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
     // jugar online
     const net = game.net;
@@ -179,6 +194,48 @@ export class UI {
       });
       list.appendChild(b);
     });
+    this.buildSfxOptions();
+  }
+
+  /** opciones del sonido de juntar billetes (para elegir cuál queda): cada una con su barrita de volumen.
+   *  Los volúmenes se guardan en el navegador y se copian con el botón, para pasarlos. */
+  buildSfxOptions() {
+    const a = this.g.audio, box = $('sfx-opts');
+    const KEY = 'terra-regalos-pan:billvol2';
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { /* nada */ }
+    box.innerHTML = '';
+    const vols = {};
+    const text = () => 'Juntar billetes: ' + BILL_OPTIONS.map(([k, d], i) => `${i}. ${d}: ${Math.round(vols[k] * 100)}%`).join(', ');
+    BILL_OPTIONS.forEach(([key, desc, v0], i) => {
+      vols[key] = saved[key] ?? v0;
+      const cell = document.createElement('div');
+      cell.className = 'opt-cell';
+      const b = document.createElement('button');
+      b.className = 'btn small alt sfx';
+      b.innerHTML = `<b>${i}.</b> ${desc}`;
+      b.addEventListener('click', () => { a.unlock(); if (!a.sfxOn) { a.setSfx(true); this.refreshAudioBtns(); } a.previewOpt(key, vols[key]); });
+      const lab = document.createElement('label');
+      lab.className = 'tune-vol';
+      const r = document.createElement('input');
+      r.type = 'range'; r.min = '0'; r.max = '200'; r.step = '5';
+      r.value = String(Math.round(vols[key] * 100));
+      r.setAttribute('aria-label', `Volumen de la opción ${i}`);
+      const out = document.createElement('output');
+      out.textContent = r.value + '%';
+      r.addEventListener('input', () => {
+        vols[key] = Number(r.value) / 100;
+        out.textContent = r.value + '%';
+        saved[key] = vols[key];
+        try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch { /* nada */ }
+        $('opt-tune').value = text();
+      });
+      r.addEventListener('change', () => { a.unlock(); a.previewOpt(key, vols[key]); });
+      lab.append(r, out);
+      cell.append(b, lab);
+      box.appendChild(cell);
+    });
+    $('opt-tune').value = text();
   }
 
 

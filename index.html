@@ -32,7 +32,7 @@
       </div>
       <div id="money-box"><img class="ico" data-icon="coin" alt=""><span id="money">$0</span></div>
       <div id="inv-box">
-        <div class="inv"><img class="ico" data-icon="torch" alt=""><b id="inv-torch">0</b><kbd>T</kbd></div>
+        <div class="inv"><img class="ico" data-icon="torch" alt=""><b id="inv-torch">0</b><kbd class="key-keys">T</kbd><kbd class="key-pad" aria-label="Botón Y">Y</kbd></div>
       </div>
       <div id="depth-box">
         <div id="depth-num">0 m</div>
@@ -216,7 +216,12 @@
         <h2>Efectos de sonido</h2>
         <p class="hint">Tocá uno para escucharlo, tal como suena en el juego. Están numerados para decir cuáles cambiar.</p>
         <div id="sfx-list" class="songs sfx-list"></div>
+        <h3 class="opt-title">Juntar billetes: opciones</h3>
+        <p class="hint">El 0 es el que suena hoy. Escuchalos, ajustá el volumen de cada uno y pasame cuál queda (con su volumen):</p>
+        <div id="sfx-opts" class="songs sfx-list"></div>
+        <textarea id="opt-tune" class="tune-text" readonly rows="3"></textarea>
         <div class="row">
+          <button class="btn small alt" id="opt-copy">Copiar opciones</button>
           <button class="btn" id="sfx-ok">Listo</button>
         </div>
       </div>
