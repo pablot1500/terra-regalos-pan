@@ -49,7 +49,7 @@ const EFFECTS = [
   ['bossHit', 0.6, 0.5, 'A boss enemy gets hit: punchy cartoon impact bonk, video game sound effect, no words.'],                       // 43
 ];
 // los que ya reemplazan al de código en el juego (el resto queda de respaldo, para comparar en el menú)
-const USE = new Set(['dig', 'clink', 'bill', 'gem', 'buy', 'deny', 'ui', 'bark', 'surprise', 'gate', 'gateShut', 'boom', 'laugh', 'beam', 'flame', 'bossHit']);
+const USE = new Set(['dig', 'clink', 'gem', 'buy', 'deny', 'ui', 'bark', 'surprise', 'gate', 'gateShut', 'boom', 'laugh', 'beam', 'flame', 'bossHit']);
 // volumen extra de cada grabado (1 = el nivelado automático)
 const VOL = { dig: 0.7, clink: 0.85, deny: 0.7, gate: 0.85, laugh: 0.85, beam: 0.85, flame: 0.85, bossHit: 0.85 };
 // ojo: gate.mp3 está recortado a mano a la mitad (0,75 s); el completo está en respaldo/. Si se regenera, hay que recortarlo de nuevo.

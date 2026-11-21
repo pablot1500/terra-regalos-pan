@@ -4,7 +4,7 @@ import { MusicDirector, loadGenerated } from './music.js';
 
 // volumen de cada efecto en el juego (1 = normal), afinado a oído desde el menú Efectos de sonido
 const SFX_VOL = {
-  dig: 0.25, break: 1.15, clink: 0.4, drill: 0.8, coin: 0.75, bill: 0.3, gold: 0.7, gem: 0.25,
+  dig: 0.25, break: 1.15, clink: 0.4, drill: 0.8, coin: 0.75, bill: 1, gold: 0.7, gem: 0.25,
   chest: 0.65, jump: 0.6, land: 2, jet: 1.6, hurt: 0.45, faint: 0.7, rest: 1.3, torch: 1.2,
   buy: 0.25, deny: 0.4, ui: 0.6, talk: 1.35, bark: 0.35, surprise: 0.2, paper: 1.35, gate: 0.3,
   gateShut: 0.35, shutter: 1.25, click: 0.8, fuse: 0.7, boom: 0.4, magic: 0.6, pump: 1.5, squirt: 1.45,
@@ -239,28 +239,9 @@ export class Audio {
       case 'break': this.noise(0.16, { vol: 0.4, freq: 1100 }); this.tone(160, 0.1, { type: 'triangle', vol: 0.25, slide: 70 }); break;
       case 'clink': this.tone(1800, 0.08, { type: 'triangle', vol: 0.18 }); this.tone(2400, 0.06, { type: 'square', vol: 0.05, delay: 0.02 }); break;
       case 'coin': this.tone(988, 0.07, { vol: 0.12 }); this.tone(1319, 0.14, { vol: 0.12, delay: 0.06 }); break;
-      case 'bill': this.noise(0.12, { vol: 0.25, freq: 3000, type: 'highpass' }); this.tone(784, 0.08, { vol: 0.08 }); this.tone(1175, 0.1, { vol: 0.08, delay: 0.06 }); break;
-      // opciones nuevas para juntar billetes (para elegir en el menú Efectos de sonido)
-      case 'bill2': // fajo de billetes que se hojea (frrrt) y campanita
+      case 'bill': // fajo de billetes que se hojea (frrrt) y campanita
         for (let i = 0; i < 4; i++) this.noise(0.035, { vol: 0.16, freq: 3800, type: 'highpass', delay: i * 0.03 });
         this.tone(1319, 0.09, { type: 'triangle', vol: 0.13, delay: 0.12 }); this.tone(1760, 0.18, { type: 'triangle', vol: 0.13, delay: 0.17 });
-        break;
-      case 'bill3': // caja registradora: cha-ching
-        this.noise(0.05, { vol: 0.18, freq: 2500, type: 'highpass' });
-        this.tone(2093, 0.06, { type: 'square', vol: 0.05, delay: 0.05 });
-        this.tone(2637, 0.28, { type: 'triangle', vol: 0.14, delay: 0.1 }); this.tone(3136, 0.22, { type: 'sine', vol: 0.06, delay: 0.1 });
-        break;
-      case 'bill4': // papelito que se arruga y una monedita
-        this.noise(0.1, { vol: 0.22, freq: 2200, type: 'bandpass' }); this.noise(0.06, { vol: 0.14, freq: 5000, type: 'highpass', delay: 0.04 });
-        this.tone(1568, 0.05, { type: 'square', vol: 0.06, delay: 0.09 }); this.tone(2093, 0.14, { type: 'square', vol: 0.06, delay: 0.13 });
-        break;
-      case 'bill5': // swish y arpegio alegre que sube
-        this.noise(0.08, { vol: 0.14, freq: 3200, type: 'highpass' });
-        [659, 880, 1109, 1319].forEach((f, i) => this.tone(f, 0.1, { type: 'triangle', vol: 0.12, delay: 0.04 + i * 0.04 }));
-        break;
-      case 'bill6': // swish suave de papel y una campanita redonda
-        this.noise(0.16, { vol: 0.2, freq: 1800, type: 'bandpass' });
-        this.tone(1047, 0.35, { type: 'sine', vol: 0.16, delay: 0.07 }); this.tone(2094, 0.2, { type: 'sine', vol: 0.04, delay: 0.07 });
         break;
       case 'gold': [784, 988, 1175, 1568].forEach((f, i) => this.tone(f, 0.12, { vol: 0.1, delay: i * 0.05 })); break;
       case 'gem': [1047, 1319, 1568, 2093, 2637].forEach((f, i) => this.tone(f, 0.18, { type: 'triangle', vol: 0.14, delay: i * 0.05 })); break;
@@ -314,20 +295,6 @@ export class Audio {
         this.tone(70, 1.5, { type: 'triangle', vol: 0.45, slide: 35 });
         break;
     }
-  }
-
-  /**
-   * prueba una opción del menú a un volumen dado: si hay grabado con ese nombre suena el grabado;
-   * 'nombre:code' fuerza el de código
-   */
-  previewOpt(key, vol) {
-    if (!this.ctx || !this.sfxOn) return;
-    const [name, code] = key.split(':');
-    const out = this.ctx.createGain();
-    out.gain.value = vol;
-    out.connect(this.sfx);
-    this.dest = out;
-    try { if (!code && this.genSfx[name]) this.playRec(this.genSfx[name]); else this.playCode(name); } finally { this.dest = null; }
   }
 
   /** prueba un efecto grabado a un volumen dado (para elegir opciones en el menú) */

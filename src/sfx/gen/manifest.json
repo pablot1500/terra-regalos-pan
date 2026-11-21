@@ -33,7 +33,7 @@
     },
     "bill": {
       "file": "bill.mp3",
-      "use": true,
+      "use": false,
       "vol": 1,
       "prompt": "Picking up paper money: a quick crisp banknote rustle with a tiny happy chime, video game pickup sound."
     },
