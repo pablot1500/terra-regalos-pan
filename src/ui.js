@@ -64,6 +64,7 @@ export class UI {
     $('s-sfx').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-sfx', true); this.buildSfxList(); });
     // repetir la escena de las aguilitas (para probar cambios), sin tocar el progreso
     $('s-agui').addEventListener('click', () => { game.audio.unlock(); game.audio.play('ui'); game.replayEaglets(); });
+    $('s-lava').addEventListener('click', () => { game.audio.unlock(); game.audio.play('ui'); game.replayLava(); });
     $('sfx-ok').addEventListener('click', () => { sub('screen-sfx', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
     // jugar online
     const net = game.net;

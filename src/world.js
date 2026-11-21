@@ -657,6 +657,36 @@ export class World {
   }
 
   /**
+   * Un lugar para pararse mirando la lava (para repetir la escena de la lava): piso firme, lugar arriba y un
+   * charco de lava a unos 30-60 px de costado. Elige el más cercano a (px, py). Devuelve { x, y, spot } o null.
+   */
+  lavaViewpoint(px, py) {
+    const { sw, sub, lava } = this;
+    const maxSy = (CORE_ROW - 6) * SPT;
+    let best = null, bd = Infinity;
+    for (let sy = this.lavaRow0 + 2; sy < maxSy; sy++) for (let sx = 2; sx < sw - 2; sx += 2) {
+      const q = sy * sw + sx;
+      if (!lava[q] || lava[q - sw] || sub[q - sw]) continue; // la superficie de un charco
+      const lx = sx * SUB + 1, ly = sy * SUB + 1;
+      const d0 = (lx - px) ** 2 + (ly - py) ** 2;
+      if (d0 >= bd) continue;
+      for (const dx of [-44, 44, -36, 36, -56, 56]) {
+        const x = lx + dx;
+        let fy = -1;
+        for (let y = ly - 24; y < ly + 12; y++) if (this.solidPx(x, y) && !this.solidPx(x, y - 1)) { fy = y; break; }
+        if (fy < 0) continue;
+        let ok = true;
+        for (let k = 1; k < 22 && ok; k++) for (const ox of [-5, 0, 5]) if (this.solidPx(x + ox, fy - k) || this.lavaAtPx(x + ox, fy - k)) { ok = false; break; }
+        for (let k = -12; k <= 12 && ok; k += 3) if (this.lavaAtPx(x + k, fy - 2) || this.lavaAtPx(x + k, fy - 8)) ok = false;
+        if (!ok) continue;
+        bd = d0; best = { x, y: fy, spot: { x: lx, y: ly } };
+        break;
+      }
+    }
+    return best;
+  }
+
+  /**
    * El agua enfría la lava: las sub-celdas de lava en un radio (px) se vuelven roca de lava, que se puede picar.
    * En la caverna del núcleo no (ahí la lava es el mar de la pelea). Devuelve las sub-celdas que cambiaron.
    */

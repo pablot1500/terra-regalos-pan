@@ -371,6 +371,32 @@ class Game {
     this.startEagletScene(p, { immune: true });
   }
 
+  /**
+   * Configuración → "Ver otra vez la escena de la lava": lleva al personaje a mirar el charco de lava más cercano
+   * y repite la escena, sin tocar lo cavado ni lo comprado.
+   */
+  replayLava() {
+    if (this.net.role) { this.toast('La escena se puede repetir solo jugando sin conexión', null, 'warn'); return; }
+    if (this.state === 'title' || this.state === 'splash') {
+      if (!this.savedData) { this.toast('Primero empezá una partida', null, 'warn'); return; }
+      this.state = 'title-done'; // sin la bajada de cámara del título: directo a la escena
+      this.continueGame();
+    }
+    for (const id of ['screen-settings', 'screen-pause', 'screen-controls', 'screen-songs', 'screen-sfx']) this.ui.show(id, false);
+    if (this.state === 'paused') this.resume();
+    if (this.state !== 'play') return;
+    const p = this.players[0];
+    const v = this.world.lavaViewpoint(p.cx, Math.max(p.cy, rowForDepth(LAVA.from) * TILE));
+    if (!v) { this.toast('No encontré lava para mirar', null, 'warn'); return; }
+    p.x = v.x - p.w / 2; p.y = v.y - p.h; p.vx = 0; p.vy = 0; p.peakY = p.y;
+    p.hovering = false; p.dead = false; p.digging = false; p.onGround = true;
+    p.hp = Math.max(p.hp, HP_MAX);
+    p.energy = Math.max(p.energy, this.stats.energyMax * 0.6);
+    for (const pl of this.players) if (pl.ai) pl.ai.place(p, true);
+    this.eaglets.clear();
+    this.startLavaScene(p, v.spot);
+  }
+
   /** daño de un picotazo de aguilita, con lo que lo baja la armadura */
   eagletDmg(base) {
     return Math.max(1, Math.round(base * (1 - (this.stats.eagletArmor || 0) / 100)));
