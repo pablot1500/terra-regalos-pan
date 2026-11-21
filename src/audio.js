@@ -16,6 +16,9 @@ export const sfxVolOf = (name) => SFX_VOL[name] ?? 1;
 // los ladridos de Popi entre los que va alternando (todos con el volumen de 'bark')
 const BARKS = ['bark', 'bark3', 'bark5'];
 
+/** sonidos posibles para juntar una gema (se elige en Efectos de sonido; el 0 es el de siempre) */
+export const GEM_SFX = ['Actual', 'Campanita de cristal', 'Brillitos', 'Premio', 'Gota de cristal'];
+
 /** todos los efectos de sonido, con dónde suenan (para el menú "Efectos de sonido") */
 export const SFX_LIST = [
   ['dig', 'Cavar tierra con la pala'],
@@ -78,17 +81,19 @@ export class Audio {
     this.genSfx = {};         // efectos grabados con ElevenLabs ya listos para sonar (src/sfx/gen): {buffer, gain}
     this.genUse = {};         // cuáles reemplazan al de código en el juego (el resto, solo para comparar en el menú)
     this.last = {};
+    this.gemSfx = 0;          // cuál de los sonidos de GEM_SFX suena al juntar una gema
     loadGenerated();
     try {
       const s = JSON.parse(localStorage.getItem('terra-regalos-pan:audio') || '{}');
       if (s.sfx === false) this.sfxOn = false;
+      if (Number.isInteger(s.gem) && s.gem >= 0 && s.gem < GEM_SFX.length) this.gemSfx = s.gem;
       if (s.music === false) this.musicOn = false;
       for (const k in this.vol) if (Number.isFinite(s.vol?.[k])) this.vol[k] = Math.min(1, Math.max(0, s.vol[k]));
     } catch { /* nada */ }
   }
 
   savePrefs() {
-    try { localStorage.setItem('terra-regalos-pan:audio', JSON.stringify({ sfx: this.sfxOn, music: this.musicOn, vol: this.vol })); } catch { /* nada */ }
+    try { localStorage.setItem('terra-regalos-pan:audio', JSON.stringify({ sfx: this.sfxOn, music: this.musicOn, vol: this.vol, gem: this.gemSfx })); } catch { /* nada */ }
   }
 
   applyVolumes() {
@@ -244,7 +249,7 @@ export class Audio {
         [2637, 3136, 3951].forEach((f, i) => this.tone(f, 0.07, { type: 'triangle', vol: 0.07, delay: 0.06 + i * 0.035 }));
         break;
       case 'gold': [784, 988, 1175, 1568].forEach((f, i) => this.tone(f, 0.12, { vol: 0.1, delay: i * 0.05 })); break;
-      case 'gem': [1047, 1319, 1568, 2093, 2637].forEach((f, i) => this.tone(f, 0.18, { type: 'triangle', vol: 0.14, delay: i * 0.05 })); break;
+      case 'gem': this.gem(this.gemSfx); break;
       case 'jump': this.tone(300, 0.12, { vol: 0.1, slide: 600 }); break;
       case 'land': this.noise(0.08, { vol: 0.3, freq: 400 }); break;
       case 'hurt': this.tone(440, 0.25, { vol: 0.18, slide: 110 }); this.noise(0.12, { vol: 0.3, freq: 800 }); break;
@@ -295,6 +300,41 @@ export class Audio {
         this.tone(70, 1.5, { type: 'triangle', vol: 0.45, slide: 35 });
         break;
     }
+  }
+
+  /** juntar una gema: el sonido elegido de GEM_SFX */
+  gem(v) {
+    if (v === 1) {
+      // campanita de cristal: dos golpecitos de campana con armónicos que se apagan despacio
+      [[2093, 0], [2637, 0.09]].forEach(([f, d]) => {
+        this.tone(f, 0.7, { type: 'sine', vol: 0.22, delay: d });
+        this.tone(f * 2.01, 0.35, { type: 'sine', vol: 0.08, delay: d });
+        this.tone(f * 3.98, 0.15, { type: 'sine', vol: 0.04, delay: d });
+      });
+    } else if (v === 2) {
+      // brillitos: una lluvia de notitas agudas que suben, con un siseo de brillo
+      [2349, 2794, 3136, 3729, 4186, 3729, 4699].forEach((f, i) => this.tone(f, 0.09, { type: 'triangle', vol: 0.1, delay: i * 0.032 }));
+      this.noise(0.35, { vol: 0.05, freq: 7000, type: 'highpass', delay: 0.02 });
+    } else if (v === 3) {
+      // premio: arpegio rapidito que termina en una nota larga, y su eco más suave
+      [784, 988, 1175, 1568].forEach((f, i) => this.tone(f, 0.08, { vol: 0.07, delay: i * 0.045 }));
+      this.tone(1976, 0.3, { vol: 0.07, delay: 0.18 });
+      [784, 988, 1175, 1568].forEach((f, i) => this.tone(f, 0.07, { vol: 0.025, delay: 0.32 + i * 0.045 }));
+    } else if (v === 4) {
+      // gota de cristal: un "plinc" que sube y dos tintineos
+      this.tone(900, 0.09, { type: 'sine', vol: 0.22, slide: 2600 });
+      this.tone(3136, 0.18, { type: 'triangle', vol: 0.12, delay: 0.08 });
+      this.tone(3951, 0.25, { type: 'triangle', vol: 0.1, delay: 0.15 });
+      this.noise(0.02, { vol: 0.1, freq: 5000, type: 'highpass' });
+    } else {
+      [1047, 1319, 1568, 2093, 2637].forEach((f, i) => this.tone(f, 0.18, { type: 'triangle', vol: 0.14, delay: i * 0.05 }));
+    }
+  }
+
+  /** elige el sonido de las gemas (y lo guarda) */
+  setGemSfx(v) {
+    this.gemSfx = v;
+    this.savePrefs();
   }
 
   /** prueba un efecto grabado a un volumen dado (para elegir opciones en el menú) */
