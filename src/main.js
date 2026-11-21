@@ -795,8 +795,10 @@ class Game {
       // si ya bajaron sin pasar por las escenas (por ejemplo, con "Pelear con Aguilus" de la pausa),
       // ya tienen el equipo y Popi los espera en el patio
       if (this.counters.best > 20) { this.kitGiven = true; this.popiMet = true; }
-      // ya equipados, la primera vez que pisan el cantero Popi sale del arbusto grande
-      const onCantero = p.onGround && Math.abs(p.y + p.h - SURFACE * TILE) < 2 && p.cx > DIG_ZONE.c0 * TILE && p.cx < (DIG_ZONE.c1 + 1) * TILE;
+      // ya equipados, la primera vez que pasan por el cantero Popi sale del arbusto grande
+      // (aunque pasen saltando o volando por encima, sin pisarlo)
+      const feet = p.y + p.h - SURFACE * TILE;
+      const onCantero = feet > -7 * TILE && feet < 2 * TILE && p.cx > DIG_ZONE.c0 * TILE && p.cx < (DIG_ZONE.c1 + 1) * TILE;
       if (this.kitGiven && !this.popiMet && !guest && !p.dead && onCantero) this.startPopiScene(p);
       const nearDog = this.popiMet && !this.popi && Math.abs(p.cx - (DOG_POS.x + 10)) < 22 && Math.abs(p.y + p.h - (DOG_POS.y + 14)) < 12;
       if (nearDog && !this.wasNearDog) {
@@ -920,7 +922,8 @@ class Game {
   padUI(inp) {
     const st = this.state;
     if (['intro', 'scene', 'remoteScene'].includes(st) && this.scene) {
-      if (inp.padA) { if (this.scene.noteOpen) document.getElementById('intro-note-ok').click(); else this.scene.advance(); }
+      if (this.scene.kitOpen) { if (inp.padA || inp.padB || inp.interact) this.ui.closeKit(); }
+      else if (inp.padA) { if (this.scene.noteOpen) document.getElementById('intro-note-ok').click(); else this.scene.advance(); }
       if (inp.padStart) this.scene.skip();
       return;
     }

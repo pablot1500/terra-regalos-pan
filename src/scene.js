@@ -41,7 +41,9 @@ export class Scene {
     this.onEnd = onEnd;
     this.onSkip = onSkip;
     this.onKey = (e) => {
-      if (['Space', 'Enter', 'KeyE', 'NumpadEnter'].includes(e.code)) this.advance();
+      if (['Space', 'Enter', 'KeyE', 'NumpadEnter'].includes(e.code)) {
+        if (this.kitOpen) { e.preventDefault(); if (!e.repeat) this.ui.closeKit(); } else this.advance();
+      }
       if (e.code === 'Escape') this.skip();
     };
     window.addEventListener('keydown', this.onKey);

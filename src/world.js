@@ -6,7 +6,7 @@
 //    saca círculos de sub-celdas, así los pozos quedan orgánicos.
 import {
   TILE, CHUNK, WORLD_W, WORLD_H, SURFACE, METERS_PER_TILE, BOTTOM_ROW, EDGE,
-  LAYERS, LAYER_LOOT, GIFTS, ITEMS, MAX_DEPTH, CORE_ROW, LAVA,
+  LAYERS, LAYER_LOOT, GIFTS, ITEMS, MAX_DEPTH, CORE_ROW, LAVA, BRUSH_R,
 } from './config.js';
 import { T, DEF, LAYER_TILES, VARIANTS, TEXPX, WALLPX, PALRGB, isDiggable, hardness } from './tiles.js';
 import { hash2, fbm } from './rng.js';
@@ -17,6 +17,11 @@ import { placeStructures, PATIO, DIG_ZONE } from './structures.js';
 export const SUB = 2;            // px por sub-celda
 export const SPT = TILE / SUB;   // sub-celdas por bloque (4)
 const CRUMBLE = 3;               // si a un bloque le quedan <= 3 sub-celdas, se desmorona
+// Pedacitos de tierra sueltos: si después de un palazo queda un montoncito rodeado de aire más chico
+// que un círculo del 70% del radio de la pala inicial, se rompe solo (para no quedar trabado en ellos).
+// Si es más grande, queda flotando como una roca.
+const FLOATER_R = BRUSH_R[0] * 0.7;
+const FLOATER_MAX = Math.floor((Math.PI * FLOATER_R * FLOATER_R) / (SUB * SUB)); // en sub-celdas
 
 export const rowForDepth = (m) => SURFACE + Math.round(m / METERS_PER_TILE);
 export const depthAtY = (yPx) => Math.max(0, (yPx / TILE - SURFACE) * METERS_PER_TILE);
@@ -425,6 +430,7 @@ export class World {
         n++;
       }
     }
+    if (n) n += this.dropFloaters(sx0 - 3, sy0 - 3, sx1 + 3, sy1 + 3, power, touched, mats);
     const loot = [];
     const cols = new Set();
     for (const ti of touched) {
@@ -440,6 +446,53 @@ export class World {
     }
     for (const c of cols) this.updateSkyTop(c);
     return { n, loot, mats };
+  }
+
+  /**
+   * Busca, alrededor de un palazo, montoncitos de terreno que quedaron sueltos (rodeados de aire) y,
+   * si son chiquitos, los rompe. No toca lo que esté pegado a algo que no se puede cavar con `power`
+   * (roca dura, cristal, estructuras) ni lo que esté arriba de la superficie.
+   */
+  dropFloaters(sx0, sy0, sx1, sy1, power, touched, mats) {
+    const { sw, sh, sub, w } = this;
+    sx0 = Math.max(0, sx0); sy0 = Math.max(0, sy0); sx1 = Math.min(sw - 1, sx1); sy1 = Math.min(sh - 1, sy1);
+    const top = SURFACE * SPT;
+    const seen = new Set();
+    let removed = 0;
+    for (let sy = sy0; sy <= sy1; sy++) for (let sx = sx0; sx <= sx1; sx++) {
+      const s0 = sy * sw + sx;
+      if (!sub[s0] || seen.has(s0)) continue;
+      // recorre el montoncito (vecinos en 8 direcciones) hasta ver que es grande o que está anclado
+      const comp = [s0];
+      seen.add(s0);
+      let keep = false;
+      for (let k = 0; k < comp.length; k++) {
+        const j = comp[k], x = j % sw, y = (j / sw) | 0;
+        const t = this.tiles[(y >> 2) * w + (x >> 2)];
+        if (y < top || !isDiggable(t) || hardness(t) > power || t === T.CRYSTAL) { keep = true; break; }
+        if (comp.length > FLOATER_MAX) { keep = true; break; }
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          if (!dx && !dy) continue;
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= sw) continue;
+          if (ny >= sh) { keep = true; continue; } // el fondo del mundo es sólido
+          const q = ny * sw + nx;
+          if (sub[q] && !seen.has(q)) { seen.add(q); comp.push(q); }
+        }
+        if (keep) break;
+      }
+      if (keep) continue;
+      for (const j of comp) {
+        const x = j % sw, y = (j / sw) | 0, ti = (y >> 2) * w + (x >> 2);
+        const t = this.tiles[ti];
+        sub[j] = 0;
+        this.subDug[j] = 1;
+        touched.add(ti);
+        mats[t] = (mats[t] || 0) + 1;
+        removed++;
+      }
+    }
+    return removed;
   }
 
   markTileDug(c, r) {

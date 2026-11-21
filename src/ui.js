@@ -441,11 +441,23 @@ export class UI {
     this.show('intro-note', !!text);
   }
 
+  /** cierra el cartel del equipo de Carlos (con teclado o joystick); no si se acaba de abrir, para no saltearlo sin querer */
+  closeKit() {
+    if ($('intro-kit').classList.contains('hidden') || performance.now() - this.kitOpenedAt < 500) return;
+    $('intro-kit-ok').click();
+  }
+
   /** el equipo de Carlos (pala, jetpack y batería) en la escena del taller */
   introKit(show, onClose) {
     this.kitCb = show ? onClose : null;
     if (show) for (const img of $('intro-kit').querySelectorAll('img[data-icon]')) img.src = ICON_URL[img.dataset.icon];
     this.show('intro-kit', !!show);
+    this.kitOpenedAt = show ? performance.now() : 0;
+    const ok = $('intro-kit-ok');
+    if (show) {
+      $('intro-kit-hint').textContent = this.hint('(o apretá Espacio)', '(o apretá A)', '');
+      ok.classList.toggle('pad-focus', this.ctl() === 'pad');
+    } else ok.classList.remove('pad-focus');
   }
 
   // ---------- HUD ----------
