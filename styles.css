@@ -258,11 +258,12 @@ body.touch .inv kbd { display: none; }
 .toast.warn { color: #ffb36b; }
 @keyframes toastIn { from { transform: translateY(-8px); opacity: 0; } }
 #prompt {
-  position: absolute; left: 50%; bottom: calc(22% + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  /* centrado sin transform: si el centrado dependiera de la animación, el primer instante aparecía corrido a la derecha */
+  position: absolute; left: 0; right: 0; margin: 0 auto; width: max-content; max-width: 94vw; bottom: calc(22% + env(safe-area-inset-bottom));
   background: rgba(43,31,51,0.92); border: 3px solid var(--ink); padding: 8px 14px; font-size: 17px; box-shadow: 0 3px 0 var(--ink);
   white-space: nowrap; animation: pulse 1.2s infinite;
 }
-@keyframes pulse { 50% { transform: translateX(-50%) translateY(-3px); } }
+@keyframes pulse { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 
 /* ---------- Táctil ---------- */
 #touch { position: absolute; inset: 0; pointer-events: none; z-index: 11; }
