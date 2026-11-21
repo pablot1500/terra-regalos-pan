@@ -4,7 +4,7 @@ import { ICON_URL, DOG, POPI, charPortrait } from './sprites.js';
 import { fmtMoney } from './util.js';
 import { MusicDirector, GEN } from './music.js';
 import { SFX_LIST, GEM_SFX } from './audio.js';
-import { gift1Url } from './giftart.js';
+import { gift1Url, gift2Url, GIFT2_OPTIONS, gift2Choice, setGift2Choice } from './giftart.js';
 
 
 const $ = (id) => document.getElementById(id);
@@ -64,6 +64,10 @@ export class UI {
     $('s-sfx').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-sfx', true); this.buildSfxList(); });
     // repetir la escena de las aguilitas (para probar cambios), sin tocar el progreso
     $('s-agui').addEventListener('click', () => { game.audio.unlock(); game.audio.play('ui'); game.replayEaglets(); });
+    // elegir el dibujo del segundo regalo (y ver el cartel completo)
+    $('s-giftart').addEventListener('click', () => { this.show('screen-settings', false); sub('screen-giftart', true); this.buildGiftArt(); });
+    $('giftart-ok').addEventListener('click', () => { sub('screen-giftart', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
+    $('giftart-preview').addEventListener('click', () => { game.audio.play('ui'); this.show('screen-giftart', false); this.showGift(GIFTS[1], true); });
     $('sfx-ok').addEventListener('click', () => { sub('screen-sfx', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
     // jugar online
     const net = game.net;
@@ -85,6 +89,7 @@ export class UI {
     $('songs-auto').addEventListener('click', () => { if (game.audio.music) game.audio.music.release(); this.refreshSongs(); });
     $('p-songs').addEventListener('click', () => this.refreshSongs());
     this.closeSub = () => {
+      if (!$('screen-giftart').classList.contains('hidden')) { $('giftart-ok').click(); return true; }
       for (const id of ['screen-settings', 'screen-controls', 'screen-songs', 'screen-sfx']) if (!$(id).classList.contains('hidden')) { sub(id, false); return true; }
       return false;
     };
@@ -104,6 +109,8 @@ export class UI {
     $('shop-close').addEventListener('click', () => game.closeShop());
     $('screen-shop').addEventListener('click', (e) => { if (e.target.id === 'screen-shop') game.closeShop(); });
     $('gift-ok').addEventListener('click', () => {
+      // vista previa desde el menú: vuelve a la lista de dibujos
+      if (this.giftPreview) { this.giftPreview = false; this.show('screen-gift', false); this.show('screen-giftart', true); this.buildGiftArt(); return; }
       game.closeGift();
     });
     this.refreshAudioBtns();
@@ -704,23 +711,34 @@ export class UI {
   }
 
   // ---------- Regalo ----------
-  /** el cartel del regalo */
-  showGift(gift) {
+  /** el cartel del regalo; con `preview` es la vista previa desde el menú (no toca la partida) */
+  showGift(gift, preview = false) {
+    this.giftPreview = preview;
     // titular grande con las letras saltando de a una
     const hl = $('gift-headline');
     hl.innerHTML = '';
-    [...(gift.headline || '¡¡Un regalo!!')].forEach((ch, i) => {
-      const s = document.createElement('span');
-      s.textContent = ch === ' ' ? '\u00a0' : ch;
-      s.style.animationDelay = (0.25 + i * 0.04) + 's';
-      hl.appendChild(s);
+    // las letras van agrupadas por palabra, así si no entra corta entre palabras (y no deja un "!" solo abajo)
+    const head = gift.headline || '¡¡Un regalo!!';
+    hl.classList.toggle('long', head.length > 18);
+    let i = 0;
+    head.split(' ').forEach((word, w) => {
+      if (w) { hl.appendChild(document.createTextNode(' ')); i++; }
+      const wd = document.createElement('span');
+      wd.className = 'w';
+      for (const ch of word) {
+        const s = document.createElement('span');
+        s.textContent = ch;
+        s.style.animationDelay = (0.25 + i++ * 0.04) + 's';
+        wd.appendChild(s);
+      }
+      hl.appendChild(wd);
     });
     // el dibujo: la caja de bombones elegida o el paquete de regalo
     const img = $('gift-img');
-    if (gift.art === 'ferrero') {
-      img.src = gift1Url();
+    if (gift.art === 'ferrero' || gift.art === 'reloj') {
+      img.src = gift.art === 'reloj' ? gift2Url() : gift1Url();
       img.classList.add('art');
-      img.alt = 'Caja de bombones Ferrero Rocher';
+      img.alt = gift.art === 'reloj' ? 'Reloj plateado' : 'Caja de bombones Ferrero Rocher';
       const probe = new Image();
       probe.onload = () => { img.style.setProperty('--w', probe.width); img.style.setProperty('--h', probe.height); };
       probe.src = img.src;
@@ -733,9 +751,28 @@ export class UI {
     $('gift-kicker').textContent = `Encontrado a ${gift.depth} m`;
     $('gift-title').textContent = gift.title;
     $('gift-text').textContent = gift.text;
-    $('gift-ok').textContent = gift.final ? '¡Gracias!' : '¡Seguir cavando!';
+    $('gift-ok').textContent = preview ? 'Volver' : gift.final ? '¡Gracias!' : '¡Seguir cavando!';
     this.confetti();
     this.show('screen-gift', true);
+  }
+
+  /** las 4 opciones de dibujo del segundo regalo, para elegir */
+  buildGiftArt() {
+    const list = $('giftart-list');
+    const cur = gift2Choice();
+    list.innerHTML = '';
+    GIFT2_OPTIONS.forEach((o, i) => {
+      const b = document.createElement('button');
+      b.className = 'giftart-opt' + (i === cur ? ' on' : '');
+      b.setAttribute('aria-pressed', String(i === cur));
+      b.innerHTML = `<img src="${gift2Url(i)}" alt=""><span><b>${i + 1}.</b> ${o.name}</span>`;
+      b.addEventListener('click', () => {
+        this.g.audio.play('ui');
+        setGift2Choice(i);
+        for (const el of list.children) { const on = el === b; el.classList.toggle('on', on); el.setAttribute('aria-pressed', String(on)); }
+      });
+      list.appendChild(b);
+    });
   }
 
   /** papel picado cayendo en el cartel del regalo */

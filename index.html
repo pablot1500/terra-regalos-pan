@@ -213,6 +213,19 @@
       </div>
     </div>
 
+    <!-- Elegir el dibujo del segundo regalo -->
+    <div id="screen-giftart" class="screen modal hidden">
+      <div class="panel pause">
+        <h2>Segundo regalo</h2>
+        <p class="hint">Elegí el dibujo del reloj: es el que aparece al abrir el cofre.</p>
+        <div id="giftart-list" class="giftart-list"></div>
+        <div class="row">
+          <button class="btn small alt" id="giftart-preview">Ver cómo queda</button>
+          <button class="btn" id="giftart-ok">Listo</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Efectos de sonido (para escucharlos uno por uno) -->
     <div id="screen-sfx" class="screen modal hidden">
       <div class="panel pause">
@@ -241,7 +254,10 @@
           <button class="btn small alt" id="s-songs">Escuchar canciones</button>
           <button class="btn small alt" id="s-sfx">Efectos de sonido</button>
         </div>
-        <button class="btn small alt" id="s-agui">Ver otra vez la escena de las aguilitas</button>
+        <div class="row">
+          <button class="btn small alt" id="s-agui">Ver otra vez la escena de las aguilitas</button>
+          <button class="btn small alt" id="s-giftart">Dibujo del segundo regalo</button>
+        </div>
         <p class="hint">Con el compañero prendido, el otro personaje te acompaña, ayuda a cavar y charlan cada tanto.</p>
         <div class="vols">
           <label><span>Música</span><input type="range" id="vol-music" min="0" max="100" step="5"><output></output></label>
