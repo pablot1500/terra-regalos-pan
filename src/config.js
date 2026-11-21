@@ -262,7 +262,7 @@ export const GIFTS = [
     text: 'Una caja de ferrero para la cumpleañera!! (obligatorio compartir)',
   },
   {
-    // art: 'reloj' = el reloj plateado (src/giftart.js; el dibujo se elige en Configuración)
+    // art: 'reloj' = el reloj plateado de frente (src/giftart.js)
     id: 2, depth: 800, headline: '¡¡El segundo regalo!!', art: 'reloj', title: 'Un reloj!!!',
     text: 'Un reloj plateado para la cumpleañera, para que nunca más lleguemos tarde.',
   },

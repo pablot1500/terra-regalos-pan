@@ -4,8 +4,7 @@ import { ICON_URL, DOG, POPI, charPortrait } from './sprites.js';
 import { fmtMoney } from './util.js';
 import { MusicDirector, GEN } from './music.js';
 import { SFX_LIST, GEM_SFX } from './audio.js';
-import { playChestOpen } from './chestopen.js';
-import { gift1Url, gift2Url, GIFT2_OPTIONS, gift2Choice, setGift2Choice } from './giftart.js';
+import { gift1Url, gift2Url } from './giftart.js';
 
 
 const $ = (id) => document.getElementById(id);
@@ -65,14 +64,6 @@ export class UI {
     $('s-sfx').addEventListener('click', () => { game.audio.unlock(); this.show('screen-settings', false); sub('screen-sfx', true); this.buildSfxList(); });
     // repetir la escena de las aguilitas (para probar cambios), sin tocar el progreso
     $('s-agui').addEventListener('click', () => { game.audio.unlock(); game.audio.play('ui'); game.replayEaglets(); });
-    // elegir el dibujo del segundo regalo (y ver el cartel completo)
-    $('s-giftart').addEventListener('click', () => { this.show('screen-settings', false); sub('screen-giftart', true); this.buildGiftArt(); });
-    $('giftart-ok').addEventListener('click', () => { sub('screen-giftart', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
-    $('giftart-preview').addEventListener('click', () => {
-      game.audio.unlock(); game.audio.play('ui');
-      this.show('screen-giftart', false);
-      playChestOpen(game.audio, () => this.showGift(GIFTS[1], true)); // con la apertura del cofre, como en el juego
-    });
     $('sfx-ok').addEventListener('click', () => { sub('screen-sfx', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
     // jugar online
     const net = game.net;
@@ -94,7 +85,6 @@ export class UI {
     $('songs-auto').addEventListener('click', () => { if (game.audio.music) game.audio.music.release(); this.refreshSongs(); });
     $('p-songs').addEventListener('click', () => this.refreshSongs());
     this.closeSub = () => {
-      if (!$('screen-giftart').classList.contains('hidden')) { $('giftart-ok').click(); return true; }
       for (const id of ['screen-settings', 'screen-controls', 'screen-songs', 'screen-sfx']) if (!$(id).classList.contains('hidden')) { sub(id, false); return true; }
       return false;
     };
@@ -114,8 +104,6 @@ export class UI {
     $('shop-close').addEventListener('click', () => game.closeShop());
     $('screen-shop').addEventListener('click', (e) => { if (e.target.id === 'screen-shop') game.closeShop(); });
     $('gift-ok').addEventListener('click', () => {
-      // vista previa desde el menú: vuelve a la lista de dibujos
-      if (this.giftPreview) { this.giftPreview = false; this.show('screen-gift', false); this.show('screen-giftart', true); this.buildGiftArt(); return; }
       game.closeGift();
     });
     this.refreshAudioBtns();
@@ -716,9 +704,8 @@ export class UI {
   }
 
   // ---------- Regalo ----------
-  /** el cartel del regalo; con `preview` es la vista previa desde el menú (no toca la partida) */
-  showGift(gift, preview = false) {
-    this.giftPreview = preview;
+  /** el cartel del regalo */
+  showGift(gift) {
     // titular grande con las letras saltando de a una
     const hl = $('gift-headline');
     hl.innerHTML = '';
@@ -756,28 +743,9 @@ export class UI {
     $('gift-kicker').textContent = `Encontrado a ${gift.depth} m`;
     $('gift-title').textContent = gift.title;
     $('gift-text').textContent = gift.text;
-    $('gift-ok').textContent = preview ? 'Volver' : gift.final ? '¡Gracias!' : '¡Seguir cavando!';
+    $('gift-ok').textContent = gift.final ? '¡Gracias!' : '¡Seguir cavando!';
     this.confetti();
     this.show('screen-gift', true);
-  }
-
-  /** las 4 opciones de dibujo del segundo regalo, para elegir */
-  buildGiftArt() {
-    const list = $('giftart-list');
-    const cur = gift2Choice();
-    list.innerHTML = '';
-    GIFT2_OPTIONS.forEach((o, i) => {
-      const b = document.createElement('button');
-      b.className = 'giftart-opt' + (i === cur ? ' on' : '');
-      b.setAttribute('aria-pressed', String(i === cur));
-      b.innerHTML = `<img src="${gift2Url(i)}" alt=""><span><b>${i + 1}.</b> ${o.name}</span>`;
-      b.addEventListener('click', () => {
-        this.g.audio.play('ui');
-        setGift2Choice(i);
-        for (const el of list.children) { const on = el === b; el.classList.toggle('on', on); el.setAttribute('aria-pressed', String(on)); }
-      });
-      list.appendChild(b);
-    });
   }
 
   /** papel picado cayendo en el cartel del regalo */
