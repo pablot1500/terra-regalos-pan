@@ -57,7 +57,8 @@ function computeStats(u) {
     glide: v('motor').g,
     hover: JET_MODE === 'hover' ? 0 : v('motor').h || 0, // modo vuelo con E (solo en el jetpack clásico)
     jet: JET_HOVER[u.motor] || JET_HOVER[0],          // jetpack nuevo: velocidades y manejo del nivel
-    lightR: v('casco'),
+    lightR: v('casco').l,
+    torchR: v('casco').t,
     reach: DIG.reachMult * (1 + DIG.reachPerUpgrade * (u.pala + v('pala').b)),
     gunRate: v('pistola').r,   // pistola de agua: tiros por segundo
     gunCost: v('pistola').e,   // y energía por tiro
@@ -1034,10 +1035,12 @@ class Game {
     if (this.boss && this.boss.fighting) this.lights.push([this.boss.x / TILE, (this.boss.y - 20) / TILE, 6, 0.9]);
     // online: en las escenas que manda el anfitrión, los actores llevan su luz (tu personaje quedó en otro lado)
     if (this.state === 'remoteScene' && this.scene) for (const ac of Object.values(this.scene.actors)) this.lights.push([ac.x / TILE, (ac.y - 10) / TILE, 6, 0.95]);
+    // las antorchas iluminan según el casco (también las que ya estaban puestas)
+    const tr = this.stats.torchR || TORCH.radius, tm = Math.max(0, tr - 12);
     for (const tq of this.torches) {
       const tx = tq.x / TILE, ty = tq.y / TILE;
-      if (tx < cx0 || tx > cx1 || ty < cy0 || ty > cy1) continue;
-      this.lights.push([tx, ty, TORCH.radius, 0.95 + Math.sin(this.time * 9 + tq.seed) * 0.04]);
+      if (tx < cx0 - tm || tx > cx1 + tm || ty < cy0 - tm || ty > cy1 + tm) continue;
+      this.lights.push([tx, ty, tr, 0.95 + Math.sin(this.time * 9 + tq.seed) * 0.04]);
     }
     // chispas de magma subiendo en el núcleo
     if (this.cam.y + this.vh > CORE_ROW * TILE && Math.random() < dt * 14) {

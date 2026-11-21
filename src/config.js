@@ -224,9 +224,13 @@ export const UPGRADES = [
   },
   {
     id: 'casco', name: 'Casco de minero', icon: 'helmet',
-    desc: 'La lámpara del casco ilumina más lejos bajo tierra.',
-    levels: [[7.5, 0], [9, 120], [10.5, 550], [12, 1900], [14, 5800], [16, 14000], [19, 30000]],
-    label: (v) => `Luz ${Math.round(v * 2)} m`,
+    desc: 'La lámpara del casco ilumina más lejos bajo tierra, y las antorchas también iluminan más (hasta las que ya pusiste).',
+    // l = alcance de la lámpara, t = alcance de las antorchas (en bloques; vale también para las ya clavadas)
+    levels: [
+      [{ l: 7.5, t: 14 }, 0], [{ l: 9, t: 15.5 }, 120], [{ l: 10.5, t: 17 }, 550], [{ l: 12, t: 18.5 }, 1900],
+      [{ l: 14, t: 20 }, 5800], [{ l: 16, t: 22 }, 14000], [{ l: 19, t: 24 }, 30000],
+    ],
+    label: (v) => `Luz ${Math.round(v.l * 2)} m · antorchas ${Math.round(v.t * 2)} m`,
     tiers: ['Linterna chiquita', 'Casco de minero', 'Casco con LED', 'Casco reflector', 'Casco faro', 'Casco solar', 'Casco de estrella'],
   },
   {
@@ -245,9 +249,9 @@ export const UPGRADES = [
 
 // ---- Consumibles (precio fijo, sin límite de cantidad) ----
 export const SUPPLIES = {
-  torch: { name: 'Antorcha', price: 25, desc: 'Se clava en la pared e ilumina alrededor. No se rompe al cavar.' },
+  torch: { name: 'Antorcha', price: 25, desc: 'Se clava en la pared e ilumina alrededor. No se rompe al cavar. Con mejor casco, iluminan más.' },
 };
-export const TORCH = { radius: 14 };           // en bloques
+export const TORCH = { radius: 14 };           // en bloques (sin mejorar el casco; con el casco llega más lejos)
 
 // ---- Regalos ----
 // Textos de prueba: después los cambiamos por los regalos de verdad.
