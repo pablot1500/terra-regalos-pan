@@ -184,7 +184,7 @@ export class Eaglets {
     if (b.st === 'swoop' && b.cd <= 0 && !p.dead && p.hurtT <= 0
       && Math.abs(p.cx - b.x) < p.w / 2 + 4 && Math.abs(p.cy - b.y) < p.h / 2 + 3) {
       const s = Math.sign(dx) || 1;
-      p.hurt(EAGLETS.dmg, 'eaglet');
+      p.hurt(g.eagletDmg(EAGLETS.dmg), 'eaglet');
       p.vx = s * 120; p.vy = Math.min(p.vy, -80);
       b.cd = 1.2;
       this.retreat(b, p);

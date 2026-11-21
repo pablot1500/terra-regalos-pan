@@ -194,9 +194,18 @@ export const UPGRADES = [
   {
     id: 'armadura', name: 'Armadura', icon: 'armor',
     desc: 'Te protege de los golpes cuando caés de muy alto. Al máximo, también de la lava.',
-    // a = % menos de daño por caídas, lava = % menos de daño por lava
-    levels: [[{ a: 0, lava: 0 }, 0], [{ a: 25, lava: 0 }, 120], [{ a: 45, lava: 0 }, 600], [{ a: 60, lava: 0 }, 2250], [{ a: 75, lava: 0 }, 6750], [{ a: 90, lava: 0 }, 16500], [{ a: 100, lava: 0 }, 32000], [{ a: 100, lava: 80 }, 70000]],
-    label: (v) => (v.lava ? `Inmune a caídas · -${v.lava}% lava` : v.a >= 100 ? 'Inmune a las caídas' : v.a ? `-${v.a}% de daño` : 'Sin armadura'),
+    // una vez que aparecieron las aguilitas, la descripción cuenta que también protege de sus picotazos
+    descAgui: 'Te protege de los golpes cuando caés de muy alto y de los picotazos de las aguilitas. Al máximo, también de la lava.',
+    // a = % menos de daño por caídas, ag = % menos de daño de las aguilitas, lava = % menos de daño por lava
+    levels: [
+      [{ a: 0, ag: 0, lava: 0 }, 0], [{ a: 25, ag: 10, lava: 0 }, 120], [{ a: 45, ag: 20, lava: 0 }, 600],
+      [{ a: 60, ag: 30, lava: 0 }, 2250], [{ a: 75, ag: 40, lava: 0 }, 6750], [{ a: 90, ag: 50, lava: 0 }, 16500],
+      [{ a: 100, ag: 60, lava: 0 }, 32000], [{ a: 100, ag: 70, lava: 80 }, 70000],
+    ],
+    label: (v, agui) => {
+      const base = v.lava ? `Inmune a caídas · -${v.lava}% lava` : v.a >= 100 ? 'Inmune a las caídas' : v.a ? `-${v.a}% de daño` : 'Sin armadura';
+      return agui && v.ag ? `${base.replace('de daño', 'caídas')} · -${v.ag}% aguilitas` : base;
+    },
   },
   {
     // s = velocidad, e = energía por segundo, g = velocidad al bajar despacio (S),

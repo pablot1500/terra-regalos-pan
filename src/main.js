@@ -51,6 +51,7 @@ function computeStats(u) {
     infEnergy: !Number.isFinite(v('bateria')),
     armor: v('armadura').a,
     lavaResist: v('armadura').lava / 100,
+    eagletArmor: v('armadura').ag || 0,
     jetSpeed: v('motor').s,
     jetCost: v('motor').e,
     glide: v('motor').g,
@@ -363,6 +364,11 @@ class Game {
     for (const pl of this.players) if (pl.ai) pl.ai.place(p, true);
     this.eaglets.clear();
     this.startEagletScene(p, { immune: true });
+  }
+
+  /** daño de un picotazo de aguilita, con lo que lo baja la armadura */
+  eagletDmg(base) {
+    return Math.max(1, Math.round(base * (1 - (this.stats.eagletArmor || 0) / 100)));
   }
 
   /** después del primer regalo: aparecen las aguilitas (escena), y hay que escapar para arriba */

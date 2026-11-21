@@ -840,7 +840,7 @@ export class Boss {
       // chocarlas duele
       if (m.state !== 'aim') {
         for (const p of up) {
-          if (Math.abs(p.cx - m.x) < p.w / 2 + 4 && Math.abs(p.cy - m.y) < p.h / 2 + 3) this.hurtPlayer(p, BOSS.minionDmg, Math.sign(p.cx - m.x || 1) * 90);
+          if (Math.abs(p.cx - m.x) < p.w / 2 + 4 && Math.abs(p.cy - m.y) < p.h / 2 + 3) this.hurtPlayer(p, this.g.eagletDmg(BOSS.minionDmg), Math.sign(p.cx - m.x || 1) * 90);
         }
       }
     }

@@ -701,9 +701,9 @@ export class UI {
       const pips = up.levels.slice(1).map((_, i) => `<div class="pip ${i < lvl ? 'on' : ''}"></div>`).join('');
       card.innerHTML = `
         <div class="up-ico"><img src="${icon}" alt=""></div>
-        <div><h4>${tier || up.name}</h4>${tier ? `<p class="tier">${up.name}</p>` : ''}<p class="desc">${this.padKeys(up.desc)}</p></div>
+        <div><h4>${tier || up.name}</h4>${tier ? `<p class="tier">${up.name}</p>` : ''}<p class="desc">${this.padKeys(g.aguiMet && up.descAgui ? up.descAgui : up.desc)}</p></div>
         <div class="pips">${pips}</div>
-        <div class="vals"><span class="now">${this.padKeys(up.label(val))}</span>${next ? `<span class="next">→ ${this.padKeys(up.label(next[0]))}${nextTier && nextTier !== tier ? ` · ${nextTier}` : ''}</span>` : '<span class="next">¡Al máximo!</span>'}</div>
+        <div class="vals"><span class="now">${this.padKeys(up.label(val, g.aguiMet))}</span>${next ? `<span class="next">→ ${this.padKeys(up.label(next[0], g.aguiMet))}${nextTier && nextTier !== tier ? ` · ${nextTier}` : ''}</span>` : '<span class="next">¡Al máximo!</span>'}</div>
       `;
       const btn = document.createElement('button');
       btn.className = 'btn buy';
