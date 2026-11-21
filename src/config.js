@@ -214,9 +214,9 @@ export const TORCH = { radius: 14 };           // en bloques
 // Textos de prueba: después los cambiamos por los regalos de verdad.
 export const GIFTS = [
   {
-    // art: 'ferrero' = el dibujo de la caja de bombones (se elige en Configuración → Dibujo del primer regalo)
-    id: 1, depth: 300, headline: '¡¡El primer regalo!!', art: 'ferrero', title: 'Bombones Ferrero Rocher',
-    text: '¡Una caja de Ferrero Rocher para la cumpleañera! ♥',
+    // art: 'ferrero' = el dibujo de la caja de bombones con el bombón gigante (src/giftart.js)
+    id: 1, depth: 300, headline: '¡¡El primer regalo!!', art: 'ferrero', title: 'Bombones!!!',
+    text: 'Una caja de ferrero para la cumpleañera!! (obligatorio compartir)',
   },
   {
     id: 2, depth: 800, headline: '¡¡El segundo regalo!!', title: 'Segundo regalo',

@@ -91,7 +91,7 @@ En iPhone/iPad conviene agregarlo a la pantalla de inicio (Compartir → Agregar
 - Cavar y volar gastan energía. En el departamento se recargan la energía y la vida.
 - Si te quedás sin energía bajo tierra o te caés muy fuerte, te desmayás: volvés a casa y perdés el 10% de la plata.
 - De los **1000 m** para abajo aparece la **obsidiana** (negrísima, se mezcla con el abismo), con cuevas grandes para volar, cada vez menos tesoros y **parches de lava**: brilla, quema, y si cavás por debajo se derrama como un líquido.
-- **Al abrir un cofre** aparece el cartel del regalo: un titular grande que entra letra por letra ("¡¡El primer regalo!!", "¡¡El segundo regalo!!", "¡¡El regalo final!!"), papel picado cayendo, el dibujo que aparece con un rebote, el nombre del regalo, a cuántos metros estaba y su texto. El **primer regalo** es una caja de bombones **Ferrero Rocher** dibujada en pixel art; hay 4 versiones para elegir en Configuración → **Dibujo del primer regalo** (de frente con los sellos, inclinada, envuelta con moño, o con un bombón gigante adelante), con un botón para ver cómo queda. La elegida se guarda en el navegador. Los títulos y textos de los regalos están en `GIFTS` (`src/config.js`).
+- **Al abrir un cofre** aparece el cartel del regalo: un titular grande que entra letra por letra ("¡¡El primer regalo!!", "¡¡El segundo regalo!!", "¡¡El regalo final!!"), papel picado cayendo, el dibujo que aparece con un rebote, el nombre del regalo, a cuántos metros estaba y su texto. El **primer regalo** es una caja de bombones **Ferrero Rocher** dibujada en pixel art, con un bombón gigante adelante (papel dorado arrugado y el pirotín marrón con su guarda dorada): "Bombones!!!". Los títulos y textos de los regalos están en `GIFTS` (`src/config.js`).
 - A los **1500 m** la roca termina en una línea ondulada: abajo está el **núcleo**, una caverna enorme de magma. Al romper el piso caés unos 190 m (el fondo se mueve con parallax: magma lejos y, hacia abajo, un mundo abierto de cuevas de lava con mesetas, cascadas y un lago) hasta una plataforma sobre un mar de lava. La lava que se derrama desde arriba se va evaporando mientras cae. El último cofre está en la punta de abajo a la derecha de la plataforma (por ahora no se abre).
 - La lava se guarda tal como quedó: si se derramó, no vuelve a aparecer al recargar. La que queda cayendo fuera de pantalla sigue moviéndose de a poco.
 
@@ -143,7 +143,7 @@ src/
   tiles.js        tipos de bloque y texturas pixel art
   structures.js   edificio, departamento, escalera, casa rodante del taller (con Carlos), paredón, portón y patio
   sprites.js      personajes, tesoros, cofre, perro, íconos, fuente pixel
-  giftart.js      dibujos de los regalos (las 4 opciones de la caja de Ferrero Rocher)
+  giftart.js      dibujos de los regalos (la caja de Ferrero Rocher)
   player.js       física, cavado, jetpack, energía, caídas, animación
   background.js   cielo, nubes, barrio, costa y mar
   lighting.js     oscuridad del subsuelo y luces

@@ -365,17 +365,6 @@ body.pad .inv kbd.key-pad {
 .confetti i:nth-child(2n) { width: 8px; height: 6px; }
 @keyframes confetti-fall { to { transform: translate(var(--dx), 640px) rotate(var(--r)); } }
 @media (prefers-reduced-motion: reduce) { .confetti { display: none; } .gift-headline.go span { animation: none; opacity: 1; } }
-/* elegir el dibujo del primer regalo */
-.giftart-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 10px 0 12px; }
-.giftart-opt {
-  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 8px; cursor: pointer;
-  background: var(--panel-2); border: 3px solid var(--ink); color: var(--cream); font-family: inherit; font-size: 14px; position: relative;
-}
-.giftart-opt img { width: min(100%, 186px); height: 140px; object-fit: contain; image-rendering: pixelated; }
-.giftart-opt b { color: var(--gold); }
-.giftart-opt:hover { background: var(--panel-hi); }
-.giftart-opt.on { border-color: var(--gold); box-shadow: 0 0 0 2px var(--ink), 0 0 14px rgba(255,211,77,0.55); }
-.giftart-opt.on::before { content: '✓'; position: absolute; top: 6px; left: 6px; font-size: 14px; background: var(--gold); color: var(--ink); padding: 1px 6px; border: 2px solid var(--ink); }
 
 /* ---------- Pausa / mensajes ---------- */
 .panel.pause, .panel.msg { width: min(520px, 94vw); text-align: center; max-height: 92vh; overflow-y: auto; }
@@ -433,7 +422,6 @@ body.touch .inv kbd { display: none; }
   .panel h2 { font-size: 22px; }
   .gift-img { width: 78px; height: 84px; }
   .gift-img.art { width: calc(var(--w, 48) * 2px); height: calc(var(--h, 50) * 2px); }
-  .giftart-opt img { height: 100px; }
   .tbtn { width: 74px; height: 74px; }
   .tbtn.dig { right: calc(104px + env(safe-area-inset-right)); }
   .tbtn.jump { bottom: calc(66px + env(safe-area-inset-bottom)); }
