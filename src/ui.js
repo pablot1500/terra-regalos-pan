@@ -3,7 +3,7 @@ import { UPGRADES, GIFTS, CHARACTERS, LAYERS, MAX_DEPTH, HP_MAX, SUPPLIES } from
 import { ICON_URL, DOG, POPI, charPortrait } from './sprites.js';
 import { fmtMoney } from './util.js';
 import { MusicDirector, GEN } from './music.js';
-import { SFX_LIST, GEM_SFX } from './audio.js';
+import { SFX_LIST } from './audio.js';
 import { gift1Url, gift2Url } from './giftart.js';
 
 
@@ -173,24 +173,6 @@ export class UI {
   buildSfxList() {
     const a = this.g.audio, list = $('sfx-list');
     list.innerHTML = '';
-    // el sonido de las gemas: tocar uno lo hace sonar y lo deja elegido
-    const gems = $('gem-sfx');
-    gems.innerHTML = '';
-    const gemBtns = GEM_SFX.map((name, i) => {
-      const b = document.createElement('button');
-      b.className = 'btn small alt song';
-      b.textContent = i ? `${i}. ${name}` : `${name} (el de siempre)`;
-      b.addEventListener('click', () => {
-        a.unlock();
-        if (!a.sfxOn) { a.setSfx(true); this.refreshAudioBtns(); }
-        a.setGemSfx(i);
-        a.preview('gem', 'code');
-        gemBtns.forEach((x, j) => x.classList.toggle('sel', j === i));
-      });
-      gems.appendChild(b);
-      return b;
-    });
-    gemBtns.forEach((x, j) => x.classList.toggle('sel', j === a.gemSfx));
     SFX_LIST.forEach(([key, desc], i) => {
       const b = document.createElement('button');
       b.className = 'btn small alt sfx';

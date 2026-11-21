@@ -3,7 +3,7 @@ import {
   TILE, SURFACE, WORLD_W, WORLD_H, DEFAULT_SEED, UPGRADES, ITEMS, GIFTS, HP_MAX,
   DEATH_MONEY_PENALTY, ENDING_TEXT, CHARACTERS, BRUSH_R, SUPPLIES, TORCH, DIG,
   CORE_ROW, BOTTOM_ROW,
-  JET_MODE, JET_HOVER, EAGLETS,
+  JET_MODE, JET_HOVER, EAGLETS, LAVA,
 } from './config.js';
 import { initTiles, T } from './tiles.js';
 import { hash2 } from './rng.js';
@@ -17,7 +17,7 @@ import { Particles, Pickups, FloatTexts } from './entities.js';
 import { Player } from './player.js';
 import { Popi } from './popi.js';
 import { Scene } from './scene.js';
-import { introScript, popiScript, carlosScript, eagletScript, carlosGunScript } from './intro.js';
+import { introScript, popiScript, carlosScript, eagletScript, carlosGunScript, lavaScript } from './intro.js';
 import { Eaglets } from './eaglets.js';
 import { playChestOpen } from './chestopen.js';
 import { Boss } from './boss.js';
@@ -139,6 +139,7 @@ class Game {
     this.popiMet = false; // Popi sale del arbusto grande la primera vez que pisan el cantero (después abre el taller)
     this.aguiMet = false; // después del primer regalo aparecen las aguilitas (primer encuentro con escena)
     this.gunGiven = false; // la pistola de agua: Carlos se la da cuando vuelven escapando de las aguilitas
+    this.lavaMet = false;  // la primera vez que ven la lava hay una escena (y se dan cuenta de que el agua la enfría)
     this.tool = 'dig';     // herramienta en la mano: 'dig' (pala o taladro) o 'gun' (pistola de agua)
     this.eaglets = new Eaglets(this);
     this.players = [new Player(this, this.charId)];
@@ -170,6 +171,7 @@ class Game {
     this.freshGame(d.seed || DEFAULT_SEED);
     if (d.v === 2) this.world.importDug(d.dug);
     else this.world.importDugTiles(d.dug);
+    this.world.importCooled(d.cooled); // la lava que enfriaron con agua (antes de la lava, que solo va donde no hay roca)
     if (d.lava) this.world.importLava(d.lava);
     this.money = d.money || 0;
     const du = d.upgrades || {};
@@ -196,6 +198,7 @@ class Game {
     this.kitGiven = !!d.kitGiven || this.popiMet || Object.values(this.upgrades).some((v) => v > 0) || (this.counters.best || 0) > 20;
     this.aguiMet = !!d.aguiMet;
     this.gunGiven = !!d.gunGiven;
+    this.lavaMet = !!d.lavaMet;
     this.tool = this.gunGiven && d.tool === 'gun' ? 'gun' : 'dig';
     this.boss = new Boss(this, !!d.bossDone, d.bossLosses || 0);
     this.torches = Array.isArray(d.torches)
@@ -399,6 +402,22 @@ class Game {
     });
   }
 
+  /** la primera vez que ven la lava: se acercan a mirarla y se dan cuenta de que el agua la vuelve piedra */
+  startLavaScene(p, spot) {
+    this.lavaMet = true;
+    p.vx = 0; p.vy = 0; p.digging = false; p.hovering = false;
+    const done = () => {
+      if (this.gunGiven) {
+        this.tool = 'gun';
+        this.toast(this.ui.hint('Tirale agua a la lava (click) y se vuelve roca que se puede picar · Q vuelve a la pala',
+          'Tirale agua a la lava (stick derecho) y se vuelve roca que se puede picar · B vuelve a la pala',
+          'Tocá la lava para tirarle agua: se vuelve roca que se puede picar · CAMBIAR vuelve a la pala'), null, 'good');
+      }
+      this.save();
+    };
+    this.startScene((sc) => lavaScript(sc, p, spot), { onEnd: done });
+  }
+
   /** volvieron escapando de las aguilitas: Carlos les da la súper pistola de agua */
   startGunScene(p) {
     p.vx = 0; p.digging = false;
@@ -449,6 +468,7 @@ class Game {
       gifts: this.openedGifts,
       dug: this.world.exportDug(),
       lava: this.world.exportLava(),
+      cooled: this.world.exportCooled(),
       counters: this.counters,
       tips: this.tips,
       chatIdx: this.chatter.idx,
@@ -459,6 +479,7 @@ class Game {
       kitGiven: !!this.kitGiven,
       aguiMet: !!this.aguiMet,
       gunGiven: !!this.gunGiven,
+      lavaMet: !!this.lavaMet,
       tool: this.tool,
       bossDone: !!(this.boss && this.boss.state === 'done'),
       bossLosses: this.boss ? this.boss.losses : 0,
@@ -586,6 +607,7 @@ class Game {
   enterGuestGame(w) {
     this.freshGame(w.seed);
     this.world.importDug(w.dug);
+    this.world.importCooled(w.cooled);
     if (w.lava) this.world.importLava(w.lava);
     this.money = w.money;
     this.applyUpgrades(w.up);
@@ -932,6 +954,15 @@ class Game {
       // partidas que ya habían abierto el primer regalo antes de que existieran las aguilitas:
       // aparecen la primera vez que vuelven a bajar de los 300 m
       else if (!this.aguiMet && this.openedGifts.includes(1) && !guest && !p.dead && p.onGround && p.depth > EAGLETS.from + 2 && !(this.boss && this.boss.fighting)) this.startEagletScene(p);
+      // la primera vez que ven la lava de cerca (parados en el piso): escena
+      else if (!this.lavaMet && !guest && !p.dead && p.onGround && p.depth > LAVA.from - 30 && !(this.boss && (this.boss.fighting || this.boss.state === 'scene'))) {
+        this.lavaLookT = (this.lavaLookT || 0) - dt;
+        if (this.lavaLookT <= 0) {
+          this.lavaLookT = 0.4;
+          const spot = this.world.lavaNear(p.cx, p.cy, 80);
+          if (spot && p.y < CORE_ROW * TILE) this.startLavaScene(p, spot);
+        }
+      }
       const nearDog = this.popiMet && !this.popi && Math.abs(p.cx - (DOG_POS.x + 10)) < 22 && Math.abs(p.y + p.h - (DOG_POS.y + 14)) < 12;
       if (nearDog && !this.wasNearDog) {
         this.audio.play('bark');

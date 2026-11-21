@@ -22,6 +22,7 @@ export const T = {
   COREFLOOR: 16, // plataforma de roca del núcleo (no se rompe)
   CORE: 17,    // solo de fondo: el magma del núcleo (nunca es sólido)
   GIFTSLAB: 18, // mármol de los costados del piso de los cofres (este sí se rompe)
+  COOLED: 19,  // lava enfriada con la pistola de agua: roca oscura que se puede picar
 };
 
 export const LAYER_TILES = [T.DIRT, T.CLAY, T.STONE, T.GRANITE, T.BASALT, T.ABYSS, T.OBSIDIAN];
@@ -39,6 +40,7 @@ DEF[T.CONCRETE] = { name: 'Cemento', hard: 9999, pal: ['#5f5b56', '#8a8680', '#a
 DEF[T.PAVER] = { name: 'Baldosa', hard: 9999, pal: ['#6f665b', '#a89c8a', '#cfc4b2', '#e3dacb', '#efe8dc'], style: 'paver' };
 DEF[T.GIFTFLOOR] = { name: 'Mármol', hard: 9999, pal: ['#6e3a52', '#d9a6bd', '#f3d6e2', '#fdeef4', '#e6b33c'], style: 'giftfloor' };
 DEF[T.GIFTSLAB] = { name: 'Mármol quebradizo', hard: 2, pal: ['#6e3a52', '#c995ad', '#ebc9d8', '#f7e3ec', '#c9a24a'], style: 'giftslab' };
+DEF[T.COOLED] = { name: 'Roca de lava', hard: 4, pal: ['#1c1518', '#463a3c', '#64585a', '#857779', '#e0662a'], style: 'cooled' };
 DEF[T.GRAVEL] = { name: 'Grava', hard: 1, pal: ['#3f3a33', '#6c665c', '#8b8478', '#aaa396', '#cfc8b9'], style: 'gravel' };
 DEF[T.OBSIDIAN] = { name: 'Obsidiana', hard: 24, pal: ['#07050a', '#15111c', '#1f1a28', '#2e2638', '#ff7a2e'], style: 'obsidian' };
 DEF[T.COREFLOOR] = { name: 'Roca del núcleo', hard: 9999, pal: ['#140806', '#2a1410', '#3d1f17', '#5a3022', '#ff9a3c'], style: 'corefloor' };
@@ -161,6 +163,18 @@ function genTex(id, v) {
       px(i, j, P[3]); px(i + 1, j, '#3a3352'); px(i + 1, j + 1, P[3]);
       if (v === 1) { px(2, 5, '#6b2410'); px(3, 5, P[4]); px(4, 6, '#6b2410'); }
       if (v === 3) { px(5, 1, '#6b2410'); px(5, 2, '#a8401a'); }
+      break;
+    }
+    case 'cooled': {
+      // lava enfriada: roca gris oscura, porosa, con alguna brasita que todavía brilla
+      x.fillStyle = P[2]; x.fillRect(0, 0, 8, 8);
+      for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) {
+        const q = r();
+        if (q < 0.22) px(i, j, P[1]);
+        else if (q < 0.3) px(i, j, P[3]);
+        else if (q < 0.36) px(i, j, P[0]);
+      }
+      if (v % 2 === 0) { const i = ri(6), j = ri(6); px(i, j, '#7a2a10'); px(i + 1, j, P[4]); }
       break;
     }
     case 'corefloor': {

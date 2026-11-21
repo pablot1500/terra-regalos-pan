@@ -72,6 +72,7 @@ export class World {
     this.subDug = new Uint8Array(this.sw * this.sh);
     this.lava = new Uint8Array(this.sw * this.sh);      // sub-celdas con lava (siempre donde no hay terreno)
     this.lavaStamp = new Uint8Array(this.sw * this.sh); // para no mover dos veces la misma gota en un paso
+    this.cooled = new Uint8Array(this.sw * this.sh);    // sub-celdas de lava que se enfriaron con agua (ahora roca)
     this.lavaTick = 1;
     this.lavaAcc = 0;
     this.lavaRow0 = rowForDepth(LAVA.from - 40) * SPT;
@@ -632,6 +633,97 @@ export class World {
     let n = 0;
     for (let sy = sy0; sy <= sy1; sy++) for (let sx = sx0; sx <= sx1; sx++) n += this.lava[sy * this.sw + sx];
     return n;
+  }
+
+  /** ¿hay lava en este punto (px)? */
+  lavaAtPx(x, y) {
+    const sx = Math.floor(x / SUB), sy = Math.floor(y / SUB);
+    if (sx < 0 || sy < 0 || sx >= this.sw || sy >= this.sh) return false;
+    return !!this.lava[sy * this.sw + sx];
+  }
+
+  /** la lava más cerca de (x, y) en un radio (px), o null */
+  lavaNear(x, y, r) {
+    const { sw, lava } = this;
+    const sx0 = Math.max(0, Math.floor((x - r) / SUB)), sx1 = Math.min(sw - 1, Math.floor((x + r) / SUB));
+    const sy0 = Math.max(this.lavaRow0, Math.floor((y - r) / SUB)), sy1 = Math.min(this.sh - 1, Math.floor((y + r) / SUB));
+    let best = null, bd = r * r;
+    for (let sy = sy0; sy <= sy1; sy += 2) for (let sx = sx0; sx <= sx1; sx += 2) {
+      if (!lava[sy * sw + sx]) continue;
+      const px = sx * SUB + 1, py = sy * SUB + 1, d = (px - x) ** 2 + (py - y) ** 2;
+      if (d < bd) { bd = d; best = { x: px, y: py }; }
+    }
+    return best;
+  }
+
+  /**
+   * El agua enfría la lava: las sub-celdas de lava en un radio (px) se vuelven roca de lava, que se puede picar.
+   * En la caverna del núcleo no (ahí la lava es el mar de la pelea). Devuelve las sub-celdas que cambiaron.
+   */
+  coolLava(x, y, r) {
+    const { sw, lava } = this, out = [];
+    const sx0 = Math.max(1, Math.floor((x - r) / SUB)), sx1 = Math.min(sw - 2, Math.floor((x + r) / SUB));
+    const sy0 = Math.max(this.lavaRow0, Math.floor((y - r) / SUB)), sy1 = Math.min(this.sh - 2, Math.floor((y + r) / SUB));
+    for (let sy = sy0; sy <= sy1; sy++) for (let sx = sx0; sx <= sx1; sx++) {
+      const q = sy * sw + sx;
+      if (!lava[q] || (sx * SUB + 1 - x) ** 2 + (sy * SUB + 1 - y) ** 2 > r * r) continue;
+      if (this.mat[(sy >> 2) * this.w + (sx >> 2)] === T.CORE) continue;
+      out.push(q);
+    }
+    if (out.length) this.applyCooled(out);
+    return out;
+  }
+
+  /** convierte en roca de lava estas sub-celdas (también lo usa el juego online para copiar lo del otro) */
+  applyCooled(list) {
+    const { sw, w, lava, sub, cooled } = this, touched = new Set();
+    for (const q of list) {
+      if (q < 0 || q >= sub.length || sub[q]) continue;
+      lava[q] = 0;
+      const sx = q % sw, sy = (q / sw) | 0;
+      const ti = (sy >> 2) * w + (sx >> 2), t = this.tiles[ti];
+      if (t !== T.AIR && !isDiggable(t)) continue; // junto a lo que no se rompe, solo se evapora
+      sub[q] = 1; cooled[q] = 1;
+      // el bloque pasa a ser de roca de lava (así se pica fácil, aunque antes fuera de otra roca)
+      this.tiles[ti] = T.COOLED;
+      touched.add(ti);
+    }
+    const cols = new Set();
+    for (const ti of touched) {
+      const c = ti % w, r = (ti / w) | 0;
+      this.recount(c, r);
+      this.markDirty(c, r);
+      cols.add(c);
+    }
+    for (const c of cols) this.updateSkyTop(c);
+  }
+
+  /** la lava enfriada que sigue en pie (tramos alternados, como la lava) */
+  exportCooled() {
+    const { cooled, sub } = this, start = this.lavaRow0 * this.sw;
+    const runs = [];
+    let cur = 0, n = 0, any = false;
+    for (let q = start; q < cooled.length; q++) {
+      const v = cooled[q] && sub[q] ? 1 : 0;
+      if (v) any = true;
+      if (v === cur) { n++; continue; }
+      runs.push(n.toString(36)); cur = v; n = 1;
+    }
+    runs.push(n.toString(36));
+    return any ? runs.join('.') : '';
+  }
+
+  importCooled(str) {
+    if (!str) return;
+    const start = this.lavaRow0 * this.sw, list = [];
+    let q = start, v = 0;
+    for (const part of str.split('.')) {
+      const n = parseInt(part, 36) || 0;
+      if (v) for (let k = 0; k < n; k++) list.push(q + k);
+      q += n; v ^= 1;
+    }
+    this.cooled.fill(0);
+    this.applyCooled(list);
   }
 
   // ---------- Guardado de la lava (se guarda tal como quedó, para que no vuelva a aparecer) ----------

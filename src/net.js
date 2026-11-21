@@ -263,7 +263,7 @@ export class Net {
       pk: g.pickups.list.map((k) => [Math.round(k.x), Math.round(k.y), k.item]),
       po: g.popi ? [r1(g.popi.x), r1(g.popi.y), g.popi.facing, g.popi.onGround ? 1 : 0, g.popi.digging ? 1 : 0, g.popi.flying ? 1 : 0, g.popi.owner === g.players[0] ? 'h' : 'g'] : null,
       ch: g.chatter.netState(g.players[0]),
-      pm: g.popiMet ? 1 : 0, kg: g.kitGiven ? 1 : 0, am: g.aguiMet ? 1 : 0, gg: g.gunGiven ? 1 : 0,
+      pm: g.popiMet ? 1 : 0, kg: g.kitGiven ? 1 : 0, am: g.aguiMet ? 1 : 0, gg: g.gunGiven ? 1 : 0, lm: g.lavaMet ? 1 : 0,
       b: B ? this.bossState(B) : null,
     };
     if (this.sentTorchVer !== this.torchVer) {
@@ -330,6 +330,7 @@ export class Net {
       case 'full': this.fail('Esa sala ya tiene dos jugadores'); return;
       case 's': return this.applySnapshot(m);
       case 'lava': g.world.importLava(m.l); return;
+      case 'cool': g.world.applyCooled(m.q || []); return; // el otro enfrió lava con la pistola
       case 'sc': return this.applySceneFrame(m);
       case 'scEnd': return this.endRemoteScene();
       case 'res': if (m.msg) g.ui.toast(m.msg, m.ok ? 'good' : 'warn'); g.audio.play(m.ok ? 'buy' : 'deny'); return;
@@ -365,7 +366,7 @@ export class Net {
     this.torchVer++;
     g.syncBuddy();
     this.send('welcome', {
-      seed: g.seed, dug: g.world.exportDug(), lava: g.world.exportLava(),
+      seed: g.seed, dug: g.world.exportDug(), lava: g.world.exportLava(), cooled: g.world.exportCooled(),
       money: Math.floor(g.money), up: g.upgrades, inv: g.inv.torch, gifts: g.openedGifts,
       torches: g.torches.map((t) => [t.x, t.y, t.seed]), bossDone: !!(g.boss && g.boss.state === 'done'),
       hostChar: me.char, guestChar, at: [r.x, r.y], code: this.code,
@@ -420,7 +421,7 @@ export class Net {
     } else g.popi = null;
     if (g.state === 'shop' && before !== g.popiState()) g.ui.renderShop();
     g.chatter.remoteState = s.ch;
-    g.popiMet = !!s.pm; g.kitGiven = !!s.kg; g.aguiMet = !!s.am; g.gunGiven = !!s.gg;
+    g.popiMet = !!s.pm; g.kitGiven = !!s.kg; g.aguiMet = !!s.am; g.gunGiven = !!s.gg; g.lavaMet = !!s.lm;
     if (s.b) this.applyBoss(s.b);
   }
 

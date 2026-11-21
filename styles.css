@@ -720,11 +720,6 @@ button.pad-focus::after {
 .sfx-list .sfx { text-align: left; font-size: 13px; padding: 6px 8px; }
 .sfx-list .sfx b { color: #0e2a40; margin-right: 2px; }
 
-/* Efectos de sonido → Sonido de las gemas */
-.sfx-h { margin: 6px 0 0; font-size: 15px; color: var(--gold); text-shadow: 0 2px 0 var(--ink); }
-.gem-sfx { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
-.gem-sfx .song { font-size: 13px; }
-
 /* apertura del cofre (antes del cartel del regalo) */
 #chest-open { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(8, 4, 14, 0.82); transition: background 0.25s; }
 #chest-open canvas { width: min(94vw, 640px, calc(92vh * 84 / 64)); image-rendering: pixelated; transition: opacity 0.2s; }

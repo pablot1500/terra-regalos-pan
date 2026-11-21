@@ -45,7 +45,7 @@
     },
     "gem": {
       "file": "gem.mp3",
-      "use": true,
+      "use": false,
       "vol": 1,
       "prompt": "Collecting a precious gem: magical crystal shimmer and sparkle, video game pickup sound."
     },

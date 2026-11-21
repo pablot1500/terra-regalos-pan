@@ -295,10 +295,23 @@ export class Eaglets {
         if (--b.hp <= 0) this.kill(b, d.vx);
         hit = true; break;
       }
+      // la lava: el agua la enfría y se vuelve roca de lava (que se puede picar)
+      if (!hit && g.world.lavaAtPx(d.x, d.y)) { this.coolAt(d.x, d.y); hit = true; }
       if (!hit && g.world.solidPx(d.x, d.y)) { this.splash(d.x, d.y); hit = true; }
       if (hit || d.t > BOSS.waterLife) d.dead = true;
     }
     this.drops = this.drops.filter((d) => !d.dead);
+  }
+
+  /** una gotita cae en la lava: chisporrotea, larga vapor y la enfría alrededor */
+  coolAt(x, y) {
+    const g = this.g;
+    const cells = g.world.coolLava(x, y, 4.5);
+    if (cells.length && g.net.linked) g.net.send('cool', { q: cells });
+    const now = performance.now();
+    if (now - (this.steamAt || 0) > 140) { this.steamAt = now; g.audio.play('steam'); }
+    for (let i = 0; i < 3; i++) g.particles.add({ x, y: y - 2, vx: (Math.random() - 0.5) * 20, vy: -18 - Math.random() * 22, life: 0.8, max: 0.8, color: 'rgba(220,215,225,0.6)', size: 2, grav: -24, smoke: true });
+    if (Math.random() < 0.5) g.particles.add({ x, y, vx: (Math.random() - 0.5) * 50, vy: -30 - Math.random() * 30, life: 0.35, max: 0.35, color: Math.random() < 0.5 ? '#ffd34d' : '#ff7a2e', size: 1, grav: 160 });
   }
 
   splash(x, y) {

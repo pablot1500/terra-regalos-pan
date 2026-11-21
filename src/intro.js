@@ -361,3 +361,60 @@ export function* carlosGunScript(sc, p) {
   for (const id of [me, mate]) A[id].gunAng = -0.4;
   yield sc.say('pablo', '¡Ahora sí! ¡Que vengan esas aguilitas!');
 }
+
+/**
+ * La primera vez que ven la lava (de los 1000 m para abajo): la cámara se acerca a la lava burbujeando,
+ * charlan y se les ocurre que con el agua de la pistola la pueden enfriar y volverla piedra para picarla.
+ * `spot` = dónde está la lava que vieron.
+ */
+export function* lavaScript(sc, p, spot) {
+  const g = sc.g;
+  const me = p.char, mate = me === 'pablo' ? 'pancha' : 'pablo';
+  const fy = p.y + p.h, x0 = p.cx, W = g.world;
+  const face = spot.x < x0 ? -1 : 1;
+  let mx = x0 - face * 10;
+  for (const dx of [-face * 12, -face * 9, face * 9, face * 12]) if (W.solidPx(x0 + dx, fy + 1) && !W.solidPx(x0 + dx, fy - 8)) { mx = x0 + dx; break; }
+  sc.actor(me, x0, fy, { facing: face, tool: digTool(g) });
+  sc.actor(mate, mx, fy, { facing: face, alpha: 0, tool: digTool(g) });
+  // la lava burbujea: chispas y humito
+  const bubble = (n = 4) => {
+    for (let i = 0; i < n; i++) {
+      g.particles.add({ x: spot.x + (Math.random() - 0.5) * 16, y: spot.y - 1, vx: (Math.random() - 0.5) * 24, vy: -30 - Math.random() * 40, life: 0.6, max: 0.6, color: Math.random() < 0.5 ? '#ffd34d' : '#ff7a2e', size: 1, grav: 120 });
+      if (Math.random() < 0.4) g.particles.add({ x: spot.x + (Math.random() - 0.5) * 12, y: spot.y - 3, vx: (Math.random() - 0.5) * 8, vy: -12 - Math.random() * 10, life: 1.1, max: 1.1, color: 'rgba(90,70,70,0.5)', size: 2, grav: -10, smoke: true });
+    }
+  };
+  sc.fixed = { x: x0, y: fy - 16 };
+  sc.setZoom(2.4);
+  sc.snapCam();
+  yield sc.wait(0.5);
+  g.sfx('magma');
+  sc.emote(me, '!'); sc.emote(mate, '!');
+  yield sc.say(mate, '¿Sentís ese calor? Está todo naranja allá...');
+  // la cámara se acerca a la lava
+  sc.fixed = { x: spot.x, y: spot.y, k: 0.42 };
+  sc.setZoom(2.8);
+  for (let i = 0; i < 6; i++) { bubble(); if (i % 2 === 0) g.sfx('magma'); yield sc.wait(0.25); }
+  bubble(8);
+  yield sc.say(me, '¡Es lava! Lava de verdad, burbujeando.');
+  bubble(6);
+  yield sc.say(mate, 'Si la tocamos nos achicharramos. Y si cavamos por abajo, se nos viene encima.');
+  // vuelve a ellos
+  sc.fixed = { x: (x0 + mx) / 2, y: fy - 20 };
+  sc.setZoom(2.2);
+  yield sc.wait(0.6);
+  sc.emote(me, '?');
+  yield sc.say(me, 'Esperá... ¿qué pasa cuando la lava se enfría?');
+  yield sc.say(mate, '¡Se hace piedra! Como en los volcanes: roca volcánica, obsidiana, algo así.');
+  if (g.gunGiven) {
+    yield sc.say(me, '¿Y si le tiramos con la pistola de agua de Carlos?');
+    g.sfx('surprise');
+    sc.emote(mate, '!');
+    yield sc.say(mate, '¡Claro! La enfriamos, se vuelve piedra... ¡y después la picamos con la pala!');
+    g.sfx('pump');
+    for (const id of [me, mate]) { sc.actors[id].tool = 'water'; sc.actors[id].gunAng = 0.2; }
+    yield sc.say(me, 'A ver si funciona. ¡Agua va!');
+  } else {
+    yield sc.say(me, 'Si tuviéramos agua para tirarle...');
+    yield sc.say(mate, 'Carlos seguro tiene algo. Hay que preguntarle en el taller.');
+  }
+}
