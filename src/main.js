@@ -19,6 +19,7 @@ import { Popi } from './popi.js';
 import { Scene } from './scene.js';
 import { introScript, popiScript, carlosScript, eagletScript, carlosGunScript } from './intro.js';
 import { Eaglets } from './eaglets.js';
+import { playChestOpen } from './chestopen.js';
 import { Boss } from './boss.js';
 import { BuddyAI } from './buddy.js';
 import { Chatter } from './chatter.js';
@@ -746,25 +747,33 @@ class Game {
     player.vx = 0;
     player.digging = false;
     this.audio.jet(false);
-    this.audio.play('chest');
+    // el cofre grande en el medio de la pantalla se abre (tac, tac, tac, destello) y atrás aparece el cartel
+    playChestOpen(this.audio, () => this.revealGift());
+  }
+
+  /** después del destello: el cartel del regalo */
+  revealGift() {
+    const c = this.cine;
+    if (!c || c.shown) return;
+    c.shown = true;
+    c.ch.open = 1;
+    this.ui.show('screen-pause', false);
+    this.state = 'gift';
+    this.openedGifts.push(c.ch.id);
+    this.ui.showGift(c.ch.gift);
+    this.save();
   }
 
   updateCinematic(dt) {
     const c = this.cine;
     c.t += dt;
-    c.ch.open = Math.min(1, c.t / 0.5);
+    if (c.t > 2.55) c.ch.open = 1; // (en el pozo se abre junto con el destello)
     const x = c.ch.c * TILE + 4, y = c.ch.r * TILE - 8;
     if (Math.random() < 0.6) {
       this.particles.add({ x: x + (Math.random() - 0.5) * 14, y, vx: (Math.random() - 0.5) * 30, vy: -40 - Math.random() * 50, life: 1, max: 1, color: Math.random() < 0.5 ? '#ffd34d' : '#ff9ccc', star: true, grav: 10 });
     }
     if (Math.random() < 0.15) this.particles.add({ x: x + (Math.random() - 0.5) * 20, y: y - 6, vx: 0, vy: -20, life: 1.2, max: 1.2, heart: true, grav: 0 });
-    if (c.t > 2.2 && !c.shown) {
-      c.shown = true;
-      this.state = 'gift';
-      this.openedGifts.push(c.ch.id);
-      this.ui.showGift(c.ch.gift);
-      this.save();
-    }
+    if (c.t > 6) this.revealGift(); // por las dudas (si la animación no corrió)
   }
 
   closeGift() {

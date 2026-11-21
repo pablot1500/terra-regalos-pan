@@ -4,6 +4,7 @@ import { ICON_URL, DOG, POPI, charPortrait } from './sprites.js';
 import { fmtMoney } from './util.js';
 import { MusicDirector, GEN } from './music.js';
 import { SFX_LIST, GEM_SFX } from './audio.js';
+import { playChestOpen } from './chestopen.js';
 import { gift1Url, gift2Url, GIFT2_OPTIONS, gift2Choice, setGift2Choice } from './giftart.js';
 
 
@@ -67,7 +68,11 @@ export class UI {
     // elegir el dibujo del segundo regalo (y ver el cartel completo)
     $('s-giftart').addEventListener('click', () => { this.show('screen-settings', false); sub('screen-giftart', true); this.buildGiftArt(); });
     $('giftart-ok').addEventListener('click', () => { sub('screen-giftart', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
-    $('giftart-preview').addEventListener('click', () => { game.audio.play('ui'); this.show('screen-giftart', false); this.showGift(GIFTS[1], true); });
+    $('giftart-preview').addEventListener('click', () => {
+      game.audio.unlock(); game.audio.play('ui');
+      this.show('screen-giftart', false);
+      playChestOpen(game.audio, () => this.showGift(GIFTS[1], true)); // con la apertura del cofre, como en el juego
+    });
     $('sfx-ok').addEventListener('click', () => { sub('screen-sfx', false); this.show('screen-settings', true); if (game.state === 'paused') this.show('screen-pause', false); });
     // jugar online
     const net = game.net;
