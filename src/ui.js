@@ -1,5 +1,5 @@
 // Interfaz HTML: HUD, taller, regalos, pausa y menú principal.
-import { UPGRADES, GIFTS, CHARACTERS, LAYERS, MAX_DEPTH, HP_MAX, SUPPLIES } from './config.js';
+import { UPGRADES, GIFTS, CHARACTERS, LAYERS, MAX_DEPTH, HP_MAX, SUPPLIES, showM } from './config.js';
 import { ICON_URL, DOG, POPI, charPortrait } from './sprites.js';
 import { fmtMoney } from './util.js';
 import { MusicDirector, GEN } from './music.js';
@@ -27,7 +27,7 @@ export class UI {
       const d = document.createElement('div');
       d.className = 'gauge-gift';
       d.style.top = (gf.depth / MAX_DEPTH) * 100 + '%';
-      d.innerHTML = `<span>${gf.depth} m</span><img src="${ICON_URL.giftBig}" alt="">`;
+      d.innerHTML = `<span>${showM(gf.depth)} m</span><img src="${ICON_URL.giftBig}" alt="">`;
       gauge.appendChild(d);
       return d;
     });
@@ -140,7 +140,7 @@ export class UI {
   refreshSongs() {
     const a = this.g.audio, m = a.music;
     const list = $('songs-list');
-    const ZONES = ['Superficie (hasta 300 m)', 'Zona media (300 a 800 m)', 'Profundo (800 a 1500 m)', 'Núcleo (combate final)', 'Intro (hasta que no aparecen los regalos)', 'Intro: ¡a buscar! (hasta el final de la intro)', 'Menú (pantalla del título)'];
+    const ZONES = ['Superficie (hasta 600 m)', 'Zona media (600 a 1600 m)', 'Profundo (1600 a 3000 m)', 'Núcleo (combate final)', 'Intro (hasta que no aparecen los regalos)', 'Intro: ¡a buscar! (hasta el final de la intro)', 'Menú (pantalla del título)'];
     list.innerHTML = '';
     const gen = MusicDirector.list('gen');
     const isOn = (z, i) => m && m.forced && m.forced.zone === z && m.forced.idx === i && m.forced.src === 'gen';
@@ -367,7 +367,7 @@ export class UI {
     if (has) {
       const s = this.g.savedData;
       const gifts = (s.gifts || []).length;
-      hint.textContent = `Partida guardada: ${fmtMoney(s.money || 0)} · récord ${Math.floor(s.counters?.best || 0)} m · ${gifts}/${GIFTS.length} regalos`;
+      hint.textContent = `Partida guardada: ${fmtMoney(s.money || 0)} · récord ${showM(Math.floor(s.counters?.best || 0))} m · ${gifts}/${GIFTS.length} regalos`;
     } else {
       hint.textContent = this.isTouch ? 'Tip: jugalo con el celu acostado' : 'Tip: se juega con teclado o mouse';
     }
@@ -510,7 +510,7 @@ export class UI {
     const depth = Math.floor(p.depth);
     if (L.depth !== depth) {
       L.depth = depth;
-      $('depth-num').textContent = `${depth} m`;
+      $('depth-num').textContent = `${showM(depth)} m`;
       $('gauge-you').style.top = Math.min(100, (depth / MAX_DEPTH) * 100) + '%';
       $('gauge-fill').style.height = Math.min(100, (depth / MAX_DEPTH) * 100) + '%';
       let name = 'Superficie';
@@ -727,7 +727,7 @@ export class UI {
     }
     // reinicia las animaciones (aparece con un rebote)
     img.classList.remove('pop'); hl.classList.remove('go'); void img.offsetWidth; img.classList.add('pop'); hl.classList.add('go');
-    $('gift-kicker').textContent = `Encontrado a ${gift.depth} m`;
+    $('gift-kicker').textContent = `Encontrado a ${showM(gift.depth)} m`;
     $('gift-title').textContent = gift.title;
     $('gift-text').textContent = gift.text;
     $('gift-ok').textContent = gift.final ? '¡Gracias!' : '¡Seguir cavando!';

@@ -3,7 +3,7 @@ import {
   TILE, SURFACE, WORLD_W, WORLD_H, DEFAULT_SEED, UPGRADES, ITEMS, GIFTS, HP_MAX,
   DEATH_MONEY_PENALTY, ENDING_TEXT, CHARACTERS, BRUSH_R, SUPPLIES, TORCH, DIG,
   CORE_ROW, BOTTOM_ROW,
-  JET_MODE, JET_HOVER, EAGLETS, LAVA,
+  JET_MODE, JET_HOVER, EAGLETS, LAVA, showM,
 } from './config.js';
 import { initTiles, T } from './tiles.js';
 import { hash2 } from './rng.js';
@@ -524,7 +524,7 @@ class Game {
         const pts = spots || caves.map((c) => ({ x: c.x, y: c.y }));
         for (const s of pts) this.eaglets.spawn(s.x, s.y, { nextT: 1.2 + Math.random() * 1.2, immune });
         this.eaglets.spawnT = EAGLETS.every[0];
-        this.toast(`¡Escapá para arriba! Las aguilitas no suben más arriba de los ${EAGLETS.ceil} m`, null, 'warn');
+        this.toast(`¡Escapá para arriba! Las aguilitas no suben más arriba de los ${showM(EAGLETS.ceil)} m`, null, 'warn');
         this.save();
       },
     });
@@ -943,7 +943,7 @@ class Game {
       ]);
     } else if (this.openedGifts.length < GIFTS.length) {
       const next = GIFTS.find((g) => !this.openedGifts.includes(g.id));
-      if (next) this.toast(`El próximo regalo está a ${next.depth} m`, null, 'good');
+      if (next) this.toast(`El próximo regalo está a ${showM(next.depth)} m`, null, 'good');
     }
   }
 

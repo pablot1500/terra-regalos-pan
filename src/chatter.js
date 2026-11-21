@@ -1,7 +1,7 @@
-// Charlas entre Pablo y Panchi mientras cavan: cada 120 m uno dice algo y el otro le contesta,
+// Charlas entre Pablo y Panchi mientras cavan: cada 120 m (240 en el medidor) uno dice algo y el otro le contesta,
 // con burbujitas de diálogo arriba de la cabeza y ruidito de voz, sin frenar el juego.
 // Solo pasa cuando están los dos en juego (uno con un bot o, más adelante, de a dos personas).
-import { CHARACTERS } from './config.js';
+import { CHARACTERS, showM } from './config.js';
 import { drawText, CHAR_H } from './sprites.js';
 import { clamp } from './util.js';
 
@@ -90,7 +90,7 @@ export class Chatter {
         lines: chat.map(([who, txt]) => ({
           who: who === 'popi' ? this.g.popi : who === 'a' ? first : second,
           popi: who === 'popi',
-          rows: wrap(txt.replace('{m}', m).replace('{a}', names.a).replace('{b}', names.b)),
+          rows: wrap(txt.replace('{m}', showM(m)).replace('{a}', names.a).replace('{b}', names.b)),
         })),
       };
       return;

@@ -2,7 +2,7 @@
 // Salen de las cuevas y de los huecos ya cavados (nunca de adentro de la tierra), persiguen al personaje y
 // pican; no suben más arriba de EAGLETS.ceil. Con la pistola de agua (Carlos) se las moja y se van.
 // Acá también vuelan las gotitas de la pistola cuando se usa fuera de la pelea con Aguilus.
-import { EAGLETS, BOSS, TILE } from './config.js';
+import { EAGLETS, BOSS, TILE, showM } from './config.js';
 import { rowForDepth, SUB } from './world.js';
 import { eagletFrame } from './eagletart.js';
 import { clamp } from './util.js';
@@ -85,7 +85,7 @@ export class Eaglets {
     this.list = this.list.filter((b) => !b.gone);
     const chasing = this.list.some((b) => b.st !== 'dead' && b.st !== 'leave');
     if (this.chasing && !chasing && away && !p.dead && !g.gunGiven) {
-      g.tip('escaped', `¡Uf, zafamos! Las aguilitas no suben más arriba de los ${EAGLETS.ceil} m. Vayan a contarle a Carlos al taller`);
+      g.tip('escaped', `¡Uf, zafamos! Las aguilitas no suben más arriba de los ${showM(EAGLETS.ceil)} m. Vayan a contarle a Carlos al taller`);
     }
     this.chasing = chasing;
   }

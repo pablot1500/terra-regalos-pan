@@ -9,7 +9,11 @@ export const CHUNK = 16;             // bloques por chunk de render
 export const WORLD_W = 79;           // ancho del mundo en bloques
 export const SURFACE = 40;           // fila donde empieza el suelo
 export const METERS_PER_TILE = 2;    // cada bloque = 2 metros de profundidad
-export const MAX_DEPTH = 1500;       // metros hasta el núcleo
+export const MAX_DEPTH = 1500;       // metros hasta el núcleo (de verdad, para el juego)
+// Lo que se MUESTRA (medidor, carteles, charlas): cada metro del juego se ve como 2, así el núcleo queda a
+// 3000 m y los regalos a 600, 1600 y 3000 m. El recorrido es exactamente el mismo; solo cambia la numeración.
+export const SHOW_M = 2;
+export const showM = (m) => Math.round(m * SHOW_M);
 export const CORE_ROW = SURFACE + MAX_DEPTH / METERS_PER_TILE; // donde termina la roca y empieza el núcleo
 export const CORE_ROWS = 96;         // alto de la caverna del núcleo (en bloques): una caída larga
 export const BOTTOM_ROW = CORE_ROW + CORE_ROWS; // primera fila de roca madre
@@ -230,7 +234,7 @@ export const UPGRADES = [
       [{ l: 7.5, t: 14 }, 0], [{ l: 9, t: 15.5 }, 120], [{ l: 10.5, t: 17 }, 550], [{ l: 12, t: 18.5 }, 1900],
       [{ l: 14, t: 20 }, 5800], [{ l: 16, t: 22 }, 14000], [{ l: 19, t: 24 }, 30000],
     ],
-    label: (v) => `Luz ${Math.round(v.l * 2)} m · antorchas ${Math.round(v.t * 2)} m`,
+    label: (v) => `Luz ${showM(v.l * 2)} m · antorchas ${showM(v.t * 2)} m`,
     tiers: ['Linterna chiquita', 'Casco de minero', 'Casco con LED', 'Casco reflector', 'Casco faro', 'Casco solar', 'Casco de estrella'],
   },
   {
