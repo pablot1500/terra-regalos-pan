@@ -33,7 +33,7 @@ export class Input {
       this.setMouse(e, canvas);
       if (this.onAnyInput) this.onAnyInput();
     });
-    window.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') this.setMouse(e, canvas); });
+    window.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') this.setMouse(e, canvas, true); });
     window.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') this.mouse.down = false; });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -56,9 +56,21 @@ export class Input {
     this.setupTouch();
   }
 
-  setMouse(e, canvas) {
+  setMouse(e, canvas, moved = false) {
+    // el navegador manda movimientos "fantasma" (sin mover el mouse) cuando algo cambia debajo del cursor,
+    // por ejemplo cuando aparece un cartel: esos no cuentan como pasar a jugar con el mouse.
+    // Con el joystick en uso, hay que mover el mouse de verdad unos pixeles para volver al mouse.
+    if (moved && this.lastDevice === 'pad') {
+      this.mouseTravel = (this.mouseTravel || 0) + Math.abs(e.movementX || 0) + Math.abs(e.movementY || 0);
+      if (this.mouseTravel < 12) { this.moveMouseOnly(e, canvas); return; }
+    }
+    this.mouseTravel = 0;
     this.mouseSeen = true;
     this.lastDevice = 'mouse';
+    this.moveMouseOnly(e, canvas);
+  }
+
+  moveMouseOnly(e, canvas) {
     const r = canvas.getBoundingClientRect();
     this.mouse.x = (e.clientX - r.left) / this.scale;
     this.mouse.y = (e.clientY - r.top) / this.scale;
@@ -204,6 +216,7 @@ export class Input {
     if (any || Math.hypot(P.lx, P.ly) > 0.3 || Math.hypot(P.rx, P.ry) > 0.3 || now.lt || now.rt) {
       this.padSeen = true;
       this.lastDevice = 'pad';
+      this.mouseTravel = 0;
       if (this.onAnyInput) this.onAnyInput();
     }
   }

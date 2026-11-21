@@ -386,7 +386,7 @@ export class UI {
   /** marca en el <body> si se juega con joystick (para la pantalla de Controles) */
   syncPadClass() {
     const pad = this.g.input.lastDevice === 'pad';
-    if (pad !== this.padClass) { this.padClass = pad; document.body.classList.toggle('pad', pad); }
+    if (pad !== this.padClass) { this.padClass = pad; document.body.classList.toggle('pad', pad); this.updateSkipLabel(); }
   }
 
   setPlaying(on) {
@@ -407,7 +407,14 @@ export class UI {
   setIntro(on, skipLabel = 'Saltar intro ▸▸') {
     this.show('intro', on);
     $('intro').classList.toggle('on', on);
-    $('intro-skip').textContent = skipLabel;
+    this.skipLabel = skipLabel;
+    this.updateSkipLabel();
+  }
+
+  /** con joystick, el botón de saltar avisa que se salta con Start */
+  updateSkipLabel() {
+    const base = this.skipLabel || 'Saltar intro ▸▸';
+    $('intro-skip').textContent = this.g.input.lastDevice === 'pad' ? base.replace(/\s*▸▸$/, '') + ' (tocá Start) ▸▸' : base;
   }
 
   /** barra de vida de Aguilus (null la esconde) */
@@ -553,6 +560,11 @@ export class UI {
     const g = this.g;
     $('shop-money').textContent = fmtMoney(g.money);
     const list = $('shop-list');
+    // el botón que tenía el foco (para no volver arriba de todo después de comprar)
+    const prev = document.activeElement && list.contains(document.activeElement) ? document.activeElement : null;
+    const prevKey = prev ? prev.dataset.key : null;
+    const prevIdx = prev ? [...list.querySelectorAll('button')].indexOf(prev) : -1;
+    const prevPad = !!prev && prev.classList.contains('pad-focus');
     list.innerHTML = '';
     const section = (txt) => { const h = document.createElement('h3'); h.className = 'shop-section'; h.textContent = txt; list.appendChild(h); };
 
@@ -572,6 +584,7 @@ export class UI {
         b.className = 'btn' + (n === 5 ? ' alt' : '');
         b.textContent = `${n === 1 ? 'Comprar 1' : 'Comprar 5'} · ${fmtMoney(it.price * n)}`;
         b.disabled = g.money < it.price * n;
+        b.dataset.key = `sup-${id}-${n}`;
         b.addEventListener('click', () => g.buySupply(id, n));
         row.appendChild(b);
       }
@@ -595,6 +608,7 @@ export class UI {
       b.className = 'btn buy' + (withMe ? ' alt' : '');
       b.textContent = withMe ? 'Dejar a Popi en el patio' : other ? `Popi está con ${otherName}` : 'Llevar a Popi';
       b.disabled = other;
+      b.dataset.key = 'popi';
       b.addEventListener('click', () => g.togglePopi());
       card.appendChild(b);
       list.appendChild(card);
@@ -620,6 +634,7 @@ export class UI {
       `;
       const btn = document.createElement('button');
       btn.className = 'btn buy';
+      btn.dataset.key = 'up-' + up.id;
       if (max) { btn.textContent = 'Completo'; btn.disabled = true; }
       else {
         btn.textContent = `Mejorar · ${fmtMoney(next[1])}`;
@@ -629,6 +644,26 @@ export class UI {
       card.appendChild(btn);
       list.appendChild(card);
     }
+
+    if (prev) this.restoreShopFocus(list, prevKey, prevIdx, prevPad);
+  }
+
+  /**
+   * después de redibujar el taller, el foco vuelve al mismo botón; si ya no se puede comprar
+   * (no alcanza la plata), pasa al botón habilitado más cercano
+   */
+  restoreShopFocus(list, key, idx, pad) {
+    const btns = [...list.querySelectorAll('button')];
+    let i = btns.findIndex((b) => b.dataset.key === key);
+    if (i < 0) i = Math.min(Math.max(idx, 0), btns.length - 1);
+    let target = null;
+    for (let d = 0; d < btns.length && !target; d++) {
+      for (const j of [i + d, i - d]) if (btns[j] && !btns[j].disabled) { target = btns[j]; break; }
+    }
+    if (!target) target = $('shop-close') || null;
+    if (!target) return;
+    if (pad) this.g.padFocus(target);
+    else target.focus({ preventScroll: true });
   }
 
   // ---------- Regalo ----------

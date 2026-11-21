@@ -659,7 +659,20 @@ body.flashback #game { filter: sepia(0.85) saturate(0.85) brightness(1.06) contr
 }
 
 /* joystick: el botón elegido con la cruz */
-.pad-focus { outline: 3px solid var(--pink) !important; outline-offset: 3px; }
+/* foco del joystick: el botón se ilumina con un brillo suave que late y un destello que lo cruza */
+.pad-focus { outline: none !important; animation: pad-glow 1.6s ease-in-out infinite; }
+button.pad-focus { position: relative; overflow: hidden; transform: translateY(-2px) scale(1.04); transition: transform 0.12s ease-out; z-index: 1; }
+button.pad-focus::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%; pointer-events: none;
+  background: linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.55) 50%, transparent 100%);
+  animation: pad-shine 1.6s ease-in-out infinite;
+}
+@keyframes pad-glow {
+  0%, 100% { filter: brightness(1.08) drop-shadow(0 0 3px rgba(255,232,150,0.8)) drop-shadow(0 0 9px rgba(255,140,200,0.35)); }
+  50% { filter: brightness(1.2) drop-shadow(0 0 6px rgba(255,240,180,0.95)) drop-shadow(0 0 18px rgba(255,150,210,0.6)); }
+}
+@keyframes pad-shine { 0% { left: -60%; } 55%, 100% { left: 130%; } }
+@media (prefers-reduced-motion: reduce) { .pad-focus, button.pad-focus::after { animation: none; } }
 
 /* menú de efectos de sonido: botones numerados en dos columnas */
 .sfx-list { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; align-items: start; }
