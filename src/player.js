@@ -33,6 +33,18 @@ function jetRate(v, target, max, J) {
   return J.acc;
 }
 
+const arenaJets = new Map();
+/** el jetpack nuevo en la pelea: velocidades, aceleración y frenado al BOSS.jetMult del nivel */
+function arenaJet(J) {
+  let A = arenaJets.get(J);
+  if (!A) {
+    const k = BOSS.jetMult;
+    A = { ...J, h: J.h * k, up: J.up * k, down: J.down * k, acc: J.acc * k, brake: J.brake * k };
+    arenaJets.set(J, A);
+  }
+  return A;
+}
+
 export class Player {
   constructor(game, charId, ai = null) {
     this.game = game;
@@ -286,7 +298,8 @@ export class Player {
     let jetJustOff = false;
     if (hoverJet && this.hovering && !this.onGround && inp.jetPressed) { this.jetOff(); jetJustOff = true; }
     // J: jetpack nuevo prendido · H: modo vuelo del jetpack clásico
-    const J = hoverJet && this.hovering ? st.jet : null;
+    // en la pelea, el jetpack va más lento (si no, con el jetpack infinito se esquiva todo muy fácil)
+    const J = hoverJet && this.hovering ? (arena ? arenaJet(st.jet) : st.jet) : null;
     const H = !hoverJet && this.hovering ? HOVER[st.hover] : null;
     if (J) {
       // flotando: el manejo responde según el nivel; si venís muy rápido, frena más fuerte

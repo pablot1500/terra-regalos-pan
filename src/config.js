@@ -306,5 +306,6 @@ export const BOSS = {
   reviveR: 18,       // qué tan cerca hay que estar para revivir
   jetTime: 0.6,      // (jetpack viejo) en la pelea el jetpack es infinito...
   jetSpeed: 100,     // ...pero tiene menos fuerza
+  jetMult: 0.6,      // jetpack nuevo en la pelea: va al 60% de la velocidad (y del manejo) del nivel comprado
   ceiling: 128,      // techo invisible: se vuela hasta la altura de Aguilus, o un poquito más
 };
