@@ -15,16 +15,18 @@ function paintShoes() {
   R(18, 0, 124, 22, '#4a3070'); R(18, 0, 124, 4, '#2e1c4a');
   for (let i = 18; i < 142; i += 6) R(i + 2, 4, 1, 16, '#3c2560');      // pliegues
   R(18, 20, 124, 3, '#a374dc'); R(18, 23, 124, 1, '#22142b');           // el ribete
+  // las zapatillas: cada pata baja hasta adentro de la suya (la zapatilla se dibuja encima y tapa la punta,
+  // así parece que el pie entra por el cuello)
+  const SHOES = [{ lx: 36, sx: 28, sy: 48 }, { lx: 90, sx: 82, sy: 44 }];
   // las patas (de pájaro, pero no tan flaquitas), con las escamitas
-  for (const lx of [36, 90]) {
-    R(lx, 24, 11, 26, '#c9a26b'); R(lx, 24, 3, 26, '#e0be86'); R(lx + 9, 24, 2, 26, '#8a6a3c');
-    for (let y = 28; y < 48; y += 5) R(lx + 3, y, 6, 1, '#a9844f');
+  for (const { lx, sy } of SHOES) {
+    const h = sy + 14 - 24;
+    R(lx, 24, 11, h, '#c9a26b'); R(lx, 24, 3, h, '#e0be86'); R(lx + 9, 24, 2, h, '#8a6a3c');
+    for (let y = 28; y < 24 + h - 4; y += 5) R(lx + 3, y, 6, 1, '#a9844f');
     R(lx - 1, 24, 13, 2, '#22142b');
   }
-  // las zapatillas
   const s = shoeCanvas(66, 36);
-  x.drawImage(s, 82, 44);
-  x.drawImage(s, 28, 48);
+  for (const { sx, sy } of [...SHOES].reverse()) x.drawImage(s, sx, sy); // la de la derecha atrás
   return c;
 }
 
