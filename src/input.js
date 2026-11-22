@@ -8,7 +8,7 @@ export class Input {
     this.pad = { on: false, btn: {}, lx: 0, ly: 0, rx: 0, ry: 0 };
     this.padSeen = false;
     this.lastDevice = 'mouse';  // 'mouse' | 'touch' | 'pad': qué se usó último (para la mira)
-    this.fightMode = false;     // pelea final: el joystick izquierdo para arriba también vuela
+    this.fightMode = false;     // pelea final: el joystick de la pantalla para arriba también vuela (el del control no: se salta con A)
     this.touchAim = null;   // dedo apoyado sobre el juego: cava hacia ahí (como el mouse)
     this.scale = 1;
     this.enabled = true;
@@ -238,7 +238,9 @@ export class Input {
     const padAim = Math.hypot(P.rx, P.ry) > 0.3;
     const aimOn = T.aimOn || padAim;
     const ax = T.aimOn ? T.ax : P.rx, ay = T.aimOn ? T.ay : P.ry;
-    const fightUp = this.fightMode && sy < -0.6;
+    // en la pelea, el joystick de la pantalla para arriba también salta y prende el jetpack;
+    // con el control no: el stick para arriba no salta (se salta solo con A), y ya volando sirve para subir
+    const fightUp = this.fightMode && T.sy < -0.6;
     const nav = e('pad-up') || e('pad-sup') ? -1 : e('pad-down') || e('pad-sdown') ? 1 : 0;
     const side = e('pad-left') || e('pad-sleft') ? -1 : e('pad-right') || e('pad-sright') ? 1 : 0;
     return {
@@ -249,7 +251,7 @@ export class Input {
       glide: downKey || !!B.lt,       // S o ↓ (o LT): bajar despacio con el jetpack
       stickDown: sy > 0.55,           // joystick abajo: cavar hacia abajo
       jump: k('Space') || (!digKey && upKey) || T.jump || !!B.a || fightUp,
-      jumpPressed: e('Space') || (!digKey && (e('ArrowUp') || e('KeyW'))) || e('t-jump') || e('pad-a') || (this.fightMode && (e('t-up') || e('pad-sup'))),
+      jumpPressed: e('Space') || (!digKey && (e('ArrowUp') || e('KeyW'))) || e('t-jump') || e('pad-a') || (this.fightMode && e('t-up')),
       dig: k('KeyJ') || k('KeyK') || k('KeyX') || !!B.rt,
       fire: !!B.rt,                   // gatillo del control: tirar agua (o cavar)
       sprint: k('ShiftLeft') || k('ShiftRight') || Math.abs(sx) > 0.92 || !!B.ls,
