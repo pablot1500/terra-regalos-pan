@@ -743,3 +743,6 @@ button.pad-focus::after {
 .scenes-list .btn b { color: var(--ink); margin-right: 3px; }
 .scenes-list h3 { grid-column: 1 / -1; margin: 6px 0 0; font-size: 14px; color: var(--gold); text-shadow: 0 2px 0 var(--ink); }
 #demo-bar { position: absolute; left: 50%; top: calc(7vh + 8px); transform: translateX(-50%); z-index: 18; box-shadow: 0 0 0 3px var(--ink), 0 4px 0 rgba(0,0,0,0.4); }
+/* Configuración → Escenas → Final del juego: se ve el título, pero no se toca (solo "Volver a mi partida") */
+#screen-title[inert] { pointer-events: none; }
+#screen-title[inert] ~ #demo-bar { z-index: 21; top: auto; bottom: calc(7vh + 8px); }

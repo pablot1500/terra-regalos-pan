@@ -389,7 +389,7 @@ class Game {
         break;
       }
       case 'outro':
-        startOutro(this, () => this.exitDemo()); break;
+        startOutro(this, (skipped) => { if (skipped) this.exitDemo(); else this.endingToTitle(); }); break;
       default: this.exitDemo(true);
     }
   }
@@ -398,6 +398,8 @@ class Game {
   exitDemo(quiet = false) {
     if (!this.demo) return;
     this.demo = false; this.demoAuto = false;
+    const fromSky = this.state === 'title'; // venía de ver el final: baja del cielo como con "Continuar"
+    document.getElementById('screen-title').inert = false;
     this.ui.show('demo-bar', false);
     hideCutin(); stopChestOpen(); this.ui.show('sunset', false); this.ui.fade(false);
     this.ui.giftCb = null;
@@ -411,7 +413,7 @@ class Game {
     if (d) {
       this.savedData = d;
       store.save(d);
-      this.state = 'title-done';
+      this.state = fromSky ? 'title' : 'title-done';
       this.continueGame();
       if (!quiet) this.toast('De vuelta en tu partida, donde estabas', null, 'good');
     } else {
@@ -622,6 +624,19 @@ class Game {
     const d = this.serialize();
     this.savedData = d;
     store.save(d);
+  }
+
+  /**
+   * después del final (la cámara ya subió al cielo): de vuelta al menú principal, como para jugar otra vez.
+   * En Configuración → Escenas se ve el título igual, pero sin poder tocarlo: "Volver a mi partida" baja a la partida.
+   */
+  endingToTitle() {
+    if (!this.demo) { this.toTitle(); return; }
+    this.audio.jet(false);
+    this.state = 'title';
+    document.getElementById('screen-title').inert = true;
+    this.ui.setPlaying(false);
+    this.ui.updateTitle();
   }
 
   toTitle() {
@@ -1032,7 +1047,7 @@ class Game {
     if (this.input.pad.on) this.padUI(inp);
     this.ui.syncPadClass();
     // música: la de la intro (y su parte de acción), la del menú en el título, y en el juego según la profundidad
-    this.audio.setScene(this.state === 'intro' ? this.introMusic : this.state === 'title' ? MENU_ZONE : null);
+    this.audio.setScene(this.state === 'intro' ? this.introMusic : this.state === 'title' || (this.scene && this.scene.camRise) ? MENU_ZONE : null);
 
     // online: aunque el anfitrión esté en la pausa o en el Taller, el mundo compartido sigue andando para el otro
     if (this.net.isHost && (this.state === 'paused' || this.state === 'shop')) this.updateShared(dt);
@@ -1369,7 +1384,7 @@ class Game {
   updateCamera(dt) {
     const vw = this.vw, vh = this.vh;
     let tx, ty;
-    const sky = ['splash', 'title', 'intro', 'descend'].includes(this.state);
+    const sky = ['splash', 'title', 'intro', 'descend'].includes(this.state) || !!(this.scene && this.scene.camRise);
     if ((this.state === 'intro' || this.state === 'scene') && this.scene) {
       this.scene.updateCam(dt);
       tx = this.cam.x; ty = this.cam.y;

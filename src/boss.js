@@ -2,14 +2,14 @@
 // después del "interruptor secreto" de Carlos, pelea contra las súper pistolas de agua.
 // Tira rocas de magma (el agua las apaga), plumas, columnas de fuego, picadas, un rayo violeta,
 // lluvia de meteoritos y llama aguilitas. Si alguno cae, el otro lo puede revivir.
-import { TILE, SURFACE, BOSS, HP_MAX, ENDING_TEXT, CHARACTERS, GIFTS } from './config.js';
+import { TILE, SURFACE, BOSS, HP_MAX, CHARACTERS, GIFTS } from './config.js';
 import { playChestOpen } from './chestopen.js';
 import { showCutin, hideCutin } from './cutin.js';
 import { CORE_PLATFORM } from './world.js';
 import { drawAguilus, AG_H } from './aguilus.js';
 import { DIG_ZONE, TRAILER_X, TRAILER_H } from './structures.js';
 import { mulberry32 } from './rng.js';
-import { clamp, fmtMoney, makeCanvas } from './util.js';
+import { clamp, makeCanvas } from './util.js';
 import { eagletFrame } from './eagletart.js';
 
 const FLOOR_Y = CORE_PLATFORM.r * TILE;
@@ -267,13 +267,8 @@ export class Boss {
       this.place(f, x, SURFACE * TILE, 1, true);
     }
     g.popiMet = true; // después del final, Popi ya está en el patio (sin la escena del Gol)
-    g.save();
-    if (g.net.isHost) g.net.send('ending', { earned: Math.floor(g.counters.earned) });
-    const mins = Math.floor(g.counters.playTime / 60);
-    g.state = 'paused';
-    g.ui.showMsg('¡Fin! ♥', `${ENDING_TEXT}\n\nTiempo: ${mins} min · Bloques cavados: ${Math.round(g.counters.tiles)}\nPlata juntada: ${fmtMoney(g.counters.earned)}`, [
-      { label: 'Seguir jugando', onClick: () => { g.state = 'play'; } },
-    ]);
+    if (g.net.isHost) g.net.send('ending');
+    g.endingToTitle(); // guarda y vuelve al menú principal (la cámara ya quedó arriba, en el cielo)
   }
 
   // ------------------------------------------------------------
@@ -1736,7 +1731,7 @@ export function startOutro(g, onEnd) {
   }, { onEnd });
 }
 
-/** el final: a la tarde, en el patio, mirando el horizonte */
+/** el final: a la tarde, en el patio, mirando el horizonte; termina subiendo al cielo hasta el título */
 function* endingScript(sc) {
   const g = sc.g, A = sc.actors, GY = SURFACE * TILE;
   sc.ui.fade(true);
@@ -1748,6 +1743,7 @@ function* endingScript(sc) {
   sc.fixed = { x: LAND_X + 40, y: GY - 6, k: 0.62 };
   sc.setZoom(1.8, true);
   sc.snapCam();
+  document.getElementById('sunset').style.opacity = '1';
   sc.ui.show('sunset', true);
   sc.ui.fade(false);
   sc.caption('Esa tarde, ya con todos los regalos en casa...');
@@ -1764,8 +1760,15 @@ function* endingScript(sc) {
   sc.emote('pancha', '♥'); sc.emote('pablo', '♥');
   yield sc.say('pancha', '¡Feliz cumple para mí!');
   yield sc.say('pablo', '¡Feliz cumple, Panchi!');
-  yield sc.wait(1.4);
-  sc.ui.fade(true);
-  yield sc.wait(1.1);
-  sc.ui.show('sunset', false);
+  yield sc.wait(0.9);
+  // y se cierra el círculo: la cámara sube al cielo (lo inverso de la bajada de la intro) mientras
+  // la tarde vuelve a ser celeste, y arriba aparece otra vez el título
+  const sun = document.getElementById('sunset');
+  const tc = g.titleCam(), dur = 6.5;
+  sc.rise(tc.x + Math.sin((g.time + dur) * 0.12) * 60, tc.y, dur); // llega justo donde se mece la cámara del título
+  yield () => {
+    const R = sc.camRise, u = R ? R.t / R.dur : 1;
+    sun.style.opacity = String(1 - clamp((u - 0.1) / 0.6, 0, 1));
+    return !R;
+  };
 }

@@ -48,6 +48,7 @@ export class Scene {
     this.fixed = null;
     this.tween = null;
     this.camDrop = null;
+    this.camRise = null; // subida al cielo del final (lo inverso de la bajada de la intro)
     this.shine = null;   // brillo dorado sobre algo (el cofre en la intro)
     this.zoomT = 1;
     this.line = null;
@@ -150,6 +151,18 @@ export class Scene {
     g.zoom = z0;
     this.camDrop = { t: 0, dur, z0, z1: this.zoomT, cx0: c.x + this.viewW() / 2, cy0: c.y + this.viewH() / 2, cx1, cy1 };
     return () => this.camDrop === null;
+  }
+
+  /**
+   * lo inverso de `descend`: la cámara primero se aleja (vuelve al zoom normal) y sube al cielo
+   * hasta dejar la esquina de arriba a la izquierda en (x, y), en `dur` segundos
+   */
+  rise(x, y, dur) {
+    const g = this.g, c = g.cam;
+    this.follow = null; this.fixed = null; this.tween = null;
+    this.setZoom(1);
+    this.camRise = { t: 0, dur, z0: g.zoom, cx0: c.x + this.viewW() / 2, cy0: c.y + this.viewH() / 2, x1: x, y1: y };
+    return () => this.camRise === null;
   }
 
   pan(x, y, dur) {
@@ -262,6 +275,11 @@ export class Scene {
       if (tw.t >= tw.dur) this.tween = null;
     }
     if (this.shine) this.shine.t += dt;
+    if (this.camRise) {
+      const d = this.camRise;
+      d.t += dt;
+      if (d.t >= d.dur) { this.g.zoom = 1; this.g.cam.x = d.x1; this.g.cam.y = d.y1; this.camRise = null; }
+    }
     if (this.camDrop) {
       this.camDrop.t += dt;
       if (this.camDrop.t >= this.camDrop.dur) { this.g.zoom = this.camDrop.z1; this.camDrop = null; this.snapCam(); }
@@ -306,6 +324,16 @@ export class Scene {
       g.zoom = d.z0 + (d.z1 - d.z0) * uz * uz * (3 - 2 * uz);
       c.x = d.cx0 + (d.cx1 - d.cx0) * e - g.vw / g.zoom / 2;
       c.y = d.cy0 + (d.cy1 - d.cy0) * e - g.vh / g.zoom / 2;
+      return;
+    }
+    if (this.camRise) {
+      // subida al cielo: primero se aleja el zoom (en la primera mitad) y el movimiento es suave de punta a punta
+      const d = this.camRise, u = clamp(d.t / d.dur, 0, 1), e = ease(u);
+      const uz = clamp(u / 0.55, 0, 1);
+      g.zoom = d.z0 + (1 - d.z0) * uz * uz * (3 - 2 * uz);
+      const cx1 = d.x1 + g.vw / 2, cy1 = d.y1 + g.vh / 2;
+      c.x = d.cx0 + (cx1 - d.cx0) * e - g.vw / g.zoom / 2;
+      c.y = d.cy0 + (cy1 - d.cy0) * e - g.vh / g.zoom / 2;
       return;
     }
     // el zoom va despacio hacia su objetivo y se queda clavado al llegar

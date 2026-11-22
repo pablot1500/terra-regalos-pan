@@ -6,11 +6,10 @@
 // lo que hace (dónde está, qué cava, qué compra). Cada uno ve al otro moverse en tiempo real.
 //
 // Funciona entre cualquier dispositivo (compu, celu, tablet) mientras los dos tengan internet.
-import { CHARACTERS, BOSS, ENDING_TEXT, HP_MAX } from './config.js';
+import { CHARACTERS, BOSS, HP_MAX } from './config.js';
 import { Player } from './player.js';
 import { Popi } from './popi.js';
 import { Scene, SPEAKERS } from './scene.js';
-import { fmtMoney } from './util.js';
 
 const PEER_SRC = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';
 const PREFIX = 'cumple-panchita-sala-';
@@ -338,7 +337,7 @@ export class Net {
       case 'tp': return this.teleport(m);
       case 'hurt': { const p = g.players[0]; if (!p.dead && p.hurtT <= 0) { if (m.kx) { p.vx = m.kx; p.vy = Math.min(p.vy, -110); } p.hurt(m.dmg, 'boss'); } return; }
       case 'teamDown': return this.teamDown();
-      case 'ending': return this.ending(m);
+      case 'ending': return this.ending();
 
       // ---- los dos ----
       case 'dig': return this.applyDig(m);
@@ -482,12 +481,19 @@ export class Net {
     }, 1300);
   }
 
-  ending(m) {
+  /** el final terminó en la pantalla del anfitrión (la cámara subió al cielo): cada uno vuelve a su menú principal */
+  ending() {
     const g = this.g;
-    g.state = 'paused';
-    g.ui.showMsg('¡Fin! ♥', `${ENDING_TEXT}\n\nPlata juntada: ${fmtMoney(m.earned || 0)}`, [
-      { label: 'Seguir jugando', onClick: () => { g.state = 'play'; } },
-    ]);
+    this.endRemoteScene();
+    // se sale de la sala sin el cartel de "se cortó la conexión" (la partida era la del anfitrión: no se guarda acá)
+    this.remote = null;
+    this.close();
+    g.audio.jet(false);
+    const tc = g.titleCam();
+    g.cam.x = tc.x; g.cam.y = tc.y;
+    g.state = 'title';
+    g.ui.setPlaying(false);
+    g.ui.updateTitle();
   }
 
   // ---- escenas en el invitado: se dibujan igual que en la pantalla del anfitrión ----
