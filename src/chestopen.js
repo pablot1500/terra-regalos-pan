@@ -103,7 +103,7 @@ export function playChestOpen(audio, onReveal, { empty = false } = {}) {
       }
     }
     // destello: sube de golpe, y cuando ya aparece el cartel se va despacito (vacío: sin destello)
-    const end = empty ? END + 1.1 : END;
+    const end = empty ? END + 2.6 : END; // vacío: se queda abierto un rato largo, para que se den cuenta
     let fl = 0;
     if (!empty && t >= BURST) fl = Math.min(1, (t - BURST) / 0.12);
     if (!empty && t >= end) fl = Math.max(0, 1 - (t - end) / FADE);

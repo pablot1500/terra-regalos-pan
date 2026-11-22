@@ -1,8 +1,7 @@
 // Primeros planos "de historieta" en las escenas: un recuadro grande con líneas de velocidad, un golpe de
 // impacto (temblor y destello) y el dibujo en primer plano. Se usan en la escena de la pelea con Aguilus:
-// los pies de Aguilus con las zapatillas puestas, y la cara de Panchi gritando.
+// los pies de Aguilus con las zapatillas puestas.
 import { shoeCanvas } from './giftart.js';
-import { getCharFrames, CHAR_W } from './sprites.js';
 import { makeCanvas } from './util.js';
 
 const W = 160, H = 90;
@@ -30,32 +29,13 @@ function paintShoes() {
   return c;
 }
 
-/** Panchi de cerca (la cabeza y medio torso), enojada (con la venita) */
-function paintPancha() {
-  const [c, x] = makeCanvas(W, H);
-  const f = getCharFrames('pancha').right.idle;
-  x.imageSmoothingEnabled = false;
-  // la cabeza y la mitad del torso, centrada en la cara (lo de abajo queda cortado por el borde)
-  const rows = 18, sc = 5, x0 = Math.round(W / 2 - (CHAR_W * sc) / 2);
-  x.drawImage(f, 0, 0, CHAR_W, rows, x0, 6, CHAR_W * sc, rows * sc);
-  // la venita de enojo
-  const R = (a, b, w, h, col) => { x.fillStyle = col; x.fillRect(a, b, w, h); };
-  const vx = x0 + CHAR_W * sc + 2, vy = 10;
-  for (const [a, b] of [[0, 2], [1, 1], [2, 0], [4, 0], [5, 1], [6, 2], [0, 4], [1, 5], [2, 6], [4, 6], [5, 5], [6, 4]]) R(vx + a * 2, vy + b * 2, 2, 2, '#ff2d4f');
-  // "!!"
-  const ex = x0 - 22;
-  R(ex, 14, 4, 16, '#ffffff'); R(ex, 34, 4, 4, '#ffffff'); R(ex + 8, 10, 4, 16, '#ffffff'); R(ex + 8, 30, 4, 4, '#ffffff');
-  return c;
-}
-
 const KINDS = {
   shoes: { paint: paintShoes, bg: ['#2a1640', '#ffd34d'], dark: '#1a0e28' },
-  pancha: { paint: paintPancha, bg: ['#5a1020', '#ff8a72'], dark: '#320812' },
 };
 const cache = {};
 
 let raf = 0;
-/** muestra un primer plano (kind: 'shoes' o 'pancha') hasta hideCutin() */
+/** muestra un primer plano (kind: 'shoes') hasta hideCutin() */
 export function showCutin(kind) {
   const K = KINDS[kind];
   const root = document.getElementById('cutin');

@@ -1425,9 +1425,8 @@ function* encounterScript(sc, B, p) {
   yield sc.wait(0.6);
   g.sfx('laugh');
   yield sc.say('aguilus', '¡JA! ¡Ahora tu regalo es MÍO! ¿Y? ¿No me quedan divinas?');
-  // primer plano: Panchi, furiosa
+  // Panchi grita mientras se siguen viendo las zapatillas en las patas de Aguilus
   g.sfx('hurt'); g.shakeAll(1);
-  showCutin('pancha');
   yield sc.say('pancha', '¡¡NOOO!! ¡Devolveme mis zapatillas, pajarraco!');
   hideCutin();
   sc.fixed = { x: agX, y: FLOOR_Y - 18 };
