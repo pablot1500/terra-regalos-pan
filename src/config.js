@@ -268,7 +268,7 @@ export const GIFTS = [
   {
     // art: 'reloj' = el reloj plateado de frente (src/giftart.js)
     id: 2, depth: 800, headline: '¡¡El segundo regalo!!', art: 'reloj', title: 'Un reloj!!!',
-    text: 'Un reloj plateado para la cumpleañera, para que nunca más lleguemos tarde.',
+    text: 'Un reloj plateado para la cumpleañera, para que nunca más lleguemos tarde a lugares (deseable).',
   },
   {
     // el último está en el núcleo: en la plataforma de abajo de todo (por ahora no se abre)

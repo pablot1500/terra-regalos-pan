@@ -163,7 +163,7 @@ class Game {
     this.freshGame();
     this.startPlaying();
     this.save();
-    this.pendingTip = ['start', '¡Bajen por la escalera al patio y empiecen a cavar en el cantero!'];
+    this.pendingTip = ['start', '¡Hay que bajar por la escalera al patio y empezar a cavar en el centro!'];
   }
 
   continueGame() {
@@ -984,8 +984,8 @@ class Game {
         : reason === 'lava'
           ? 'Estuviste demasiado tiempo en la lava y te desmayaste.\nTe despertaste en casa.'
           : reason === 'eaglet'
-            ? 'Las aguilitas te picotearon hasta dejarte K.O.\nTe despertaste en casa.'
-          : 'Te caíste demasiado fuerte y quedaste K.O.\nTe despertaste en casa.')
+            ? 'Las aguilitas te picotearon hasta dejarte tumbado.\nTe despertaste en casa.'
+          : 'Te caíste demasiado fuerte y te desmayaste.\nTe despertaste en casa.')
         + (lost > 0 ? `\n\nPerdiste ${fmtMoney(lost)} en el camino.` : '');
       this.ui.showMsg(title, text, [{
         label: 'Volver a cavar',
@@ -1326,7 +1326,7 @@ class Game {
 
   updateTips(p) {
     if (!this.kitGiven) {
-      if (p.x > 22 * TILE && p.depth < 2) this.tip('kit', 'Para cavar hace falta equipo: pasá por el Taller de Carlos, la casa rodante del fondo a la derecha');
+      if (p.x > 22 * TILE && p.depth < 2) this.tip('kit', 'Para poder cavar hace falta equipo: pasemos por el Taller de Carlos, la casa rodante del fondo a la derecha');
       return;
     }
     if (p.x > 27 * TILE && p.depth < 2) {
@@ -1343,7 +1343,7 @@ class Game {
     if (p.depth > 990) this.tip('lava', 'Cuidado con la lava: quema, y si cavás por debajo se derrama');
     if (this.stats.hover && p.depth > 4) this.tip('hover', `Tu jetpack tiene modo vuelo: ${this.ui.hint('apretá E', 'apretá X', 'tocá VOLAR')} para prenderlo o apagarlo`);
     if (p.depth > 40) this.tip('fall', JET_MODE === 'hover'
-      ? `Ojo con las caídas: si venís cayendo, tocá ${jump} y el jetpack te frena`
+      ? `Ojo con las caídas: si venís cayendo, tocá ${jump} y el jetpack te hace frenar`
       : this.ui.hint('Ojo con las caídas: mantené S para bajar despacio con el jetpack', 'Ojo con las caídas: mantené LT para bajar despacio con el jetpack', 'Ojo con las caídas: para bajar despacio mantené SALTAR + joystick abajo'));
   }
 

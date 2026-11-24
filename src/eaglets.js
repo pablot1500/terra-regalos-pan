@@ -85,7 +85,7 @@ export class Eaglets {
     this.list = this.list.filter((b) => !b.gone);
     const chasing = this.list.some((b) => b.st !== 'dead' && b.st !== 'leave');
     if (this.chasing && !chasing && away && !p.dead && !g.gunGiven) {
-      g.tip('escaped', `¡Uf, zafamos! Las aguilitas no suben más arriba de los ${showM(EAGLETS.ceil)} m. Vayan a contarle a Carlos al taller`);
+      g.tip('escaped', '¡Uf, zafamos! Las aguilitas no subieron más. Vayan a contarle a Carlos al taller');
     }
     this.chasing = chasing;
   }
@@ -268,7 +268,7 @@ export class Eaglets {
       f.gunCd = (f.gunCd || 0) - dt;
       while (f.gunCd <= 0) {
         const cost = st.infEnergy ? 0 : st.gunCost;
-        if (f.energy < cost) { f.note('¡Sin energía para la pistola! Volvé a casa a cargar', 'nogun'); f.gunCd = 0.3; break; }
+        if (f.energy < cost) { f.note('¡Ya no hay energía para la pistola! Volvé a casa a cargar', 'nogun'); f.gunCd = 0.3; break; }
         f.energy -= cost;
         f.gunCd += 1 / st.gunRate;
         const a = Math.atan2(f.aim.y, f.aim.x) + (Math.random() - 0.5) * 0.07;

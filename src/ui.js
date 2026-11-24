@@ -369,7 +369,7 @@ export class UI {
       const gifts = (s.gifts || []).length;
       hint.textContent = `Partida guardada: ${fmtMoney(s.money || 0)} · récord ${showM(Math.floor(s.counters?.best || 0))} m · ${gifts}/${GIFTS.length} regalos`;
     } else {
-      hint.textContent = this.isTouch ? 'Tip: jugalo con el celu acostado' : 'Tip: se juega con teclado o mouse';
+      hint.textContent = this.isTouch ? 'Tip: jugá con el celu acostado' : 'Tip: se juega con teclado o mouse';
     }
   }
 

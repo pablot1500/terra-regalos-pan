@@ -12,21 +12,21 @@ const CPS = 26;        // letras por segundo al "escribir"
 // 'a' arranca la charla y 'b' contesta ('popi' = habla Popi: esa charla solo sale si Popi está con ustedes).
 // {m} = metros, {a}/{b} = nombres. La fuente pixel no tiene comillas ni paréntesis: mejor no usarlos.
 const CHATS = [
-  [['a', '¡Ya vamos {m} metros!!'], ['b', '¿Y cuánto falta?'], ['a', 'Ni idea. Seguro que mucho.']],
-  [['a', '¿Cuanto faltaa??'], ['b', 'Si me preguntás otra vez me voy con el Popi.']],
-  [['a', '¿Qué tan hondo puede esconder regalos un pájaro? No tiene sentido'], ['b', 'Con paciencia y saliva, el pajarito metió el regalo. No era así?']],
-  [['a', '{m} metros... ¡mamita!!'], ['b', 'Hay que tener paciencia...']],
-  [['a', 'Tengo hambree.'], ['b', 'Abajo de todo seguro hay un local de hamburguesas smash'], ['a', '¿En serio?'], ['b', 'No!!']],
+  [['a', '¡Ya vamos {m} metros!'], ['b', '¿Y cuánto nos falta?'], ['a', 'Y.. seguro que bastante.']],
+  [['a', '¿Cuanto falta? ¿Ya llegamos?'], ['b', 'Si me preguntás de vuelta me voy con el Popi.']],
+  [['a', '¿Qué tan hondo se pudo llevar los regalos este pájaro? No tiene sentido'], ['b', 'Más vale pájaro bajo tierra que mil volando.. no? No era así?']],
+  [['a', '{m} metros... ¡bastaaa!'], ['b', 'Hay que tener paciencia...']],
+  [['a', 'Tengo hambre.'], ['b', 'Abajo de todo seguro hay un local de hamburguesas smash'], ['a', '¿En serio?'], ['b', 'No.']],
   [['a', '¿Escuchaste eso?'], ['b', '¿Qué cosa?'], ['a', 'Nada, era mi panza je.']],
-  [['a', 'Si seguimos bajando llegaremos a Japón? Nos ahorraríamos el pasaje con eso..'], ['b', 'Creo que no funciona así...']],
-  [['a', '{b}, porfa ¿me llevás a upa lo que queda?'], ['b', 'No me puedo llevar ni a mi, la veo complicada.']],
-  [['a', 'Para el próximo cumple venimos con un taladro bien enorme.'], ['b', 'O con una jaula bien grande para el pájaro este.']],
-  [['a', 'Ya van {m} metros. Estoy agotado...'], ['b', '¡Si recién empezamos!']],
-  [['a', '¿Apagamos el gas antes de salir?'], ['b', '...'], ['b', '¡Ahora me dejaste con la duda!!.']],
+  [['a', 'Seguro si seguimos bajando llegamos a Japón. Nos ahorraríamos el pasaje..'], ['b', 'Creo que no funciona así...']],
+  [['a', '{b}, no doy más, llevame a upa!!'], ['b', 'No me puedo llevar ni a mi, la veo difícil.']],
+  [['a', 'El año que viene nos venimos con un taladro bien enorme.'], ['b', 'Y con una jaula bien grande para el pájaro este.']],
+  [['a', 'Ya van {m} metros. No puedo más...'], ['b', '¡Si recién empezamos!']],
+  [['a', '¿Cerramos la puerta con llave antes de venir?'], ['b', '...'], ['b', '¡Ahora me dejaste con la duda!.']],
   [['a', 'Hace como un calorcito, ¿no?'], ['b', '¿Será la emoción de encontrar los regalos?'], ['a', 'Ojalá sea eso y no otra cosa..']],
   [['a', 'Cómo es que Popi no cava el suelo más rápido si es un perro?.'], ['popi', 'A mi que no me miren...']],
-  [['a', '¿Cuánto mide la Tierra de profundo?'], ['b', '¡Esas preguntas no aportan ahora mismo!!']],
-  [['a', '¿Vos creés que los regalos valen tanto esfuerzo?'], ['b', 'Si es lo que pienso, ¡sí!']],
+  [['a', '¿Sabes cuantos metros tiene la Tierra de profundo?'], ['b', '¡Ahora mismo no quiero saber nada de eso!']],
+  [['a', '¿Vos creés que los regalos valen tanto esfuerzo?'], ['b', 'Te lo aseguro, ¡sí!']],
 ];
 
 /** corta el texto en renglones de hasta WRAP letras */

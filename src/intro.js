@@ -9,19 +9,19 @@ import { clamp } from './util.js';
 const FLOOR = SURFACE * TILE;          // piso del patio
 const APT = (SURFACE - 6) * TILE;      // piso del departamento 1B (primer piso, subiendo la escalera)
 
-export const NOTE_TEXT = `Querida cumpleañera:
+export const NOTE_TEXT = `Estimados humanos:
 
-Este año TAMPOCO te vas a salvar. ¿Se pensaban que se libraron de mi tan fácil?
+¿Se pensaban que me iba a rendir tan fácil? ¿Que no iba a robarme los regalos este año también?
 
-Me llevé tus regalos. Bien, bien, bieeen abajo. No hay forma de que los alcancen.
+Me los llevé, otra vez, porque puedo. Esta vez están bieeen abajo, no hay forma de que los alcancen.
 
-Si los quieren, los voy a estar esperando.
+Ni se les ocurra intentar recuperarlos.
 
 Me caen mal.
 
-— A (de Anónimo, para nada es la primera letra de otro nombre de un personaje que ya conocen)
+— Firmado: A (soy Aguilus pero así se ve más misterioso)
 
-P.D.: Ni se les ocurra traer las guitarritas y esas cosas musicales suyas`;
+P.D.: esta vez nada de música ni esas pavadas suyas`;
 
 export function* introScript(sc) {
   const g = sc.g;
@@ -37,7 +37,7 @@ export function* introScript(sc) {
   g.structs.trailerOpen = 0; // el taller arranca cerrado: Carlos aparece recién cuando hablan de las palas
   sc.ui.fade(false);
   yield sc.descend(7.5, 1.5);
-  sc.caption('Hoy es el día del cumple de Panchi...');
+  sc.caption('Hoy es el cumple de Panchi...');
   yield sc.wait(0.6);
   // se abre el portón de la calle y entran por ahí
   const S = g.structs, DOOR = GATE_X + 14;
@@ -61,14 +61,14 @@ export function* introScript(sc) {
   sc.camSpeed = null;
   A.pancha.speed = 30; A.pablo.speed = 30;
   sc.caption(null);
-  yield sc.say('pancha', '¡Qué bueno que llegamos!! ¡Qué lindo que festejemos mi cumple juntos otra vez!');
+  yield sc.say('pancha', '¡Qué bueno que ya llegamos!! ¡Me encanta que festejemos mi cumple juntos otra vez!');
   yield sc.say('pablo', 'Obvio corazón, no me lo perdería jamás.');
   yield sc.arrive('pancha', 'pablo');
 
   sc.walk('pancha', 214); sc.walk('pablo', 236);
-  yield sc.say('pancha', '¿Che Pabli, te acordás de lo que pasó el año pasado con.. los regalos?');
-  yield sc.say('pablo', 'Ni lo menciones. Todavía sueño con ese pajarraco.');
-  yield sc.say('pablo', 'Igual tranqui: este año los escondí bien bien. No hay chance de que falle esta vez.');
+  yield sc.say('pancha', '¿Pabli, te acordás de lo que pasó el año pasado con.. los regalos?');
+  yield sc.say('pablo', 'Ni lo menciones, que todavía tengo pesadillas con ese pájaro.');
+  yield sc.say('pablo', 'Igual tranqui, este año los escondí bien escondidos. No hay de qué preocuparse esta vez.');
   yield sc.say('pancha', 'Mmm... oki.');
   yield sc.arrive('pancha', 'pablo');
   // suben la escalera hasta el 1B
@@ -88,7 +88,7 @@ export function* introScript(sc) {
   sc.walk('pablo', 116); sc.walk('pancha', 140);
   sc.ui.fade(false);
   yield sc.wait(0.5);
-  yield sc.say('pablo', '¡Ahora sí! El escondite perfecto: debajo de la cama.');
+  yield sc.say('pablo', '¡Ahora si!! El escondite perfecto, debajo de la cama jeje.');
   yield sc.arrive('pablo');
   A.pablo.facing = -1;
   A.pablo.pose = 'search';
@@ -106,13 +106,13 @@ export function* introScript(sc) {
   sc.setZoom(2.8);
   g.audio.play('surprise');
   g.shake(1.5);
-  yield sc.say('pablo', '¡LOS REGALOS NO ESTÁN!');
+  yield sc.say('pablo', 'Los regalos... no están...');
   sc.emote('pancha', '!');
   A.pancha.facing = -1;
   yield sc.say('pancha', '¿¡CÓMO QUE NO ESTÁN!?');
   sc.fixed = { x: 128, y: APT - 14 };
   sc.setZoom(2.2);
-  yield sc.say('pablo', 'Alguien se los volvió a llevar!! Dejaron una notita y una pluma.');
+  yield sc.say('pablo', 'Otra vez se los llevaron!! Lo único que encontré es esta nota.');
   sc.feathers.push({ x: A.pablo.x - 6, y: APT - 16, floor: APT, vy: 6, t: 0, landed: false });
   g.audio.play('paper');
   yield sc.wait(0.6);
@@ -120,7 +120,7 @@ export function* introScript(sc) {
   // al cerrar la nota arranca la música de acción, hasta el final de la intro
   g.introMusic = ACTION_ZONE;
   g.audio.setScene(ACTION_ZONE);
-  yield sc.say('pancha', '¿¡Otra vez!? ¿Y quién puede haber sido ahora?');
+  yield sc.say('pancha', '¿¡Otra vez!? ¿Qué le pasa a este pájaro que no nos deja en paz? ¿Dónde están los regalos?');
   yield sc.say('pablo', 'Alguna sospecha tengo... pero acá dice "muy abajo". Abajo de dónde?');
 
   // ---- mientras tanto: la cámara baja hasta el primer regalo ----
@@ -159,9 +159,9 @@ export function* introScript(sc) {
   yield sc.wait(1.6);
   sc.emote('pablo', '!'); sc.emote('pancha', '!');
   g.shake(1.2);
-  yield sc.say('pancha', '¡Abajo nuestro!!!');
+  yield sc.say('pancha', '¡¡Abajo nuestro!!');
   yield sc.say('pablo', 'No puedo creer que tengamos que hacer esto..');
-  yield sc.say('pancha', 'En el taller de la casa rodante venden palas.');
+  yield sc.say('pancha', 'Vi un cartel en el taller de la casa rodante, parece que venden palas.');
 
   // ---- la cámara va hasta el taller de Carlos ----
   sc.camSpeed = 1.6;
@@ -172,7 +172,7 @@ export function* introScript(sc) {
   g.audio.play('shutter');
   yield (() => { const t0 = sc.t; return () => (g.structs.trailerOpen = Math.min(1, (sc.t - t0) / 0.9)) === 1; })();
   yield sc.wait(0.6);
-  yield sc.say('pablo', '¿Carlos? ¿No vendían comida ahí?');
+  yield sc.say('pablo', '¿Carlos? ¿Pero no vendían comida ahí?');
   yield sc.say('pancha', 'La crisis nos pega a todos, ya sabes.');
   // y vuelve a los dos
   sc.fixed = { x: 128, y: APT - 14 };
@@ -202,12 +202,12 @@ export function* carlosScript(sc, p) {
   sc.setZoom(2.2);
   sc.snapCam();
   yield sc.wait(0.4);
-  yield sc.say('carlos', '¡Hola, chicos! ¿Qué andan buscando con esas caras?');
-  yield sc.say('pancha', '¡Alguien se llevó mis regalos de cumple! Dice que están muy, muy abajo.');
+  yield sc.say('carlos', '¡Hola, chicos! ¿Por qué andan con esas caras largas?');
+  yield sc.say('pancha', '¡Se llevaron mis regalos de cumple! Nos dijeron que están muy, muy abajo.');
   yield sc.say('carlos', 'Ah, ¿van a buscar los regalos? ¿Otra vez?');
   sc.emote('pancha', '?');
-  yield sc.say('pancha', 'Esperá... ¿y vos cómo sabés que están abajo?');
-  yield sc.say('carlos', 'No, nada... siempre pasa. Todos los años lo mismo. Ya es una tradición del barrio.');
+  yield sc.say('pancha', 'Esperá... ¿y vos cómo sabés que ya nos había pasado esto?');
+  yield sc.say('carlos', 'Y... siempre pasa. Todos los años lo mismo. Ya es una tradición del barrio.');
   sc.emote('pablo', '~');
   yield sc.say('pablo', '...');
   yield sc.say('carlos', 'Bueno, van a necesitar esto.');
@@ -222,8 +222,8 @@ export function* carlosScript(sc, p) {
   }
   yield sc.wait(0.6);
   yield sc.say('pablo', '¡Gracias, Carlos!');
-  yield sc.say('carlos', 'El cantero del medio es lo único que se puede cavar. Y cuando junten plata, vuelvan: ¡tengo mejoras!');
-  yield sc.say('pancha', '¡Vamos a cavar!');
+  yield sc.say('carlos', 'La parte del medio es la única que se puede cavar. Cuando junten plata vuelvan, así les vendo mejoras para su equipo!');
+  yield sc.say('pancha', '¡Vamos!');
 }
 
 /**
@@ -252,7 +252,7 @@ export function* popiScript(sc, p) {
   yield sc.wait(0.9);
   S.bushShake = 0;
   yield sc.say('pancha', '¿Qué hay ahí?');
-  yield sc.say('pablo', '¿Un gato? ¿Una comadreja? ¿Aguilus disfrazado de arbusto?');
+  yield sc.say('pablo', '¿Será Aguilus disfrazado de arbusto?');
   S.bushShake = 2;
   g.sfx('rustle');
   leaves(10);
@@ -270,8 +270,8 @@ export function* popiScript(sc, p) {
   A.popi.facing = 1;
   for (let i = 0; i < 4; i++) g.particles.add({ x: A.popi.x - 4 + i * 3, y: FLOOR - 12, vx: (i - 1.5) * 6, vy: -14, life: 1.2, max: 1.2, heart: true, grav: 0 });
   yield sc.say('pancha', '¡Popito! ¿Qué hacés acá? ¿Cómo apareciste?');
-  yield sc.say('popi', 'Guau. (Traducción: me colé en el auto cuando no estaban viendo, je.)');
-  yield sc.say('pablo', 'Con razón el auto olía a salchicha...');
+  yield sc.say('popi', 'Guau. (Traducción: me colé en el auto cuando no estaban mirando, jeje.)');
+  yield sc.say('pablo', 'Qué gordo travieso eh...');
   yield sc.say('pancha', 'Bueno, ya que estás acá... ¿nos ayudás a buscar los regalos?');
   yield sc.say('popi', '¡Guau, guau! (Traducción: ¡obvio! Traje casco y todo.)');
   yield sc.say('pablo', '¡Listo! Aprovechamos y te llevamos en esta aventura, Popi.');
@@ -320,7 +320,7 @@ export function* eagletScript(sc, p, caves, report) {
   yield sc.say(me, '¡¿Aguilitas?! ¡Son las ayudantes de Aguilus!');
   g.sfx('peep');
   yield sc.say(mate, '¡Y vienen para acá! ¡Con la pala no les hacemos nada!');
-  yield sc.say(me, '¡A subir! ¡Rápido, con el jetpack!');
+  yield sc.say(me, '¡Subamos rápido!');
   report(caves.map((_, i) => ({ x: A['eaglet' + i].x, y: A['eaglet' + i].y })));
 }
 
@@ -354,10 +354,10 @@ export function* carlosGunScript(sc, p) {
     for (let i = 0; i < 10; i++) g.particles.add({ x: A[id].x + A[id].facing * 6, y: A[id].y - 10, vx: (Math.random() - 0.5) * 60, vy: -20 - Math.random() * 50, life: 0.6, max: 0.6, color: i % 2 ? '#7fd8ff' : '#ffffff', size: 1, grav: 200 });
   }
   yield sc.wait(0.7);
-  yield sc.say('carlos', 'Súper pistola de agua. Va enchufada a la batería: cada chorrito gasta un poquito de energía.');
+  yield sc.say('carlos', 'Súper pistola de agua. Tiene una batería interna, cada chorrito gasta un poquito de energía.');
   yield sc.say('pancha', '¿Una pistola de agua... eléctrica?');
-  yield sc.say('carlos', 'Tecnología del barrio, querida. Si se quedan sin batería, a casa a cargar.');
-  yield sc.say('carlos', 'Y cuando junten plata, me la traen y se la mejoro: que tire más rápido.');
+  yield sc.say('carlos', 'Es tecnología del barrio, no pregunten. Si se quedan sin batería, vuelvan a la casa a cargar.');
+  yield sc.say('carlos', 'Y por unos billetes, me las traen y las mejoro para que tire más rápido.');
   for (const id of [me, mate]) A[id].gunAng = -0.4;
   yield sc.say('pablo', '¡Ahora sí! ¡Que vengan esas aguilitas!');
 }
@@ -389,21 +389,21 @@ export function* lavaScript(sc, p, spot) {
   yield sc.wait(0.5);
   g.sfx('magma');
   sc.emote(me, '!'); sc.emote(mate, '!');
-  yield sc.say(mate, '¿Sentís ese calor? Está todo naranja allá...');
+  yield sc.say(mate, '¿Sentís ese calorcito? Veo naranja por allá...');
   // la cámara se acerca a la lava
   sc.fixed = { x: spot.x, y: spot.y, k: 0.42 };
   sc.setZoom(2.8);
   for (let i = 0; i < 6; i++) { bubble(); if (i % 2 === 0) g.sfx('magma'); yield sc.wait(0.25); }
   bubble(8);
-  yield sc.say(me, '¡Es lava! Lava de verdad, burbujeando.');
+  yield sc.say(me, '¡Es lava! Me muero de calor...');
   bubble(6);
-  yield sc.say(mate, 'Si la tocamos nos achicharramos. Y si cavamos por abajo, se nos viene encima.');
+  yield sc.say(mate, 'No la toques porque nos quemamos. Y si cavamos por abajo creo que se nos viene encima.');
   // vuelve a ellos
   sc.fixed = { x: (x0 + mx) / 2, y: fy - 20 };
   sc.setZoom(2.2);
   yield sc.wait(0.6);
   sc.emote(me, '?');
-  yield sc.say(me, 'Esperá... ¿qué pasa cuando la lava se enfría?');
+  yield sc.say(me, 'Mmm... ¿Y qué pasa cuando la lava se enfría?');
   yield sc.say(mate, '¡Se hace piedra! Como en los volcanes: roca volcánica, obsidiana, algo así.');
   if (g.gunGiven) {
     yield sc.say(me, '¿Y si le tiramos con la pistola de agua de Carlos?');
@@ -412,7 +412,7 @@ export function* lavaScript(sc, p, spot) {
     yield sc.say(mate, '¡Claro! La enfriamos, se vuelve piedra... ¡y después la picamos con la pala!');
     g.sfx('pump');
     for (const id of [me, mate]) { sc.actors[id].tool = 'water'; sc.actors[id].gunAng = 0.2; }
-    yield sc.say(me, 'A ver si funciona. ¡Agua va!');
+    yield sc.say(me, 'A ver si funciona...');
   } else {
     yield sc.say(me, 'Si tuviéramos agua para tirarle...');
     yield sc.say(mate, 'Carlos seguro tiene algo. Hay que preguntarle en el taller.');

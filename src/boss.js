@@ -1031,7 +1031,7 @@ export class Boss {
       g.sfx('charge'); g.shakeAll(3);
     } else if (this.phase === 2 && frac <= BOSS.phases[1]) {
       this.phase = 3; this.shieldT = 1.5; this.castT = Math.min(this.castT, 0.4);
-      g.addText(this.x, this.y - AG_H - 14, '¡SUFICIENTE! ¡PODER MÁXIMO!', '#ff5d6c');
+      g.addText(this.x, this.y - AG_H - 14, '¡SUFICIENTE! ¡MÁXIMO PODER!', '#ff5d6c');
       g.sfx('charge'); g.shakeAll(5);
     }
     if (this.hp <= 0) this.defeat(by && !by.ai ? by : this.local);
@@ -1384,7 +1384,7 @@ function* encounterScript(sc, B, p) {
   sc.setZoom(2);
   sc.snapCam();
   sc.drop(mate, FLOOR_Y);
-  yield sc.say(mate, '¡Esperame! ¡Uf, qué caída!');
+  yield sc.say(mate, '¡Esperame! ¡Huy, qué caída!');
   yield sc.arrive(mate);
   // el último cofre
   const chX = B.homeX + 20;
@@ -1406,8 +1406,8 @@ function* encounterScript(sc, B, p) {
   yield chestWait(sc, { empty: true });
   B.openCoreChest();
   sc.emote(me, '?'); sc.emote(mate, '?');
-  yield sc.say(me, '¿Eh? ¿Está... vacío?');
-  yield sc.say(mate, '¿Qué pasó? ¿Dónde está el regalo?');
+  yield sc.say(me, '¿Qué? ¿Está... vacío?');
+  yield sc.say(mate, '¿Qué pasó? ¿Y el regalo donde está?');
   yield sc.wait(0.4);
   // una voz atrás de ellos
   yield sc.say('voz', '¿Buscaban esto?');
@@ -1431,8 +1431,8 @@ function* encounterScript(sc, B, p) {
   hideCutin();
   sc.fixed = { x: agX, y: FLOOR_Y - 18 };
   sc.setZoom(2.2);
-  yield sc.say('pablo', '¡¿Aguilus?! ¡Sabía que eras vos! ¡La pluma te delató!');
-  yield sc.say('pancha', 'Pablo... lo sabíamos desde el principio.');
+  yield sc.say('pablo', '¡¿Aguilus?! ¡Siempre supe que eras vos!');
+  yield sc.say('pancha', 'Pablo... nos lo dijo él desde el principio.');
   yield sc.say('aguilus', '¿Las quieren? ¡Vengan a buscarlas! ¡Este año sí te arruino el cumple, Pancha!');
   const kx = (A[me].x + A[mate].x) / 2;
   const mid = (kx + B.homeX) / 2;
@@ -1453,12 +1453,12 @@ function* encounterScript(sc, B, p) {
   sc.setZoom(2.4);
   A[me].facing = A[mate].x > A[me].x ? 1 : -1;
   A[mate].facing = -A[me].facing;
-  yield sc.say('pablo', '¿Y ahora qué hacemos? ¡Él vuela y nosotros tenemos taladros!');
+  yield sc.say('pablo', '¿Y ahora qué hacemos? ¡Está volando, es super poderoso y no tenemos cómo atacarlo!');
   sc.emote('pancha', '!');
   if (g.gunGiven) {
     // ya tienen las pistolas de agua de Carlos (desde las aguilitas)
     yield sc.say('pancha', '¡Las pistolas de agua de Carlos! Si a las aguilitas no les gusta el agua...');
-    yield sc.say('pablo', '...¡a su jefe tampoco! ¡Pistolas afuera!');
+    yield sc.say('pablo', '...¡seguro que a su jefe tampoco! ¡Ya vas a ver, Aguilus!');
     yield* drawGuns(sc, [me, mate]);
     for (const id of [me, mate]) { A[id].facing = A.aguilus.x > A[id].x ? 1 : -1; A[id].gunAng = -0.2; }
     sc.fixed = { x: B.homeX, y: SKY_Y - 10 };
@@ -1471,7 +1471,7 @@ function* encounterScript(sc, B, p) {
     yield sc.say('pablo', 'No es una pistola de agua...');
     yield sc.say('pancha', '¡Es una SÚPER pistola de agua!');
     yield* epicIntro(sc, B, me, mate, mid);
-    yield sc.say(mate, `¡Y si alguno cae, el otro lo levanta! ${g.ui.hint('Apretá E', 'Apretá X', 'Tocá REVIVIR')} varias veces al lado.`);
+    yield sc.say(mate, `¡Si alguno cae, el otro lo levanta! ${g.ui.hint('Apretá E', 'Apretá X', 'Tocá REVIVIR')} varias veces al lado.`);
     return;
   }
   // llegaron hasta acá sin pasar por el taller después de las aguilitas: el interruptor secreto de Carlos
@@ -1503,7 +1503,7 @@ function* encounterScript(sc, B, p) {
   yield sc.say('pablo', 'No es una pistola de agua...');
   yield sc.say('pancha', '¡Es una SÚPER pistola de agua!');
   yield* epicIntro(sc, B, me, mate, mid);
-  yield sc.say(mate, `¡Y si alguno cae, el otro lo levanta! ${g.ui.hint('Apretá E', 'Apretá X', 'Tocá REVIVIR')} varias veces al lado.`);
+  yield sc.say(mate, `¡Si alguno cae, el otro lo levanta! ${g.ui.hint('Apretá E', 'Apretá X', 'Tocá REVIVIR')} varias veces al lado.`);
 }
 
 /** cuando vuelven a bajar después de que los noqueó: Aguilus los gasta (versión corta del interruptor) */
@@ -1586,7 +1586,7 @@ function* victoryScript(sc, B, p) {
   A[me].gunAng = 0.3; A[mate].gunAng = 0.3;
   sc.emote('aguilus', '~');
   yield sc.say('aguilus', '¡Bueno listo!! ¡Está bien, está bien! ¡Me rindo! Estoy empapado... mis plumitas..');
-  yield sc.say('pancha', '¿Por qué siempre vos, Aguilus? ¡Todos los años lo mismo!');
+  yield sc.say('pancha', '¿Por qué siempre haces esto, Aguilus? ¡Todos los años lo mismo!');
   yield sc.say('pablo', 'Ya nos tenés hartos con tus pavadas.');
   yield sc.say('aguilus', 'Es que... nadie me invita a los cumples... y los regalos son tan lindos...');
   yield sc.say('pancha', 'Bueno. Nos llevamos los regalos. Chau, Aguilus.');
@@ -1662,10 +1662,10 @@ function* victoryScript(sc, B, p) {
   A.aguilus.facing = -1;
   A.aguilus.pose = 'weak';
   sc.emote('aguilus', '~');
-  yield sc.say('aguilus', 'Uf... uf... ¡Pensé que me dejaban ahí abajo!');
+  yield sc.say('aguilus', 'Ay... ¡Pensé que me dejaban ahí abajo!');
   A.aguilus.pose = 'idle';
   yield sc.wait(0.5);
-  yield sc.say('aguilus', 'Ejem. Digo... ¡Esto no termina acá! ¡Hasta el año que viene, cumpleañera!');
+  yield sc.say('aguilus', 'Digo... ¡Esto no termina acá! ¡Hasta el año que viene, cumpleañera!');
   // ya se va... ¡pero lo frenan!
   A.aguilus.pose = 'fly';
   A.aguilus.facing = 1;
@@ -1674,7 +1674,7 @@ function* victoryScript(sc, B, p) {
   yield sc.wait(0.5);
   sc.emote('pablo', '!'); sc.emote('pancha', '!');
   A.pablo.facing = A.pancha.facing = 1;
-  yield sc.say('pablo', '¡Eh, Aguilus! ¿No te estás olvidando de algo?');
+  yield sc.say('pablo', '¡Eh, pájaro! ¿No te estás olvidando de algo?');
   sc.fly('aguilus', A.aguilus.x, GY, 50);
   yield sc.arrive('aguilus');
   Object.assign(A.aguilus, { pose: 'idle', flying: false, facing: -1 });
@@ -1691,7 +1691,7 @@ function* victoryScript(sc, B, p) {
   for (let i = 0; i < 10; i++) g.particles.add({ x: shoes.x + (Math.random() - 0.5) * 12, y: GY - 4, vx: (Math.random() - 0.5) * 30, vy: -20 - Math.random() * 30, life: 0.7, max: 0.7, color: i % 2 ? '#ffffff' : '#ffd34d', star: true, grav: 30 });
   yield sc.wait(0.7);
   sc.emote('aguilus', '~');
-  yield sc.say('aguilus', 'Snif... ¡Chau, chau! ¡Hasta el año que viene!');
+  yield sc.say('aguilus', '¡Chau, chau! ¡Hasta el año que viene!');
   A.aguilus.pose = 'fly';
   A.aguilus.facing = 1;
   sc.fly('aguilus', LAND_X + 330, GY - 280, 130);
@@ -1748,17 +1748,17 @@ function* endingScript(sc) {
   sc.caption('Esa tarde, ya con todos los regalos en casa...');
   yield sc.wait(2.4);
   sc.caption(null);
-  yield sc.say('pancha', 'Al final recuperamos todos los regalos.');
+  yield sc.say('pancha', 'Al final recuperamos todos los regalos. Otra vez.');
   yield sc.say('pablo', 'Los bombones, el reloj... y las zapatillas.');
-  yield sc.say('pancha', '¿Viste que valió la pena cavar hasta el centro de la Tierra?');
-  yield sc.say('pablo', 'Y mojar a un águila mago. Eso no pasa todos los días.');
+  yield sc.say('pancha', '¿Viste que valió la pena llegar hasta el centro de la Tierra?');
+  yield sc.say('pablo', 'Y mojar a este águila mago, qué placer que me da..');
   yield sc.say('pancha', 'Ya sé dónde vamos a esconder los regalos el año que viene...');
   yield sc.say('pablo', '¿Dónde?');
   yield sc.say('pancha', '¡En la casa rodante de Carlos!');
   yield sc.say('carlos', '¡Ja, ni se les ocurra! ¡Y devuélvanme las pistolas de agua!');
   sc.emote('pancha', '♥'); sc.emote('pablo', '♥');
   yield sc.say('pancha', '¡Feliz cumple para mí!');
-  yield sc.say('pablo', '¡Feliz cumple, Panchi!');
+  yield sc.say('pablo', '¡Feliz cumple, mi amor!');
   yield sc.wait(0.9);
   // y se cierra el círculo: la cámara sube al cielo (lo inverso de la bajada de la intro) mientras
   // la tarde vuelve a ser celeste, y arriba aparece otra vez el título

@@ -271,7 +271,7 @@ export class Player {
       aim = this.readAim(inp, ix);
       // sin el equipo de Carlos no hay pala: no se puede cavar
       if (aim && !g.kitGiven) {
-        if (inp.digPressed || inp.downPressed || inp.mouseDig) this.note('¡No tenés pala! Primero pasá por el Taller de Carlos', 'nokit');
+        if (inp.digPressed || inp.downPressed || inp.mouseDig) this.note('¡Todavía falta la pala! Primero pasemos por el Taller de Carlos', 'nokit');
         aim = null;
       }
       if (aim) this.lastAim = aim;
@@ -331,7 +331,7 @@ export class Player {
       const moving = jetIy !== 0 || walkIx !== 0;
       const cost = jetIy < 0 ? JET_COST.up : moving ? JET_COST.move : JET_COST.idle;
       if (!st.infEnergy && !arena) this.energy = Math.max(0, this.energy - st.jetCost * cost * dt);
-      if (!arena && this.energy <= 0) { this.hovering = false; this.note('¡Sin energía para volar!', 'nojet'); }
+      if (!arena && this.energy <= 0) { this.hovering = false; this.note('¡Te quedaste sin energía para volar!', 'nojet'); }
       this.peakY = this.y;
     } else if (H) {
       // modo vuelo: sin gravedad, se mueve para donde apuntes y frena enseguida
@@ -343,7 +343,7 @@ export class Player {
         this.flying = true;
         this.jetFlame(dt);
         if (!st.infEnergy) this.energy = Math.max(0, this.energy - st.jetCost * (iy || walkIx ? 1 : 0.4) * dt);
-        if (this.energy <= 0) { this.hovering = false; this.note('¡Sin energía para volar!', 'nojet'); }
+        if (this.energy <= 0) { this.hovering = false; this.note('¡Te quedaste sin energía para volar!', 'nojet'); }
       }
       this.peakY = this.y;
     } else {
@@ -353,7 +353,7 @@ export class Player {
           this.hovering = true;
           this.peakY = this.y;
           g.audio.play('jump');
-        } else this.note('¡Sin energía para volar!', 'nojet');
+        } else this.note('¡Te quedaste sin energía para volar!', 'nojet');
       }
       if (inp.jumpPressed && (this.onGround || inLava)) {
         this.vy = -PHYS.jump * (inLava ? 0.8 : 1);
@@ -382,7 +382,7 @@ export class Player {
         this.peakY = this.y;
         this.jetFlame(dt);
       } else if (wantJet && this.energy <= 0 && Math.random() < 0.1) {
-        this.note('¡Sin energía para volar!', 'nojet');
+        this.note('¡Te quedaste sin energía para volar!', 'nojet');
       }
     }
     if (this.flying !== wasFlying && !this.bot) g.audio.jet(this.flying);
@@ -557,7 +557,7 @@ export class Player {
       if (prevPhase < STRIKE_AT && ph >= STRIKE_AT) {
         g.audio.play('clink');
         this.sparks(target.hit.x, target.hit.y, ['#ffffff', '#ffe58a']);
-        this.note(`¡Muy duro! Necesitás una pala con fuerza ${hitHard}`, 'hard');
+        this.note(`¡Está muy duro! Vas a necesitar una pala con fuerza ${hitHard}`, 'hard');
       }
       return;
     }
