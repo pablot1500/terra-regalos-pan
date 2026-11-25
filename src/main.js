@@ -565,11 +565,13 @@ class Game {
   /** la primera vez que pisan el cantero (ya equipados), Popi sale del arbusto y se suma a la aventura */
   startPopiScene(p) {
     this.popiMet = true;
+    this.popiHiding = true; // hasta que salta del arbusto no tiene que verse el Popi que espera al lado del Gol
     p.vx = 0; p.digging = false;
     this.startScene((sc) => popiScript(sc, p), {
-      onSkip: () => { this.structs.bushShake = 0; },
+      onSkip: () => { this.structs.bushShake = 0; this.popiHiding = false; },
       onEnd: () => {
         this.structs.bushShake = 0;
+        this.popiHiding = false;
         if (!this.popi) this.setPopi(p);
         this.toast('¡El Taller de Carlos ya está abierto para comprar mejoras!', null, 'good');
         this.save();
@@ -1506,8 +1508,8 @@ class Game {
     const blink = (t % 4.3) > 4.15;
     const wag = Math.floor(t / (near ? 0.11 : 0.55)) % 2;
     const dogSpr = blink ? DOG.blink : near ? (wag ? DOG.happyB : DOG.happyA) : (wag ? DOG.b : DOG.a);
-    // (mientras Popi es parte de una escena, o todavía está escondido en el Gol, el de la escena es el único)
-    const popiActing = !!(this.scene && this.scene.actors && this.scene.actors.popi);
+    // (mientras Popi es parte de una escena, o todavía está escondido en el Gol o en el arbusto, el de la escena es el único)
+    const popiActing = !!(this.scene && this.scene.actors && this.scene.actors.popi) || (this.popiHiding && !!this.scene);
     if (!this.popi && this.popiMet && this.state !== 'intro' && !popiActing) ctx.drawImage(dogSpr, DOG_POS.x - camX, DOG_POS.y - camY);
     if (!this.popi && this.popiMet && near && Math.random() < 0.02) {
       this.particles.add({ x: DOG_POS.x + 5, y: DOG_POS.y - 2, vx: 0, vy: -12, life: 1, max: 1, heart: true, grav: 0 });
