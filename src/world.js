@@ -183,7 +183,9 @@ export class World {
 
     // 3) cámaras de los regalos (cúpula de cristales con piso plano)
     for (const ch of chambers) {
-      const t = LAYER_TILES[layerIndex((ch.r - SURFACE) * METERS_PER_TILE)];
+      // material de la capa de justo arriba de la cámara: el regalo 2 (800 m) queda rodeado de basalto y no de
+      // abismo, así se abre con la pala que corresponde a la capa donde está
+      const t = LAYER_TILES[layerIndex((ch.r - SURFACE) * METERS_PER_TILE - 1)];
       for (let rr = ch.r - 10; rr <= ch.r + 2; rr++) {
         for (let cc = ch.c - 11; cc <= ch.c + 11; cc++) {
           if (rr >= BOTTOM_ROW || cc < EDGE || cc >= w - EDGE) continue;
