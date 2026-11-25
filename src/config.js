@@ -166,7 +166,7 @@ export const ITEMS = [
 export const LAYER_LOOT = [
   { density: 0.14, w: { 1: 55, 2: 35, 3: 10 } },
   { density: 0.13, w: { 1: 15, 2: 40, 3: 35, 4: 10 } },
-  { density: 0.10, w: { 2: 25, 3: 40, 4: 25, 5: 10 } },
+  { density: 0.12, w: { 2: 20, 3: 35, 4: 30, 5: 15 } },
   { density: 0.10, w: { 3: 20, 4: 40, 5: 32, 6: 8 } },
   { density: 0.10, w: { 4: 22, 5: 42, 6: 22, 7: 8, 9: 6 } },
   { density: 0.10, w: { 5: 22, 6: 28, 7: 22, 8: 12, 9: 10, 10: 4, 11: 2 } },
@@ -184,7 +184,7 @@ export const UPGRADES = [
     desc: 'Más fuerza y más ancha: rompe materiales más duros, cava más rápido, saca más tierra de un palazo y llega más lejos.',
     levels: [
       [{ p: 1, b: 0 }, 0], [{ p: 2, b: 0 }, 60], [{ p: 4, b: 1 }, 480], [{ p: 7, b: 2 }, 2150],
-      [{ p: 11, b: 3 }, 7800], [{ p: 16, b: 4 }, 24000], [{ p: 24, b: 5 }, 57000], [{ p: 34, b: 6 }, 125000],
+      [{ p: 11, b: 3 }, 6500], [{ p: 16, b: 4 }, 24000], [{ p: 24, b: 5 }, 57000], [{ p: 34, b: 6 }, 125000],
     ],
     label: (v) => `Fuerza ${v.p} · ${['Normal', 'Ancha', 'Muy ancha', 'Enorme', 'Gigante', 'Colosal', 'Descomunal'][v.b]}`,
     tiers: ['Pala de hierro', 'Pala de acero', 'Pala de oro', 'Taladro', 'Taladro turbo', 'Taladro de diamante', 'Mega taladro del amor', 'Taladro cósmico'],
@@ -192,7 +192,7 @@ export const UPGRADES = [
   {
     id: 'bateria', name: 'Batería', icon: 'battery',
     desc: 'Más energía para cavar y volar sin volver a casa.',
-    levels: [[200, 0], [300, 90], [400, 380], [550, 1350], [750, 4200], [1000, 11250], [Infinity, 30000]],
+    levels: [[200, 0], [300, 90], [400, 380], [550, 1350], [750, 4200], [1000, 11250], [Infinity, 60000]],
     label: (v) => (v === Infinity ? 'Energía infinita' : `${v} de energía`),
   },
   {
