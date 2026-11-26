@@ -1253,6 +1253,40 @@ function chestWait(sc, opts) {
   return () => done;
 }
 
+/** Aguilus aparece con un hechizo: una bocanada de humo violeta con chispitas que lo tapa
+ *  y se va disipando mientras él se materializa; espera `dur` segundos */
+function magicPoofWait(sc, x, y, dur) {
+  const P = sc.g.particles, end = sc.t + dur;
+  const SMOKE = ['rgba(150,110,200,0.75)', 'rgba(200,185,225,0.7)', 'rgba(110,90,140,0.7)', 'rgba(235,230,245,0.65)'];
+  const SPARK = ['#ffd34d', '#ffffff', '#d9b3ff'];
+  const puff = (spread, big) => {
+    const a = Math.random() * Math.PI * 2, r = Math.random() * spread;
+    P.add({
+      x: x + Math.cos(a) * r, y: y - AG_H / 2 + Math.sin(a) * r * 1.2,
+      vx: Math.cos(a) * (8 + Math.random() * 22), vy: Math.sin(a) * 12 - 6 - Math.random() * 10,
+      life: 0.9 + Math.random() * 0.9, max: 1.8, color: SMOKE[Math.floor(Math.random() * SMOKE.length)],
+      size: big ? 5 + Math.floor(Math.random() * 3) : 3 + Math.floor(Math.random() * 2), grav: -8, smoke: true,
+    });
+  };
+  const spark = () => P.add({
+    x: x + (Math.random() - 0.5) * 26, y: y - Math.random() * (AG_H + 6),
+    vx: (Math.random() - 0.5) * 16, vy: -10 - Math.random() * 20,
+    life: 0.5 + Math.random() * 0.5, max: 1, color: SPARK[Math.floor(Math.random() * SPARK.length)], star: true, grav: -6,
+  });
+  // la explosión de humo
+  for (let i = 0; i < 40; i++) puff(14, true);
+  for (let i = 0; i < 14; i++) spark();
+  // después sigue saliendo humito (cada vez menos) mientras el hechizo termina
+  let last = sc.t;
+  return () => {
+    const dt = sc.t - last; last = sc.t;
+    const k = Math.max(0, (end - sc.t) / dur);
+    if (Math.random() < dt * 40 * k) puff(10, false);
+    if (Math.random() < dt * 14 * k) spark();
+    return sc.t >= end;
+  };
+}
+
 /** el cartel de un regalo en medio de una escena; espera a que toquen el botón */
 function giftWait(sc, gift) {
   let done = false;
@@ -1414,11 +1448,14 @@ function* encounterScript(sc, B, p) {
   g.sfx('surprise'); g.shakeAll(2);
   sc.emote(me, '!'); sc.emote(mate, '!');
   const agX = clamp(chX + side * 70, ARENA.x0 + 10, ARENA.x1 - 10);
-  Object.assign(A.aguilus, { x: agX, y: FLOOR_Y, hidden: false, facing: -side, pose: 'idle' });
+  // aparece con un hechizo: humo, chispitas, y se va materializando de a poco
+  Object.assign(A.aguilus, { x: agX, y: FLOOR_Y, hidden: false, facing: -side, pose: 'idle', alpha: 0, fadeIn: 0.8 });
   A[me].facing = A[mate].facing = side;
   sc.fixed = { x: (A[me].x + agX) / 2, y: FLOOR_Y - 18 };
   sc.setZoom(2);
-  yield sc.wait(0.6);
+  g.sfx('magic');
+  yield magicPoofWait(sc, agX, FLOOR_Y, 2);
+  A.aguilus.fadeIn = 0;
   // primer plano: ¡tiene puestas las zapatillas!
   g.sfx('boom'); g.shakeAll(2);
   showCutin('shoes');

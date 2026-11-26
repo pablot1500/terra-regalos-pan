@@ -220,7 +220,7 @@ export class Scene {
     if (this.done) return;
     this.t += dt;
     for (const a of Object.values(this.actors)) {
-      if (a.alpha < 1) a.alpha = Math.min(1, a.alpha + dt * 2.5);
+      if (a.alpha < 1) a.alpha = Math.min(1, a.alpha + dt * (a.fadeIn || 2.5)); // `fadeIn`: más lento (aparecer con un hechizo)
       // `ground`: sube y baja los escalones de a poco (va siguiendo la altura del piso)
       if (a.ground) a.y += (this.groundY(a.x) - a.y) * Math.min(1, dt * 16);
       if (a.target !== null) {
