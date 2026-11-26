@@ -1449,12 +1449,12 @@ function* encounterScript(sc, B, p) {
   sc.emote(me, '!'); sc.emote(mate, '!');
   const agX = clamp(chX + side * 70, ARENA.x0 + 10, ARENA.x1 - 10);
   // aparece con un hechizo: humo, chispitas, y se va materializando de a poco
-  Object.assign(A.aguilus, { x: agX, y: FLOOR_Y, hidden: false, facing: -side, pose: 'idle', alpha: 0, fadeIn: 0.8 });
+  Object.assign(A.aguilus, { x: agX, y: FLOOR_Y, hidden: false, facing: -side, pose: 'idle', alpha: 0, fadeIn: 0.55 });
   A[me].facing = A[mate].facing = side;
   sc.fixed = { x: (A[me].x + agX) / 2, y: FLOOR_Y - 18 };
   sc.setZoom(2);
   g.sfx('magic');
-  yield magicPoofWait(sc, agX, FLOOR_Y, 2);
+  yield magicPoofWait(sc, agX, FLOOR_Y, 3);
   A.aguilus.fadeIn = 0;
   // primer plano: ¡tiene puestas las zapatillas!
   g.sfx('boom'); g.shakeAll(2);
