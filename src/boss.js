@@ -1019,7 +1019,9 @@ export class Boss {
       this.hitAcc = 0;
       g.sfx('bossHit');
       g.shakeAll(1.2);
-      g.addText(this.x, this.y - AG_H - 6, HIT_LINES[Math.floor(Math.random() * HIT_LINES.length)], '#ffd34d');
+      // la quejita ("¡AGUA NO!", "¡PUAJ!"...) solo una de cada 3 veces (el golpe y el temblor, siempre)
+      this.hitN = (this.hitN || 0) + 1;
+      if (this.hitN % 3 === 1) g.addText(this.x, this.y - AG_H - 6, HIT_LINES[Math.floor(Math.random() * HIT_LINES.length)], '#ffd34d');
       for (let i = 0; i < 4; i++) g.particles.add({ x: this.x + (Math.random() - 0.5) * 10, y: this.y - 20, vx: (Math.random() - 0.5) * 50, vy: -20 - Math.random() * 30, life: 0.8, max: 0.8, color: '#c9c0b0', size: 1, grav: 40 });
     }
     const frac = Math.max(0, this.hp) / BOSS.hp;
