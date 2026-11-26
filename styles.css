@@ -34,6 +34,8 @@ html, body {
   touch-action: none;
 }
 .hidden { display: none !important; }
+/* botones ocultos a propósito (por ahora no se usan; sacar la clase "off" para volver a mostrarlos) */
+.off { display: none !important; }
 img.ico, .ico { image-rendering: pixelated; }
 button { font-family: var(--font); cursor: pointer; }
 

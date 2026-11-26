@@ -190,13 +190,13 @@
       <div class="panel pause">
         <h2>Pausa</h2>
         <button class="btn" id="btn-resume">Seguir jugando</button>
-        <button class="btn small alt hidden" id="btn-rematch">Pelear con Aguilus</button>
+        <button class="btn small alt hidden off" id="btn-rematch">Pelear con Aguilus</button>
         <div class="row">
           <button class="btn small alt" id="p-settings">Configuración</button>
           <button class="btn small alt" id="p-controls">Controles</button>
         </div>
         <div class="row">
-          <button class="btn small alt" id="p-songs">Probar canciones</button>
+          <button class="btn small alt off" id="p-songs">Probar canciones</button>
           <button class="btn small alt" id="p-online">Jugar online</button>
         </div>
         <div class="row">
@@ -256,11 +256,12 @@
           <button class="btn small alt" id="btn-music">Música</button>
         </div>
         <button class="btn small alt" id="btn-duo">Compañero</button>
-        <div class="row">
+        <!-- escuchar canciones, efectos de sonido y escenas: ocultos (clase "off"); sacarla para volver a mostrarlos -->
+        <div class="row off">
           <button class="btn small alt" id="s-songs">Escuchar canciones</button>
           <button class="btn small alt" id="s-sfx">Efectos de sonido</button>
         </div>
-        <button class="btn small alt" id="s-scenes">Escenas</button>
+        <button class="btn small alt off" id="s-scenes">Escenas</button>
         <p class="hint">Con el compañero prendido, el otro personaje te acompaña, ayuda a cavar y charlan cada tanto.</p>
         <div class="vols">
           <label><span>Música</span><input type="range" id="vol-music" min="0" max="100" step="5"><output></output></label>
